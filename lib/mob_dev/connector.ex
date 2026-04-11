@@ -1,0 +1,185 @@
+defmodule MobDev.Connector do
+  @moduledoc """
+  Orchestrates device discovery, tunnel setup, app restart, and node connection.
+  """
+
+  alias MobDev.{Device, Tunnel}
+  alias MobDev.Discovery.{Android, IOS}
+
+  @android_package  "com.mob.demo"
+  @android_activity ".MainActivity"
+  @ios_bundle_id    "com.mob.demo"
+  @connect_timeout  10_000   # ms to wait for node to appear
+  @connect_interval 500      # ms between polls
+
+  @doc """
+  Discovers all connected devices, sets up tunnels, restarts apps, and waits
+  for Erlang nodes to come online.
+
+  Returns {connected, failed} lists of %Device{}.
+  """
+  def connect_all(opts \\ []) do
+    cookie = Keyword.get(opts, :cookie, :mob_secret)
+
+    IO.puts("\n#{color(:cyan)}Scanning for devices...#{color(:reset)}\n")
+
+    devices = discover_all()
+
+    if devices == [] do
+      IO.puts("  #{color(:yellow)}No devices found.#{color(:reset)}")
+      IO.puts("  • Connect an Android device via USB and enable USB debugging")
+      IO.puts("  • Start an iOS simulator in Xcode or via xcrun simctl")
+      {[], []}
+    else
+      print_discovered(devices)
+
+      # Set up tunnels (assigns dist_port per device)
+      {tunneled, failed_tunnel} = setup_tunnels(devices)
+
+      # Restart apps so they pick up tunnels and use correct node names
+      Enum.each(tunneled, &restart_app/1)
+
+      # Start distribution on the Mac side
+      ensure_local_dist(cookie)
+
+      # Wait for nodes to come online
+      IO.puts("\n  Waiting for nodes...")
+      {connected, failed_wait} = wait_for_nodes(tunneled, cookie)
+
+      # Report failures
+      all_failed = failed_tunnel ++ failed_wait
+      Enum.each(all_failed, fn d ->
+        IO.puts("  #{color(:red)}✗ #{d.name || d.serial}: #{d.error}#{color(:reset)}")
+        print_fix_hint(d)
+      end)
+
+      if connected != [] do
+        IO.puts("\n#{color(:green)}Connected cluster (#{length(connected)} node(s)):#{color(:reset)}")
+        Enum.each(connected, fn d ->
+          IO.puts("  #{color(:green)}✓#{color(:reset)} #{d.node}  [port #{d.dist_port}]")
+        end)
+      end
+
+      {connected, all_failed}
+    end
+  end
+
+  defp discover_all do
+    android = Android.list_devices()
+    ios     = IOS.list_devices()
+    android ++ ios
+  end
+
+  defp setup_tunnels(devices) do
+    # Track index per platform to assign unique ports
+    devices
+    |> Enum.with_index()
+    |> Enum.reduce({[], []}, fn {device, idx}, {ok, fail} ->
+      IO.write("  #{device.name || device.serial}  →  tunneling...")
+      case Tunnel.setup(device, idx) do
+        {:ok, d}        -> IO.puts("  #{color(:green)}✓#{color(:reset)}"); {ok ++ [d], fail}
+        {:error, reason} ->
+          IO.puts("  #{color(:red)}✗#{color(:reset)}")
+          {ok, fail ++ [%{device | status: :error, error: reason}]}
+      end
+    end)
+  end
+
+  defp restart_app(%Device{platform: :android, serial: serial, dist_port: port}) do
+    IO.write("  Restarting app on #{serial}...")
+    Android.restart_app(serial, @android_package, @android_activity, dist_port: port)
+    IO.puts(" done")
+  end
+
+  defp restart_app(%Device{platform: :ios, serial: udid, dist_port: port}) do
+    IO.write("  Restarting app on #{udid}...")
+    IOS.terminate_app(udid, @ios_bundle_id)
+    :timer.sleep(500)
+    IOS.launch_app(udid, @ios_bundle_id, dist_port: port)
+    IO.puts(" done")
+  end
+
+  defp ensure_local_dist(cookie) do
+    unless Node.alive?() do
+      Node.start(:"mob_dev@127.0.0.1", :longnames)
+      Node.set_cookie(cookie)
+    end
+  end
+
+  defp wait_for_nodes(devices, cookie) do
+    devices
+    |> Enum.reduce({[], []}, fn device, {ok, fail} ->
+      IO.write("  #{device.node} ...")
+      case wait_for_node(device.node, cookie, @connect_timeout) do
+        :ok ->
+          IO.puts("  #{color(:green)}✓#{color(:reset)}")
+          {ok ++ [%{device | status: :connected}], fail}
+        {:error, reason} ->
+          IO.puts("  #{color(:red)}✗#{color(:reset)}")
+          {ok, fail ++ [%{device | status: :error, error: reason}]}
+      end
+    end)
+  end
+
+  defp wait_for_node(node, _cookie, timeout) when timeout <= 0 do
+    {:error, "timed out waiting for #{node}"}
+  end
+
+  defp wait_for_node(node, cookie, timeout) do
+    Node.set_cookie(node, cookie)
+    case Node.connect(node) do
+      true  -> :ok
+      false ->
+        :timer.sleep(@connect_interval)
+        wait_for_node(node, cookie, timeout - @connect_interval)
+      :ignored ->
+        {:error, "local node not alive (distribution not started)"}
+    end
+  end
+
+  defp print_discovered(devices) do
+    android = Enum.filter(devices, &(&1.platform == :android))
+    ios     = Enum.filter(devices, &(&1.platform == :ios))
+
+    if android != [] do
+      IO.puts("  #{color(:blue)}Android#{color(:reset)}")
+      Enum.each(android, fn d ->
+        status = if d.status == :unauthorized,
+          do: "#{color(:red)}unauthorized#{color(:reset)}",
+          else: "found"
+        IO.puts("  ├── #{d.name || d.serial}  #{d.serial}  #{status}")
+        if d.status == :unauthorized, do: IO.puts("  │   #{d.error}")
+      end)
+    end
+
+    if ios != [] do
+      IO.puts("  #{color(:blue)}iOS#{color(:reset)}")
+      Enum.each(ios, fn d ->
+        IO.puts("  ├── #{d.name || d.serial}  #{d.serial}  found")
+      end)
+    end
+    IO.puts("")
+  end
+
+  defp print_fix_hint(%Device{status: :unauthorized}) do
+    IO.puts("    → Check your device for a 'Allow USB debugging?' prompt")
+    IO.puts("    → If no prompt: Settings → Developer Options → Revoke USB debugging")
+  end
+
+  defp print_fix_hint(%Device{platform: :android, error: error})
+       when is_binary(error) do
+    if String.contains?(error, "timed out") do
+      IO.puts("    → Is the app installed? Run: mix mob.deploy")
+      IO.puts("    → Android distribution starts 3s after app launch")
+    end
+  end
+
+  defp print_fix_hint(_), do: :ok
+
+  defp color(:red),    do: IO.ANSI.red()
+  defp color(:green),  do: IO.ANSI.green()
+  defp color(:yellow), do: IO.ANSI.yellow()
+  defp color(:blue),   do: IO.ANSI.cyan()
+  defp color(:cyan),   do: IO.ANSI.cyan()
+  defp color(:reset),  do: IO.ANSI.reset()
+end
