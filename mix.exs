@@ -6,7 +6,9 @@ defmodule MobDev.MixProject do
       app: :mob_dev,
       version: "0.1.0",
       elixir: "~> 1.17",
-      deps: deps()
+      description: "Project runner for the Mob mobile framework",
+      deps: deps(),
+      package: package()
     ]
   end
 
@@ -22,6 +24,13 @@ defmodule MobDev.MixProject do
        git: "https://github.com/GenericJam/avatarex.git", ref: "deedd09", only: [:dev, :test]},
       {:image, "~> 0.54", only: [:dev, :test]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/genericjam/mob_dev"}
     ]
   end
 end
