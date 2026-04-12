@@ -4,7 +4,7 @@ defmodule MobDev.MixProject do
   def project do
     [
       app: :mob_dev,
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.17",
       description: "Project runner for the Mob mobile framework",
       deps: deps(),
@@ -21,8 +21,8 @@ defmodule MobDev.MixProject do
       {:eqrcode, "~> 0.2"},
       {:jason, "~> 1.4"},
       {:avatarex,
-       git: "https://github.com/GenericJam/avatarex.git", ref: "deedd09", only: [:dev, :test]},
-      {:image, "~> 0.54", only: [:dev, :test]},
+       git: "https://github.com/GenericJam/avatarex.git", ref: "deedd09"},
+      {:image, "~> 0.54"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
