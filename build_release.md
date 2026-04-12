@@ -44,10 +44,11 @@ for SELinux `execve` permission on Android).
 
 Built from a cross-compiled OTP for `aarch64-apple-iossimulator`. Needs:
 
-1. **Headers** at `erts-<vsn>/include/`:
+1. **Headers** at `erts-<vsn>/include/` (same set for both platforms, arch-specific file differs):
    - `erl_nif.h` — from `erts/emulator/beam/erl_nif.h`
+   - `erl_nif_api_funcs.h` — from `erts/emulator/beam/erl_nif_api_funcs.h`
    - `erl_drv_nif.h` — from `erts/emulator/beam/erl_drv_nif.h`
-   - `erl_int_sizes_config.h` — from `erts/include/aarch64-apple-iossimulator/erl_int_sizes_config.h`
+   - `erl_int_sizes_config.h` — iOS: `erts/include/aarch64-apple-iossimulator/erl_int_sizes_config.h` / Android: `erts/include/aarch64-unknown-linux-android/erl_int_sizes_config.h`
    - `erl_fixed_size_int_types.h` — from `erts/include/erl_fixed_size_int_types.h`
 
 2. **Extra static libs** at `erts-<vsn>/lib/`:
@@ -87,14 +88,31 @@ for the path, typically `/tmp/otp-android` or similar).
 OTP_SRC=~/code/otp
 OTP_RELEASE=/tmp/otp-android   # adjust if different
 HASH=<hash>
-TARBALL=/tmp/otp-android-$HASH.tar.gz
+STAGE=$(mktemp -d)
 
-tar czf "$TARBALL" \
-    -C "$(dirname $OTP_RELEASE)" \
-    "$(basename $OTP_RELEASE)"
+cp -r "$OTP_RELEASE/." "$STAGE"
 
-# Verify structure
-tar tzf "$TARBALL" | grep "erts-" | head -5
+# Add extra static libs
+ERTS_LIB="$STAGE/erts-16.3/lib"   # update version as needed
+cp "$OTP_SRC/erts/emulator/zstd/obj/aarch64-unknown-linux-android/opt/libzstd.a" "$ERTS_LIB/"
+cp "$OTP_SRC/erts/emulator/pcre/obj/aarch64-unknown-linux-android/opt/libepcre.a" "$ERTS_LIB/"
+cp "$OTP_SRC/erts/emulator/ryu/obj/aarch64-unknown-linux-android/opt/libryu.a"   "$ERTS_LIB/"
+cp "$OTP_SRC/lib/asn1/priv/lib/aarch64-unknown-linux-android/asn1rt_nif.a"       "$ERTS_LIB/"
+
+# Add required headers
+ERTS_INC="$STAGE/erts-16.3/include"
+mkdir -p "$ERTS_INC"
+cp "$OTP_SRC/erts/emulator/beam/erl_nif.h"                                        "$ERTS_INC/"
+cp "$OTP_SRC/erts/emulator/beam/erl_nif_api_funcs.h"                              "$ERTS_INC/"
+cp "$OTP_SRC/erts/emulator/beam/erl_drv_nif.h"                                    "$ERTS_INC/"
+cp "$OTP_SRC/erts/include/aarch64-unknown-linux-android/erl_int_sizes_config.h"   "$ERTS_INC/"
+cp "$OTP_SRC/erts/include/erl_fixed_size_int_types.h"                             "$ERTS_INC/"
+
+BASE=$(basename $STAGE)
+tar czf "/tmp/otp-android-$HASH.tar.gz" -C "$(dirname $STAGE)" "$BASE"
+
+# Verify
+tar tzf "/tmp/otp-android-$HASH.tar.gz" | grep "\.a$\|\.h$"
 ```
 
 ---
@@ -123,6 +141,7 @@ cp "$OTP_SRC/lib/asn1/priv/lib/aarch64-apple-iossimulator/asn1rt_nif.a"       "$
 # Add required headers
 ERTS_INC="$STAGE/erts-16.3/include"
 cp "$OTP_SRC/erts/emulator/beam/erl_nif.h"                                     "$ERTS_INC/"
+cp "$OTP_SRC/erts/emulator/beam/erl_nif_api_funcs.h"                           "$ERTS_INC/"
 cp "$OTP_SRC/erts/emulator/beam/erl_drv_nif.h"                                 "$ERTS_INC/"
 cp "$OTP_SRC/erts/include/aarch64-apple-iossimulator/erl_int_sizes_config.h"   "$ERTS_INC/"
 cp "$OTP_SRC/erts/include/erl_fixed_size_int_types.h"                          "$ERTS_INC/"

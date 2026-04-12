@@ -134,7 +134,7 @@ defmodule MobDev.IconGeneratorTest do
     end
   end
 
-  # ── generate_random/1 (integration — requires avatarex + libvips) ─────────────
+  # ── generate_random/1 (integration — requires Avatarz + libvips) ─────────────
 
   describe "generate_random/1" do
     setup do

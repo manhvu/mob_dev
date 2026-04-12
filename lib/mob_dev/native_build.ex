@@ -267,8 +267,8 @@ defmodule MobDev.NativeBuild do
       IO.puts("  Building iOS simulator app...")
 
       env = [
-        {"MOB_DIR",          cfg[:mob_dir]},
-        {"MOB_ELIXIR_LIB",   cfg[:elixir_lib]},
+        {"MOB_DIR",          Path.expand(cfg[:mob_dir])},
+        {"MOB_ELIXIR_LIB",   Path.expand(cfg[:elixir_lib])},
         {"MOB_IOS_OTP_ROOT", otp_root}
       ]
 
@@ -303,10 +303,11 @@ defmodule MobDev.NativeBuild do
   defp app_name, do: Mix.Project.config()[:app] |> to_string()
 
   defp check_path(path, key) do
+    expanded = if is_binary(path), do: Path.expand(path), else: path
     cond do
       is_nil(path) or path =~ "/path/to/" ->
         {:error, "#{key} not configured in mob.exs"}
-      not File.exists?(path) ->
+      not File.exists?(expanded) ->
         {:error, "#{key} path not found: #{path}"}
       true ->
         :ok

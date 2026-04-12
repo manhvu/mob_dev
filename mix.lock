@@ -1,5 +1,5 @@
 %{
-  "avatarex": {:git, "https://github.com/GenericJam/avatarex.git", "deedd0903482e813c195a1fa9dbfbd7094c8e9a8", [ref: "deedd09"]},
+  "avatarz": {:hex, :avatarz, "0.2.0", "84fcd8a173b74a4a9d1730b181c0c44dd703cb661de23d39874f5b2cc2a761d1", [:mix], [{:image, "~> 0.55.2", [hex: :image, repo: "hexpm", optional: false]}], "hexpm", "77e31e38896d5a86f3ff1d7c91f47bae09dd4fd6a29985eea820a79fad6075f9"},
   "cc_precompiler": {:hex, :cc_precompiler, "0.1.11", "8c844d0b9fb98a3edea067f94f616b3f6b29b959b6b3bf25fee94ffe34364768", [:mix], [{:elixir_make, "~> 0.7", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "3427232caf0835f94680e5bcf082408a70b48ad68a5f5c0b02a3bea9f3a075b9"},
   "earmark_parser": {:hex, :earmark_parser, "1.4.44", "f20830dd6b5c77afe2b063777ddbbff09f9759396500cdbe7523efd58d7a339c", [:mix], [], "hexpm", "4778ac752b4701a5599215f7030989c989ffdc4f6df457c5f36938cc2d2a2750"},
   "elixir_make": {:hex, :elixir_make, "0.9.0", "6484b3cd8c0cee58f09f05ecaf1a140a8c97670671a6a0e7ab4dc326c3109726", [:mix], [], "hexpm", "db23d4fd8b757462ad02f8aa73431a426fe6671c80b200d9710caf3d1dd0ffdb"},

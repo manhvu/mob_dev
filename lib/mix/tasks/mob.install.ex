@@ -176,13 +176,12 @@ defmodule Mix.Tasks.Mob.Install do
       content = File.read!(props)
 
       if String.contains?(content, "/path/to/") do
-        otp_build = MobDev.OtpDownloader.android_otp_dir()
+        otp_dir = MobDev.OtpDownloader.android_otp_dir()
 
         new_content =
           content
-          |> replace_prop("mob.otp_build", otp_build)
-          |> replace_prop("mob.mob_dir",   cfg[:mob_dir])
-          |> replace_prop("mob.otp_release", otp_build)
+          |> replace_prop("mob.otp_release", otp_dir)
+          |> replace_prop("mob.mob_dir",     cfg[:mob_dir])
 
         File.write!(props, new_content)
         Mix.shell().info([:green, "* android/local.properties configured", :reset])
