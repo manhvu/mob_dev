@@ -1,4 +1,9 @@
 defmodule MobDev.IconGenerator do
+  # Image and Avatarex are provided by the parent project (mob_dev is a dev dep).
+  # They're on the code path at runtime but not visible when mob_dev is compiled
+  # as a dependency, so suppress the compile-time undefined-module warnings.
+  @compile {:no_warn_undefined, [Image, Avatarex, Avatarex.Sets.Robot]}
+
   @moduledoc """
   Generates app icons for Android and iOS from either a random robot avatar
   (using Avatarex) or a provided source image (using Image).
@@ -62,8 +67,9 @@ defmodule MobDev.IconGenerator do
     renders_path = Path.join(output_dir, ".icon_renders")
     File.mkdir_p!(renders_path)
 
+    seed = Path.basename(output_dir)
     avatar =
-      Avatarex.render(Avatarex.Sets.Robot, :robot, renders_path)
+      Avatarex.render(seed, Avatarex.Sets.Robot, :robot, renders_path)
 
     source_png = Path.join(output_dir, "icon_source.png")
     Image.write!(avatar.image, source_png)
@@ -109,7 +115,7 @@ defmodule MobDev.IconGenerator do
       File.mkdir_p!(dest_dir)
       dest = Path.join(dest_dir, "ic_launcher.png")
       source
-      |> Image.resize!(px, vertical_scale: 1.0)
+      |> Image.thumbnail!(px)
       |> Image.write!(dest)
     end)
   end
@@ -121,7 +127,7 @@ defmodule MobDev.IconGenerator do
     Enum.each(@ios_sizes, fn px ->
       dest = Path.join(dest_dir, "icon_#{px}.png")
       source
-      |> Image.resize!(px, vertical_scale: 1.0)
+      |> Image.thumbnail!(px)
       |> Image.write!(dest)
     end)
 

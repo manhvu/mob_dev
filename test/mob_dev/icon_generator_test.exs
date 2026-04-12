@@ -110,6 +110,28 @@ defmodule MobDev.IconGeneratorTest do
       assert is_list(parsed["images"])
       assert length(parsed["images"]) > 0
     end
+
+    test "Android icons are square (not squashed)", %{tmp: tmp} do
+      source = write_test_png(tmp)
+      IconGenerator.generate_from_source(source, tmp)
+      Enum.each(IconGenerator.android_sizes(), fn {bucket, px} ->
+        path = Path.join(tmp, "android/app/src/main/res/#{bucket}/ic_launcher.png")
+        img = Image.open!(path)
+        assert Image.width(img) == px,  "#{bucket}: width #{Image.width(img)} != #{px}"
+        assert Image.height(img) == px, "#{bucket}: height #{Image.height(img)} != #{px}"
+      end)
+    end
+
+    test "iOS icons are square (not squashed)", %{tmp: tmp} do
+      source = write_test_png(tmp)
+      IconGenerator.generate_from_source(source, tmp)
+      Enum.each(IconGenerator.ios_sizes(), fn px ->
+        path = Path.join(tmp, "ios/Assets.xcassets/AppIcon.appiconset/icon_#{px}.png")
+        img = Image.open!(path)
+        assert Image.width(img) == px,  "icon_#{px}: width #{Image.width(img)} != #{px}"
+        assert Image.height(img) == px, "icon_#{px}: height #{Image.height(img)} != #{px}"
+      end)
+    end
   end
 
   # ── generate_random/1 (integration — requires avatarex + libvips) ─────────────

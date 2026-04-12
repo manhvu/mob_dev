@@ -25,24 +25,32 @@ defmodule Mix.Tasks.Mob.Deploy do
     * `--no-restart`  — push BEAMs but don't restart the app
   """
 
-  @switches [native: :boolean, restart: :boolean]
+  @switches [native: :boolean, restart: :boolean, android: :boolean, ios: :boolean]
 
   @impl Mix.Task
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: @switches)
 
-    restart = Keyword.get(opts, :restart, true)
-    native  = Keyword.get(opts, :native, false)
+    restart   = Keyword.get(opts, :restart, true)
+    native    = Keyword.get(opts, :native, false)
+    platforms = resolve_platforms(opts)
 
     IO.puts("")
+
+    if native do
+      IO.puts("Fetching dependencies...")
+      mix = System.find_executable("mix")
+      System.cmd(mix, ["deps.get"], into: IO.stream())
+    end
+
     Mix.Task.run("compile")
     IO.puts("\n#{IO.ANSI.cyan()}Deploying to devices...#{IO.ANSI.reset()}\n")
 
     if native do
-      MobDev.NativeBuild.build_all()
+      MobDev.NativeBuild.build_all(platforms: platforms)
     end
 
-    {deployed, failed} = MobDev.Deployer.deploy_all(restart: restart)
+    {deployed, failed} = MobDev.Deployer.deploy_all(restart: restart, platforms: platforms)
 
     if deployed == [] and failed == [] do
       IO.puts("#{IO.ANSI.yellow()}No devices found.#{IO.ANSI.reset()}")
@@ -65,4 +73,25 @@ defmodule Mix.Tasks.Mob.Deploy do
       end
     end
   end
+
+  defp resolve_platforms(opts) do
+    android = opts[:android]
+    ios     = opts[:ios]
+
+    cond do
+      android && ios   -> [:android, :ios]
+      android          -> [:android]
+      ios              ->
+        if macos?() do
+          [:ios]
+        else
+          IO.puts("#{IO.ANSI.yellow()}Warning: --ios is only supported on macOS. Skipping iOS.#{IO.ANSI.reset()}")
+          []
+        end
+      macos?()         -> [:android, :ios]
+      true             -> [:android]
+    end
+  end
+
+  defp macos?, do: match?({:unix, :darwin}, :os.type())
 end

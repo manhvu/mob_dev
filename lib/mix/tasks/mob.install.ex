@@ -43,6 +43,9 @@ defmodule Mix.Tasks.Mob.Install do
       Mix.raise("No mix.exs found. Run mix mob.install from your project root.")
     end
 
+    configure_paths(project_dir)
+    download_otp()
+
     unless opts[:no_icon] do
       generate_icons(project_dir, opts[:icon])
     end
@@ -51,11 +54,148 @@ defmodule Mix.Tasks.Mob.Install do
 
     Mob project ready!
 
-        mix mob.deploy       # build APK + push BEAMs + launch on devices
-        mix mob.watch        # auto-push changes while developing
-        mix mob.connect      # connect IEx to running device nodes
+        mix mob.deploy --native   # first deploy: build APK + iOS app, install + push BEAMs
+        mix mob.deploy            # fast push + restart (day-to-day)
+        mix mob.watch             # auto-push changes while developing
+        mix mob.connect           # connect IEx to running device nodes
     """)
   end
+
+  # ── OTP download ─────────────────────────────────────────────────────────────
+
+  defp download_otp do
+    Mix.shell().info("Ensuring OTP releases are cached...")
+
+    case MobDev.OtpDownloader.ensure_android() do
+      {:ok, path}      -> Mix.shell().info([:green, "* Android OTP: #{path}", :reset])
+      {:error, reason} -> Mix.shell().error("Warning: Android OTP download failed: #{reason}")
+    end
+
+    if match?({:unix, :darwin}, :os.type()) do
+      case MobDev.OtpDownloader.ensure_ios_sim() do
+        {:ok, path}      -> Mix.shell().info([:green, "* iOS OTP: #{path}", :reset])
+        {:error, reason} -> Mix.shell().error("Warning: iOS OTP download failed: #{reason}")
+      end
+    end
+  end
+
+  # ── Path configuration ───────────────────────────────────────────────────────
+
+  @required_keys [:mob_dir, :elixir_lib]
+
+  defp configure_paths(project_dir) do
+    mob_exs = Path.join(project_dir, "mob.exs")
+
+    cfg =
+      if File.exists?(mob_exs) do
+        Config.Reader.read!(mob_exs) |> Keyword.get(:mob_dev, [])
+      else
+        []
+      end
+
+    missing = Enum.filter(@required_keys, fn key ->
+      val = cfg[key]
+      is_nil(val) or String.contains?(val, "/path/to/")
+    end)
+
+    if missing != [] do
+      defaults = detect_defaults(project_dir)
+
+      Mix.shell().info("""
+
+      Configure your local build paths in mob.exs.
+      These are machine-specific and gitignored.
+      Press Enter to accept a detected value [ ], or type a new path.
+      """)
+
+      updates =
+        Enum.map(missing, fn key ->
+          {key, prompt_path(key, defaults[key])}
+        end)
+
+      new_cfg = Keyword.merge(cfg, updates)
+      write_mob_exs(mob_exs, new_cfg)
+      write_local_properties(project_dir, new_cfg)
+
+      Mix.shell().info([:green, "* mob.exs configured", :reset])
+    end
+  end
+
+  defp detect_defaults(project_dir) do
+    %{
+      elixir_lib: detect_elixir_lib(),
+      mob_dir:    detect_mob_dir(project_dir)
+    }
+  end
+
+  # We're running inside Elixir — :code.lib_dir(:elixir) is always available.
+  defp detect_elixir_lib do
+    :code.lib_dir(:elixir) |> to_string() |> Path.dirname()
+  end
+
+  # Read the {:mob, path: "..."} dep from mix.exs and resolve it.
+  defp detect_mob_dir(project_dir) do
+    mix_exs = Path.join(project_dir, "mix.exs")
+    with {:ok, content} <- File.read(mix_exs),
+         [_, rel] <- Regex.run(~r/\{:mob,\s+path:\s+"([^"]+)"/, content) do
+      Path.expand(rel, project_dir)
+    else
+      _ -> nil
+    end
+  end
+
+  defp prompt_path(key, detected) do
+    label = prompt_label(key)
+    if detected do
+      input = Mix.shell().prompt("  #{label} [#{detected}]:") |> String.trim()
+      if input == "", do: detected, else: input
+    else
+      Mix.shell().prompt("  #{label}:") |> String.trim()
+    end
+  end
+
+  defp prompt_label(:mob_dir),    do: "mob library path"
+  defp prompt_label(:elixir_lib), do: "Elixir lib path"
+
+  defp write_mob_exs(path, cfg) do
+    content = """
+    import Config
+
+    config :mob_dev,
+      mob_dir:    #{inspect(cfg[:mob_dir])},
+      elixir_lib: #{inspect(cfg[:elixir_lib])}
+    """
+
+    File.write!(path, content)
+  end
+
+  defp write_local_properties(project_dir, cfg) do
+    props = Path.join(project_dir, "android/local.properties")
+
+    if File.exists?(props) do
+      content = File.read!(props)
+
+      if String.contains?(content, "/path/to/") do
+        otp_build = MobDev.OtpDownloader.android_otp_dir()
+
+        new_content =
+          content
+          |> replace_prop("mob.otp_build", otp_build)
+          |> replace_prop("mob.mob_dir",   cfg[:mob_dir])
+          |> replace_prop("mob.otp_release", otp_build)
+
+        File.write!(props, new_content)
+        Mix.shell().info([:green, "* android/local.properties configured", :reset])
+      end
+    end
+  end
+
+  defp replace_prop(content, key, value) when not is_nil(value) do
+    String.replace(content, ~r/^#{Regex.escape(key)}=.*$/m, "#{key}=#{value}")
+  end
+  defp replace_prop(content, _key, nil), do: content
+
+  # ── Icon generation ───────────────────────────────────────────────────────────
 
   defp generate_icons(project_dir, nil) do
     Mix.shell().info("Generating app icon (random robot)...")

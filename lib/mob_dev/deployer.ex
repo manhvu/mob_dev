@@ -18,24 +18,28 @@ defmodule MobDev.Deployer do
   alias MobDev.Device
 
   @android_activity ".MainActivity"
-  @ios_beamhello    "/tmp/otp-ios-sim/beamhello"
 
   defp app_name,         do: Mix.Project.config()[:app] |> to_string()
   defp bundle_id,        do: "com.mob.#{app_name()}"
   defp android_package,  do: bundle_id()
   defp android_app_data, do: "/data/data/#{android_package()}/files"
+  defp android_beams_dir, do: "#{android_app_data()}/otp/#{app_name()}"
   defp ios_bundle_id,    do: bundle_id()
+  defp ios_beams_dir,    do: "/tmp/otp-ios-sim/#{app_name()}"
 
   @doc """
   Discovers devices, pushes BEAMs, and optionally restarts apps.
   Returns `{deployed, failed}` lists of `%Device{}`.
   """
   def deploy_all(opts \\ []) do
-    restart = Keyword.get(opts, :restart, true)
+    restart   = Keyword.get(opts, :restart, true)
+    platforms = Keyword.get(opts, :platforms, [:android, :ios])
     beam_dirs = collect_beam_dirs()
 
-    android = Android.list_devices() |> Enum.reject(&(&1.status == :unauthorized))
-    ios     = IOS.list_simulators()
+    android = if :android in platforms,
+                do: Android.list_devices() |> Enum.reject(&(&1.status == :unauthorized)),
+                else: []
+    ios     = if :ios in platforms, do: IOS.list_simulators(), else: []
     all     = android ++ ios
 
     if all == [] do
@@ -86,9 +90,10 @@ defmodule MobDev.Deployer do
     case run_adb(["-s", serial, "root"]) do
       {:ok, _} ->
         :timer.sleep(600)
+        run_adb(["-s", serial, "shell", "mkdir -p #{android_beams_dir()}"])
         Enum.reduce_while(beam_dirs, :ok, fn dir, _ ->
           case run_adb(["-s", serial, "push", "#{dir}/.",
-                        "#{android_app_data()}/otp/beamhello/"]) do
+                        "#{android_beams_dir()}/"]) do
             {:ok, _}        -> {:cont, :ok}
             {:error, reason} -> {:halt, {:error, "push failed: #{reason}"}}
           end
@@ -125,7 +130,7 @@ defmodule MobDev.Deployer do
       end
 
       cmd = "run-as #{android_package()} tar xf #{stage_device} " <>
-            "-C #{android_app_data()}/otp/beamhello/ --strip-components=1"
+            "-C #{android_beams_dir()}/ --strip-components=1"
       case run_adb(["-s", serial, "shell", cmd]) do
         {:ok, _} -> :ok
         {:error, r} -> throw({:error, "run-as tar failed: #{r}"})
@@ -157,9 +162,9 @@ defmodule MobDev.Deployer do
     dist_port = Keyword.get(opts, :dist_port, 9100)
 
     try do
-      File.mkdir_p!(@ios_beamhello)
+      File.mkdir_p!(ios_beams_dir())
       Enum.each(beam_dirs, fn dir ->
-        case System.cmd("cp", ["-r", "#{dir}/.", @ios_beamhello], stderr_to_stdout: true) do
+        case System.cmd("cp", ["-r", "#{dir}/.", ios_beams_dir()], stderr_to_stdout: true) do
           {_, 0} -> :ok
           {out, _} -> throw({:error, "cp failed: #{out}"})
         end

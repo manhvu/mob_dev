@@ -6,9 +6,12 @@ defmodule MobDev.Connector do
   alias MobDev.{Device, Tunnel}
   alias MobDev.Discovery.{Android, IOS}
 
-  @android_package  "com.mob.demo"
   @android_activity ".MainActivity"
-  @ios_bundle_id    "com.mob.demo"
+
+  defp app_name,        do: Mix.Project.config()[:app] |> to_string()
+  defp bundle_id,       do: "com.mob.#{app_name()}"
+  defp android_package, do: bundle_id()
+  defp ios_bundle_id,   do: bundle_id()
   @connect_timeout  10_000   # ms to wait for node to appear
   @connect_interval 500      # ms between polls
 
@@ -87,15 +90,15 @@ defmodule MobDev.Connector do
 
   defp restart_app(%Device{platform: :android, serial: serial, dist_port: port}) do
     IO.write("  Restarting app on #{serial}...")
-    Android.restart_app(serial, @android_package, @android_activity, dist_port: port)
+    Android.restart_app(serial, android_package(), @android_activity, dist_port: port)
     IO.puts(" done")
   end
 
   defp restart_app(%Device{platform: :ios, serial: udid, dist_port: port}) do
     IO.write("  Restarting app on #{udid}...")
-    IOS.terminate_app(udid, @ios_bundle_id)
+    IOS.terminate_app(udid, ios_bundle_id())
     :timer.sleep(500)
-    IOS.launch_app(udid, @ios_bundle_id, dist_port: port)
+    IOS.launch_app(udid, ios_bundle_id(), dist_port: port)
     IO.puts(" done")
   end
 

@@ -42,6 +42,13 @@ Run only unit tests: `mix test --exclude integration`
 `parse_runtime_version/1` are public specifically to enable testing. Do not
 make them private.
 
+## Releasing a new OTP runtime
+
+When upgrading OTP, you need to rebuild the pre-built tarballs that
+`MobDev.OtpDownloader` downloads. See [`build_release.md`](build_release.md)
+for the full process (staging, adding headers + static libs, uploading to GitHub,
+updating the hash in `otp_downloader.ex`).
+
 ## Key files
 
 - `lib/mob_dev/device.ex` — device struct + `node_name/1`, `short_id/1`
