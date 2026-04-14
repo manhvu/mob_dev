@@ -9,6 +9,7 @@ defmodule MobDev.Discovery.IOS do
   alias MobDev.Device
 
   @doc "Returns booted iOS simulators."
+  @spec list_simulators() :: [Device.t()]
   def list_simulators do
     case System.find_executable("xcrun") do
       nil -> []
@@ -17,6 +18,7 @@ defmodule MobDev.Discovery.IOS do
   end
 
   @doc "Returns connected physical iOS devices (requires libimobiledevice)."
+  @spec list_physical() :: [Device.t()]
   def list_physical do
     case System.find_executable("ideviceinfo") do
       nil -> []
@@ -25,6 +27,7 @@ defmodule MobDev.Discovery.IOS do
   end
 
   @doc "Returns all iOS devices (simulators + physical)."
+  @spec list_devices() :: [Device.t()]
   def list_devices do
     list_simulators() ++ list_physical()
   end
@@ -44,6 +47,7 @@ defmodule MobDev.Discovery.IOS do
   Parses the JSON output of `xcrun simctl list devices booted --json`.
   Exposed for testing.
   """
+  @spec parse_simctl_json(String.t()) :: [Device.t()]
   def parse_simctl_json(json_string) do
     json_string
     |> Jason.decode!()
@@ -67,6 +71,7 @@ defmodule MobDev.Discovery.IOS do
   Parses the plain-text output of `xcrun simctl list devices booted`.
   Exposed for testing.
   """
+  @spec parse_simctl_text(String.t()) :: [Device.t()]
   def parse_simctl_text(output) do
     output
     |> String.split("\n")
@@ -83,7 +88,7 @@ defmodule MobDev.Discovery.IOS do
           serial:   udid,
           name:     name,
           type:     :simulator,
-          status:   :discovered,
+          status:   :booted,
         }
         [%{d | node: Device.node_name(d)}]
       _ -> []
@@ -97,13 +102,14 @@ defmodule MobDev.Discovery.IOS do
       name:     name,
       version:  version,
       type:     :simulator,
-      status:   :discovered,
+      status:   :booted,
     }
     %{d | node: Device.node_name(d)}
   end
   defp sim_to_device(_, _), do: nil
 
   @doc "Parses a CoreSimulator runtime key into a human-readable version string. Exposed for testing."
+  @spec parse_runtime_version(String.t()) :: String.t()
   def parse_runtime_version(runtime) do
     case Regex.run(~r/iOS-(\d+)-(\d+)/, runtime) do
       [_, major, minor] -> "iOS #{major}.#{minor}"
@@ -143,6 +149,7 @@ defmodule MobDev.Discovery.IOS do
   Launches the app on a booted simulator.
   Passes MOB_DIST_PORT as an environment variable (xcrun simctl launch supports this).
   """
+  @spec launch_app(String.t(), String.t(), keyword()) :: {String.t(), non_neg_integer()}
   def launch_app(udid, bundle_id, opts \\ []) do
     dist_port = Keyword.get(opts, :dist_port, 9100)
     # xcrun simctl passes SIMCTL_CHILD_* env vars to the launched app (prefix stripped).
@@ -151,6 +158,7 @@ defmodule MobDev.Discovery.IOS do
                env: [{"SIMCTL_CHILD_MOB_DIST_PORT", to_string(dist_port)}])
   end
 
+  @spec terminate_app(String.t(), String.t()) :: {String.t(), non_neg_integer()}
   def terminate_app(udid, bundle_id) do
     System.cmd("xcrun", ["simctl", "terminate", udid, bundle_id], stderr_to_stdout: true)
   end

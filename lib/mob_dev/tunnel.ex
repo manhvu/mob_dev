@@ -19,6 +19,7 @@ defmodule MobDev.Tunnel do
   Assigns a dist port and sets up adb tunnels for a device.
   Returns {:ok, %Device{}} with dist_port filled in, or {:error, reason}.
   """
+  @spec setup(Device.t(), non_neg_integer()) :: {:ok, Device.t()} | {:error, String.t()}
   def setup(device, index \\ 0)
 
   def setup(%Device{platform: :android, serial: serial} = device, index) do
@@ -40,9 +41,11 @@ defmodule MobDev.Tunnel do
   end
 
   @doc "Returns the dist port for a given device index (same formula used in setup/2)."
+  @spec dist_port(non_neg_integer()) :: non_neg_integer()
   def dist_port(index), do: @base_dist_port + index
 
   @doc "Tears down adb tunnels for a device."
+  @spec teardown(Device.t()) :: :ok
   def teardown(%Device{platform: :android, serial: serial, dist_port: dist_port}) do
     run_adb(["-s", serial, "reverse", "--remove", "tcp:#{@epmd_port}"])
     run_adb(["-s", serial, "forward", "--remove", "tcp:#{dist_port}"])

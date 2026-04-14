@@ -21,6 +21,7 @@ defmodule MobDev.Connector do
 
   Returns {connected, failed} lists of %Device{}.
   """
+  @spec connect_all(keyword()) :: {[Device.t()], [Device.t()]}
   def connect_all(opts \\ []) do
     cookie = Keyword.get(opts, :cookie, :mob_secret)
 
@@ -80,7 +81,9 @@ defmodule MobDev.Connector do
     |> Enum.reduce({[], []}, fn {device, idx}, {ok, fail} ->
       IO.write("  #{device.name || device.serial}  →  tunneling...")
       case Tunnel.setup(device, idx) do
-        {:ok, d}        -> IO.puts("  #{color(:green)}✓#{color(:reset)}"); {ok ++ [d], fail}
+        {:ok, d} ->
+          IO.puts("  #{color(:green)}✓#{color(:reset)}")
+          {ok ++ [d], fail}
         {:error, reason} ->
           IO.puts("  #{color(:red)}✗#{color(:reset)}")
           {ok, fail ++ [%{device | status: :error, error: reason}]}

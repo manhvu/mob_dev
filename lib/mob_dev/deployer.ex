@@ -20,17 +20,33 @@ defmodule MobDev.Deployer do
   @android_activity ".MainActivity"
 
   defp app_name,         do: Mix.Project.config()[:app] |> to_string()
-  defp bundle_id,        do: "com.mob.#{app_name()}"
+  defp bundle_id,        do: load_mob_config()[:bundle_id] || "com.mob.#{app_name()}"
   defp android_package,  do: bundle_id()
   defp android_app_data, do: "/data/data/#{android_package()}/files"
   defp android_beams_dir, do: "#{android_app_data()}/otp/#{app_name()}"
   defp ios_bundle_id,    do: bundle_id()
-  defp ios_beams_dir,    do: "/tmp/otp-ios-sim/#{app_name()}"
+  defp ios_beams_dir do
+    # mob_beam.m hardcodes /tmp/otp-ios-sim as OTP_ROOT.
+    # If that directory exists (manually set up or from a prior native deploy),
+    # deploy beams there so the running BEAM picks them up immediately.
+    # Fall back to the cache dir otherwise (e.g. fresh machine before first --native).
+    tmp_path   = Path.join("/tmp/otp-ios-sim", app_name())
+    cache_path = Path.join(MobDev.OtpDownloader.ios_sim_otp_dir(), app_name())
+    if File.dir?("/tmp/otp-ios-sim"), do: tmp_path, else: cache_path
+  end
+
+  defp load_mob_config do
+    config_file = Path.join(File.cwd!(), "mob.exs")
+    if File.exists?(config_file),
+      do: Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, []),
+      else: []
+  end
 
   @doc """
   Discovers devices, pushes BEAMs, and optionally restarts apps.
   Returns `{deployed, failed}` lists of `%Device{}`.
   """
+  @spec deploy_all(keyword()) :: {[Device.t()], [Device.t()]}
   def deploy_all(opts \\ []) do
     restart   = Keyword.get(opts, :restart, true)
     platforms = Keyword.get(opts, :platforms, [:android, :ios])
@@ -56,7 +72,9 @@ defmodule MobDev.Deployer do
           :ios     -> deploy_ios(device, beam_dirs, restart: restart, dist_port: dist_port)
         end
         case result do
-          {:ok, d}         -> IO.puts("  #{color(:green)}✓#{color(:reset)}"); {:ok, d}
+          {:ok, d} ->
+            IO.puts("  #{color(:green)}✓#{color(:reset)}")
+            {:ok, d}
           {:error, reason} ->
             IO.puts("  #{color(:red)}✗#{color(:reset)}")
             IO.puts("    #{color(:red)}#{reason}#{color(:reset)}")
@@ -87,21 +105,26 @@ defmodule MobDev.Deployer do
 
   defp push_beams_android(serial, beam_dirs) do
     # Try adb root first (works on emulators and eng builds).
-    case run_adb(["-s", serial, "root"]) do
-      {:ok, _} ->
-        :timer.sleep(600)
-        run_adb(["-s", serial, "shell", "mkdir -p #{android_beams_dir()}"])
-        Enum.reduce_while(beam_dirs, :ok, fn dir, _ ->
-          case run_adb(["-s", serial, "push", "#{dir}/.",
-                        "#{android_beams_dir()}/"]) do
-            {:ok, _}        -> {:cont, :ok}
-            {:error, reason} -> {:halt, {:error, "push failed: #{reason}"}}
-          end
-        end)
+    # Check the output text — non-rooted devices return exit 0 with
+    # "cannot run as root in production builds".
+    rooted? = case run_adb(["-s", serial, "root"]) do
+      {:ok, out} -> out =~ "restarting" or out =~ "already running as root"
+      _          -> false
+    end
 
-      {:error, _} ->
-        # Fall back to run-as tar (non-rooted physical devices).
-        push_beams_android_runas(serial, beam_dirs)
+    if rooted? do
+      :timer.sleep(600)
+      run_adb(["-s", serial, "shell", "mkdir -p #{android_beams_dir()}"])
+      Enum.reduce_while(beam_dirs, :ok, fn dir, _ ->
+        case run_adb(["-s", serial, "push", "#{Path.expand(dir)}/.",
+                      "#{android_beams_dir()}/"]) do
+          {:ok, _}        -> {:cont, :ok}
+          {:error, reason} -> {:halt, {:error, "push failed: #{reason}"}}
+        end
+      end)
+    else
+      # Fall back to run-as tar (non-rooted physical devices).
+      push_beams_android_runas(serial, beam_dirs)
     end
   end
 
@@ -128,6 +151,9 @@ defmodule MobDev.Deployer do
         {:ok, _} -> :ok
         {:error, r} -> throw({:error, "adb push failed: #{r}"})
       end
+
+      run_adb(["-s", serial, "shell",
+               "run-as #{android_package()} mkdir -p #{android_beams_dir()}"])
 
       cmd = "run-as #{android_package()} tar xf #{stage_device} " <>
             "-C #{android_beams_dir()}/ --strip-components=1"
@@ -164,7 +190,8 @@ defmodule MobDev.Deployer do
     try do
       File.mkdir_p!(ios_beams_dir())
       Enum.each(beam_dirs, fn dir ->
-        case System.cmd("cp", ["-r", "#{dir}/.", ios_beams_dir()], stderr_to_stdout: true) do
+        abs_dir = Path.expand(dir)
+        case System.cmd("cp", ["-r", "#{abs_dir}/.", ios_beams_dir()], stderr_to_stdout: true) do
           {_, 0} -> :ok
           {out, _} -> throw({:error, "cp failed: #{out}"})
         end

@@ -18,6 +18,7 @@ defmodule MobDev.HotPush do
   Sets up adb tunnels (idempotent) and connects to all running device nodes.
   Returns list of connected node atoms.
   """
+  @spec connect(keyword()) :: [node()]
   def connect(opts \\ []) do
     cookie = Keyword.get(opts, :cookie, @cookie)
 
@@ -46,6 +47,7 @@ defmodule MobDev.HotPush do
   Pushes all compiled BEAM files from `_build/dev/lib/*/ebin/` to `nodes`.
   Returns `{pushed_count, failed_list}`.
   """
+  @spec push_all([node()]) :: {non_neg_integer(), list()}
   def push_all(nodes) do
     beams = Path.wildcard("_build/dev/lib/*/ebin/*.beam")
     push_beams(nodes, beams)
@@ -55,6 +57,7 @@ defmodule MobDev.HotPush do
   Takes a snapshot of current BEAM mtimes. Pass the result to `push_changed/2`
   before and after compiling to get only the modules that actually changed.
   """
+  @spec snapshot_beams() :: %{String.t() => non_neg_integer()}
   def snapshot_beams do
     Path.wildcard("_build/dev/lib/*/ebin/*.beam")
     |> Map.new(fn path ->
@@ -70,6 +73,7 @@ defmodule MobDev.HotPush do
   Pushes BEAM files that changed since `snapshot` (from `snapshot_beams/0`).
   Returns `{pushed_count, failed_list}` — pushed_count is 0 if nothing changed.
   """
+  @spec push_changed([node()], %{String.t() => non_neg_integer()}) :: {non_neg_integer(), list()}
   def push_changed(nodes, snapshot) do
     beams =
       Path.wildcard("_build/dev/lib/*/ebin/*.beam")

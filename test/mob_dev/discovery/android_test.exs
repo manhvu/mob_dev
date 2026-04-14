@@ -38,7 +38,6 @@ defmodule MobDev.Discovery.AndroidTest do
       [device] = Android.parse_devices_output(output)
       assert device.serial == "R5CW3089HVB"
       assert device.status == :unauthorized
-      assert is_binary(device.error)
       assert device.error =~ "authorized"
     end
 
@@ -106,7 +105,6 @@ defmodule MobDev.Discovery.AndroidTest do
   @tag :integration
   test "list_devices returns a list" do
     result = Android.list_devices()
-    assert is_list(result)
-    Enum.each(result, fn d -> assert %Device{} = d end)
+    assert Enum.all?(result, &match?(%Device{}, &1))
   end
 end

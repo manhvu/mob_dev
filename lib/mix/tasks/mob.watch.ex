@@ -23,6 +23,11 @@ defmodule Mix.Tasks.Mob.Watch do
       mix mob.watch --cookie my_cookie
   """
 
+  @pid_file "_build/mob_watch.pid"
+
+  @spec pid_file() :: String.t()
+  def pid_file, do: @pid_file
+
   @impl Mix.Task
   def run(args) do
     {opts, _, _} = OptionParser.parse(args,
@@ -33,6 +38,9 @@ defmodule Mix.Tasks.Mob.Watch do
     cookie    = opts |> Keyword.get(:cookie, "mob_secret") |> String.to_atom()
     debounce  = Keyword.get(opts, :debounce, 300)
     interval  = Keyword.get(opts, :interval, 500)
+
+    File.mkdir_p!("_build")
+    File.write!(@pid_file, to_string(:os.getpid()))
 
     IO.puts("")
     IO.puts("#{IO.ANSI.cyan()}mob.watch#{IO.ANSI.reset()} — watching lib/ for changes  (Ctrl-C to stop)\n")

@@ -6,8 +6,8 @@ defmodule MobDev.IconGeneratorTest do
   # ── metadata ─────────────────────────────────────────────────────────────────
 
   describe "android_sizes/0" do
-    test "returns a map" do
-      assert is_map(IconGenerator.android_sizes())
+    test "returns a map with 5 entries" do
+      assert map_size(IconGenerator.android_sizes()) == 5
     end
 
     test "includes all five mipmap buckets" do
@@ -35,8 +35,8 @@ defmodule MobDev.IconGeneratorTest do
   end
 
   describe "ios_sizes/0" do
-    test "returns a list" do
-      assert is_list(IconGenerator.ios_sizes())
+    test "returns a non-empty list" do
+      assert length(IconGenerator.ios_sizes()) >= 4
     end
 
     test "includes 1024px (App Store)" do
@@ -107,7 +107,6 @@ defmodule MobDev.IconGeneratorTest do
       IconGenerator.generate_from_source(source, tmp)
       json_path = Path.join(tmp, "ios/Assets.xcassets/AppIcon.appiconset/Contents.json")
       {:ok, parsed} = Jason.decode(File.read!(json_path))
-      assert is_list(parsed["images"])
       assert length(parsed["images"]) > 0
     end
 

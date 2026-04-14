@@ -4,6 +4,7 @@ defmodule MobDev.Discovery.Android do
   alias MobDev.Device
 
   @doc "Returns a list of %Device{} for all adb-visible Android devices."
+  @spec list_devices() :: [Device.t()]
   def list_devices do
     case System.find_executable("adb") do
       nil -> []
@@ -27,6 +28,7 @@ defmodule MobDev.Discovery.Android do
   Does not perform enrichment (no adb calls for name/version).
   Exposed for testing.
   """
+  @spec parse_devices_output(String.t()) :: [Device.t()]
   def parse_devices_output(output) do
     output
     |> String.split("\n")
@@ -78,6 +80,7 @@ defmodule MobDev.Discovery.Android do
   Check if developer mode is enabled on the device.
   Returns :enabled | :disabled | :unknown.
   """
+  @spec developer_mode(String.t()) :: :enabled | :disabled | :unknown
   def developer_mode(serial) do
     case run_adb(["-s", serial, "shell", "settings", "get", "global",
                   "development_settings_enabled"]) do
@@ -90,6 +93,8 @@ defmodule MobDev.Discovery.Android do
   @doc """
   Restarts the app on the device, optionally passing a dist_port intent extra.
   """
+  @spec restart_app(String.t(), String.t(), String.t(), keyword()) ::
+          {:ok, String.t()} | {:error, String.t()}
   def restart_app(serial, package, activity, opts \\ []) do
     dist_port = Keyword.get(opts, :dist_port, 9100)
     run_adb(["-s", serial, "shell", "am", "force-stop", package])

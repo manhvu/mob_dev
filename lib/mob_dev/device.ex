@@ -3,6 +3,8 @@ defmodule MobDev.Device do
   Represents a connected or available device (physical or emulator/simulator).
   """
 
+  @type t :: %__MODULE__{}
+
   @enforce_keys [:platform, :serial]
   defstruct [
     :platform,    # :android | :ios
@@ -28,6 +30,7 @@ defmodule MobDev.Device do
     iex> MobDev.Device.short_id("78354490-EF38-44D7-A437-DD941C20524D")
     "524D"
   """
+  @spec short_id(String.t()) :: String.t()
   def short_id(serial) do
     serial
     |> String.replace("-", "")
@@ -46,6 +49,7 @@ defmodule MobDev.Device do
   Multi-device support (where unique per-device names are needed) is future work
   and will require the app to receive its node name dynamically via intent extras.
   """
+  @spec node_name(t()) :: atom()
   def node_name(%__MODULE__{platform: :android}) do
     :"mob_demo_android@127.0.0.1"
   end
@@ -55,6 +59,7 @@ defmodule MobDev.Device do
   end
 
   @doc "Human-readable one-line summary."
+  @spec summary(t()) :: String.t()
   def summary(%__MODULE__{} = d) do
     type_label = case d.type do
       :emulator  -> "emulator"

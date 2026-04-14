@@ -13,19 +13,23 @@ defmodule MobDev.OtpDownloader do
   @ios_sim_name "otp-ios-sim-#{@otp_hash}"
 
   @doc "Ensures the Android OTP release is cached. Returns {:ok, path} or {:error, reason}."
+  @spec ensure_android() :: {:ok, String.t()} | {:error, term()}
   def ensure_android do
     ensure(@android_name, "#{@android_name}.tar.gz")
   end
 
   @doc "Ensures the iOS simulator OTP release is cached. Returns {:ok, path} or {:error, reason}."
+  @spec ensure_ios_sim() :: {:ok, String.t()} | {:error, term()}
   def ensure_ios_sim do
     ensure(@ios_sim_name, "#{@ios_sim_name}.tar.gz")
   end
 
   @doc "Returns the cached Android OTP directory path (may not exist yet)."
+  @spec android_otp_dir() :: String.t()
   def android_otp_dir, do: cache_dir(@android_name)
 
   @doc "Returns the cached iOS simulator OTP directory path (may not exist yet)."
+  @spec ios_sim_otp_dir() :: String.t()
   def ios_sim_otp_dir, do: cache_dir(@ios_sim_name)
 
   # ── Private ──────────────────────────────────────────────────────────────────

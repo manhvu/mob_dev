@@ -5,11 +5,13 @@ defmodule MobDev.QR do
   """
 
   @doc "Prints a QR code for the given content to stdout."
+  @spec print(String.t()) :: :ok
   def print(content) do
     IO.puts(render(content))
   end
 
   @doc "Returns the QR code as a string of Unicode blocks."
+  @spec render(String.t()) :: String.t()
   def render(content) do
     matrix =
       content

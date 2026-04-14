@@ -22,7 +22,14 @@ defmodule MobDev.MixProject do
       {:jason, "~> 1.4"},
       {:avatarz, "~> 0.2"},
       {:image, "~> 0.54"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      # Dev server
+      {:phoenix_live_view, "~> 1.0"},
+      {:bandit, "~> 1.0"},
+      {:phoenix_pubsub, "~> 2.0"},
+      {:plug_crypto, "~> 2.0"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:jump_credo_checks, "~> 0.1.0", only: [:dev, :test], runtime: false}
     ]
   end
 

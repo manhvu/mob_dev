@@ -20,7 +20,7 @@ defmodule MobDev.Discovery.IOSTest do
       assert device.name == "iPhone 15"
       assert device.platform == :ios
       assert device.type == :simulator
-      assert device.status == :discovered
+      assert device.status == :booted
       assert device.version == "iOS 18.0"
     end
 
@@ -118,8 +118,7 @@ defmodule MobDev.Discovery.IOSTest do
     end
 
     test "falls back gracefully for unknown format" do
-      result = IOS.parse_runtime_version("some.unknown.runtime.foo")
-      assert is_binary(result)
+      assert IOS.parse_runtime_version("some.unknown.runtime.foo") == "foo"
     end
   end
 
@@ -128,7 +127,6 @@ defmodule MobDev.Discovery.IOSTest do
   @tag :integration
   test "list_simulators returns a list" do
     result = IOS.list_simulators()
-    assert is_list(result)
-    Enum.each(result, fn d -> assert %Device{} = d end)
+    assert Enum.all?(result, &match?(%Device{}, &1))
   end
 end

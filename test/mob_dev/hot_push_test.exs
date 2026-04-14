@@ -6,8 +6,8 @@ defmodule MobDev.HotPushTest do
   # ── snapshot_beams/0 ─────────────────────────────────────────────────────────
 
   describe "snapshot_beams/0" do
-    test "returns a map" do
-      assert is_map(HotPush.snapshot_beams())
+    test "returns a non-empty map" do
+      assert map_size(HotPush.snapshot_beams()) > 0
     end
 
     test "all keys are .beam paths" do

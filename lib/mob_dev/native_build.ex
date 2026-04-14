@@ -20,6 +20,7 @@ defmodule MobDev.NativeBuild do
   Runs Android Gradle build if `android/` dir exists.
   Runs iOS build script if `ios/build.sh` exists.
   """
+  @spec build_all(keyword()) :: [:ok | {:error, term()}]
   def build_all(opts \\ []) do
     cfg       = load_config()
     platforms = Keyword.get(opts, :platforms, [:android, :ios])
@@ -49,7 +50,7 @@ defmodule MobDev.NativeBuild do
 
   defp build_android(cfg) do
     IO.puts("  Building Android APK...")
-    bundle_id = "com.mob.#{app_name()}"
+    bundle_id = cfg[:bundle_id] || "com.mob.#{app_name()}"
     apk = "android/app/build/outputs/apk/debug/app-debug.apk"
 
     with {:ok, otp_dir} <- MobDev.OtpDownloader.ensure_android(),
@@ -91,14 +92,14 @@ defmodule MobDev.NativeBuild do
     android_dir = Path.join(File.cwd!(), "android")
     gradlew     = Path.join(android_dir, "gradlew")
 
-    unless File.exists?(gradlew) do
-      {:error, "gradlew not found at #{gradlew}"}
-    else
+    if File.exists?(gradlew) do
       case System.cmd(gradlew, ["assembleDebug", "-q"],
                       cd: android_dir, stderr_to_stdout: true) do
         {_, 0}   -> :ok
         {out, _} -> {:error, "Gradle failed:\n#{String.slice(out, -500, 500)}"}
       end
+    else
+      {:error, "gradlew not found at #{gradlew}"}
     end
   end
 
