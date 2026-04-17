@@ -61,6 +61,7 @@ defmodule MobDev.Deployer do
   def deploy_all(opts \\ []) do
     restart   = Keyword.get(opts, :restart, true)
     platforms = Keyword.get(opts, :platforms, [:android, :ios])
+    force_fs  = Keyword.get(opts, :force_fs, false)
     beam_dirs = collect_beam_dirs()
 
     android = if :android in platforms,
@@ -78,7 +79,9 @@ defmodule MobDev.Deployer do
       # Try Erlang dist first — hot-loads modules with no restart. We set up
       # tunnels and attempt Node.connect for each device; those that respond
       # get BEAMs via RPC, the rest fall back to adb/cp + restart.
-      dist_nodes = connect_dist(all)
+      # force_fs: true skips dist and always writes to the filesystem — required
+      # after a native build/install where the old BEAM process is dead.
+      dist_nodes = if force_fs, do: [], else: connect_dist(all)
 
       results = all |> Enum.with_index() |> Enum.map(fn {device, idx} ->
         IO.write("  #{device.name || device.serial}  →  pushing...")

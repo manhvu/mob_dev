@@ -80,7 +80,7 @@ defmodule Mix.Tasks.Mob.Deploy do
       MobDev.NativeBuild.build_all(platforms: platforms)
     end
 
-    {deployed, failed} = MobDev.Deployer.deploy_all(restart: restart, platforms: platforms)
+    {deployed, failed} = MobDev.Deployer.deploy_all(restart: restart, platforms: platforms, force_fs: native)
 
     if deployed == [] and failed == [] do
       IO.puts("#{IO.ANSI.yellow()}No devices found.#{IO.ANSI.reset()}")

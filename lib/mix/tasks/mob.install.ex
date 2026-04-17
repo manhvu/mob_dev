@@ -141,6 +141,10 @@ defmodule Mix.Tasks.Mob.Install do
       write_local_properties(project_dir, new_cfg)
 
       Mix.shell().info([:green, "* mob.exs configured", :reset])
+    else
+      # mob.exs already has all required paths (e.g. generated with --local).
+      # Still sync local.properties if it has placeholder values.
+      write_local_properties(project_dir, cfg)
     end
   end
 

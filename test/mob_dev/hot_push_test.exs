@@ -33,11 +33,11 @@ defmodule MobDev.HotPushTest do
     end
 
     test "detects beam files not in snapshot (empty snapshot)" do
-      beam_count = Path.wildcard("_build/dev/lib/*/ebin/*.beam") |> length()
-      # Empty snapshot means every existing beam is "new".
+      # Empty snapshot means every runtime beam is "new".
+      # push_changed only counts runtime deps — not dev-only deps like mob_dev itself.
       {pushed, failed} = HotPush.push_changed([], %{})
       assert failed == []
-      assert pushed == beam_count
+      assert pushed > 0
     end
 
     test "does not push files that haven't changed" do
@@ -63,10 +63,13 @@ defmodule MobDev.HotPushTest do
       assert failed == []
     end
 
-    test "push count matches number of beam files in _build" do
-      beam_count = Path.wildcard("_build/dev/lib/*/ebin/*.beam") |> length()
+    test "push count is less than total beam files in _build" do
+      # push_all only pushes runtime deps — dev-only deps (mob_dev itself, Bandit,
+      # Phoenix, etc.) must be excluded even though their BEAMs are in _build/dev.
+      total_beams = Path.wildcard("_build/dev/lib/*/ebin/*.beam") |> length()
       {pushed, _} = HotPush.push_all([])
-      assert pushed == beam_count
+      assert pushed > 0
+      assert pushed < total_beams
     end
   end
 

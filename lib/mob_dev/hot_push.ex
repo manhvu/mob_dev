@@ -45,21 +45,28 @@ defmodule MobDev.HotPush do
 
   @doc """
   Pushes all compiled BEAM files from `_build/dev/lib/*/ebin/` to `nodes`.
+
+  Only pushes BEAMs for runtime dependencies — deps marked `only: :dev` or
+  `runtime: false` in `mix.exs` (and their transitive deps) are excluded.
+  This prevents dev tooling (mob_dev, Bandit, Phoenix, etc.) from being pushed
+  to the device when using `path:` deps during local framework development.
+
   Returns `{pushed_count, failed_list}`.
   """
   @spec push_all([node()]) :: {non_neg_integer(), list()}
   def push_all(nodes) do
-    beams = Path.wildcard("_build/dev/lib/*/ebin/*.beam")
+    beams = runtime_beam_paths()
     push_beams(nodes, beams)
   end
 
   @doc """
-  Takes a snapshot of current BEAM mtimes. Pass the result to `push_changed/2`
-  before and after compiling to get only the modules that actually changed.
+  Takes a snapshot of current BEAM mtimes for runtime deps only.
+  Pass the result to `push_changed/2` before and after compiling to get only
+  the modules that actually changed.
   """
   @spec snapshot_beams() :: %{String.t() => non_neg_integer()}
   def snapshot_beams do
-    Path.wildcard("_build/dev/lib/*/ebin/*.beam")
+    runtime_beam_paths()
     |> Map.new(fn path ->
       mtime = case File.stat(path, time: :posix) do
         {:ok, %{mtime: t}} -> t
@@ -76,7 +83,7 @@ defmodule MobDev.HotPush do
   @spec push_changed([node()], %{String.t() => non_neg_integer()}) :: {non_neg_integer(), list()}
   def push_changed(nodes, snapshot) do
     beams =
-      Path.wildcard("_build/dev/lib/*/ebin/*.beam")
+      runtime_beam_paths()
       |> Enum.filter(fn path ->
         current_mtime = case File.stat(path, time: :posix) do
           {:ok, %{mtime: t}} -> t
@@ -86,6 +93,73 @@ defmodule MobDev.HotPush do
       end)
 
     push_beams(nodes, beams)
+  end
+
+  # ── Runtime dep filtering ────────────────────────────────────────────────────
+
+  # Returns only BEAM paths that belong to the app's runtime dependency tree.
+  # Excludes deps marked only: :dev or runtime: false in mix.exs, and all of
+  # their transitive deps (resolved via OTP .app files).
+  defp runtime_beam_paths do
+    runtime = runtime_lib_names()
+    Path.wildcard("_build/dev/lib/*/ebin/*.beam")
+    |> Enum.filter(fn path ->
+      lib = path |> Path.split() |> Enum.at(-3)
+      MapSet.member?(runtime, lib)
+    end)
+  end
+
+  defp runtime_lib_names do
+    project_app = to_string(Mix.Project.config()[:app])
+
+    # Direct runtime deps: no only: :dev and not runtime: false
+    direct =
+      Mix.Project.config()
+      |> Keyword.get(:deps, [])
+      |> Enum.flat_map(&dep_runtime_name/1)
+      |> MapSet.new()
+      |> MapSet.put(project_app)
+
+    expand_runtime_libs(direct)
+  end
+
+  # Expand a set of lib names to include their transitive OTP deps,
+  # by reading each lib's .app file in _build/dev.
+  defp expand_runtime_libs(libs) do
+    new_libs =
+      Enum.flat_map(libs, fn lib ->
+        case Path.wildcard("_build/dev/lib/#{lib}/ebin/*.app") do
+          [app_file | _] ->
+            case :file.consult(String.to_charlist(app_file)) do
+              {:ok, [{:application, _app, props}]} ->
+                (props[:applications] || []) |> Enum.map(&to_string/1)
+              _ -> []
+            end
+          [] -> []
+        end
+      end)
+      |> MapSet.new()
+      |> MapSet.difference(libs)
+
+    if MapSet.size(new_libs) == 0 do
+      libs
+    else
+      expand_runtime_libs(MapSet.union(libs, new_libs))
+    end
+  end
+
+  # Returns the app name as a string if this dep is a runtime dep, else [].
+  defp dep_runtime_name(dep) do
+    {app, opts} = case dep do
+      {app, _version, opts} when is_list(opts) -> {app, opts}
+      {app, opts}           when is_list(opts) -> {app, opts}
+      {app, _version}                          -> {app, []}
+      app                   when is_atom(app)  -> {app, []}
+    end
+    only    = Keyword.get(opts, :only)
+    runtime = Keyword.get(opts, :runtime, true)
+    dev_only = only == :dev or only == [:dev] or (is_list(only) and only == [:dev])
+    if dev_only or not runtime, do: [], else: [to_string(app)]
   end
 
   # ── Private ─────────────────────────────────────────────────────────────────
