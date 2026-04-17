@@ -9,6 +9,14 @@ defmodule Mix.Tasks.Mob.WatchStop do
       mix mob.watch_stop
 
   Reads the PID written by `mix mob.watch` and sends SIGTERM.
+
+  ## Under the hood
+
+      pid = File.read!("_build/mob_watch.pid") |> String.trim()
+      System.cmd("kill", [pid])   # SIGTERM
+      File.rm("_build/mob_watch.pid")
+
+  Equivalent to running `kill $(cat _build/mob_watch.pid)` in a terminal.
   """
 
   @impl Mix.Task

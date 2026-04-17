@@ -23,6 +23,36 @@ defmodule Mix.Tasks.Mob.Deploy do
 
     * `--native`      — build native binaries before pushing BEAMs
     * `--no-restart`  — push BEAMs but don't restart the app
+
+  ## Under the hood
+
+  A fast deploy is equivalent to:
+
+      mix deps.get                                     # only with --native
+      mix compile
+
+      # Android
+      adb push _build/prod/lib/*/ebin/*.beam /data/data/<pkg>/files/lib/*/ebin/
+      adb shell am force-stop <package>               # restart
+
+      # iOS simulator
+      xcrun simctl spawn <udid> cp <beam_files> <app_bundle>/
+
+  When Erlang distribution is already reachable (app running, node connected),
+  `mix mob.deploy` skips `adb push` and hot-pushes via RPC instead — equivalent
+  to calling `nl(Module)` in IEx for every changed module:
+
+      :rpc.call(node, :code, :load_binary, [Module, path, beam_binary])
+
+  With `--native`, it also runs the platform build before pushing BEAMs:
+
+      # Android
+      ./gradlew assembleDebug
+      adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+      # iOS simulator
+      xcodebuild -scheme <app> -destination 'platform=iOS Simulator,...' build
+      xcrun simctl install booted <app>.app
   """
 
   @switches [native: :boolean, restart: :boolean, android: :boolean, ios: :boolean]

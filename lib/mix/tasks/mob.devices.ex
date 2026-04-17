@@ -10,6 +10,19 @@ defmodule Mix.Tasks.Mob.Devices do
       mix mob.devices
 
   Useful for diagnosing connection issues before running mix mob.connect.
+
+  ## Under the hood
+
+      # Android
+      adb devices -l
+      # → parses serial numbers, device/emulator state, and manufacturer/model
+
+      # iOS (macOS only)
+      xcrun simctl list devices --json
+      # → filters for Booted simulators with device name and UDID
+
+  You can run either command directly to get the raw output. `mix mob.devices`
+  adds status hints (e.g. "enable Developer Mode", "check USB debugging prompt").
   """
 
   alias MobDev.Discovery.{Android, IOS}

@@ -92,13 +92,28 @@ defmodule MobDev.Discovery.Android do
 
   @doc """
   Restarts the app on the device, optionally passing a dist_port intent extra.
+
+  Runs `chcon` before `am start` to heal any SELinux MCS category mismatch on OTP
+  files. This mismatch happens when the APK is reinstalled and Android assigns a new
+  MCS category to the package — files pushed via `adb push` retain the old label and
+  the BEAM can't access them. The `chcon` copies the correct context from the app's
+  own `files/` directory (which `installd` always keeps up to date).
+
+  The `chcon` requires root (`adb root`) — it's silently skipped on non-rooted devices
+  where the OTP files were pushed with the correct label to begin with.
   """
   @spec restart_app(String.t(), String.t(), String.t(), keyword()) ::
           {:ok, String.t()} | {:error, String.t()}
   def restart_app(serial, package, activity, opts \\ []) do
     dist_port = Keyword.get(opts, :dist_port, 9100)
+    app_data  = "/data/data/#{package}/files"
     run_adb(["-s", serial, "shell", "am", "force-stop", package])
-    :timer.sleep(500)
+    # Heal SELinux MCS category mismatch: APK reinstall changes the app's assigned
+    # category but leaves OTP files with the old label. This causes the BEAM to crash
+    # on launch (symlink creation fails with EACCES, then erl_start aborts).
+    run_adb(["-s", serial, "shell",
+             "chcon -hR $(stat -c %C #{app_data}) #{app_data}/otp"])
+    :timer.sleep(300)
     run_adb(["-s", serial, "shell", "am", "start",
              "-n", "#{package}/#{activity}",
              "--ei", "mob_dist_port", to_string(dist_port)])

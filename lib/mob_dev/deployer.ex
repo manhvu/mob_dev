@@ -5,6 +5,15 @@ defmodule MobDev.Deployer do
   Does NOT rebuild APKs or recompile native code — that's `deploy.sh` (first-time setup).
   Use this for day-to-day code iteration: edit Elixir → `mix mob.deploy` → code running.
 
+  ## Transport selection
+
+  **Erlang dist (preferred)**: when a device node is already reachable via Erlang
+  distribution, BEAMs are hot-loaded via RPC. No restart needed — modules are
+  loaded in place exactly like `nl/1` in IEx.
+
+  **adb push / cp (fallback)**: when no dist connection exists (first deploy, app not
+  running), falls back to the traditional push-then-restart path.
+
   ## Platform behaviour
 
   **Android**: pushes via `adb push` (requires `adb root`, i.e. emulator or debug build),
@@ -15,7 +24,9 @@ defmodule MobDev.Deployer do
   """
 
   alias MobDev.Discovery.{Android, IOS}
-  alias MobDev.Device
+  alias MobDev.{Device, HotPush, Tunnel}
+
+  @cookie :mob_secret
 
   @android_activity ".MainActivity"
 
@@ -64,19 +75,34 @@ defmodule MobDev.Deployer do
     else
       IO.puts("  Pushing #{count_beams(beam_dirs)} BEAM file(s) to #{length(all)} device(s)...")
 
+      # Try Erlang dist first — hot-loads modules with no restart. We set up
+      # tunnels and attempt Node.connect for each device; those that respond
+      # get BEAMs via RPC, the rest fall back to adb/cp + restart.
+      dist_nodes = connect_dist(all)
+
       results = all |> Enum.with_index() |> Enum.map(fn {device, idx} ->
         IO.write("  #{device.name || device.serial}  →  pushing...")
-        dist_port = MobDev.Tunnel.dist_port(idx)
-        result = case device.platform do
-          :android -> deploy_android(device, beam_dirs, restart: restart, dist_port: dist_port)
-          :ios     -> deploy_ios(device, beam_dirs, restart: restart, dist_port: dist_port)
-        end
+        dist_port = Tunnel.dist_port(idx)
+        node      = Device.node_name(device)
+
+        {method, result} =
+          if node in dist_nodes do
+            {:dist, push_via_dist(node, device)}
+          else
+            fallback = case device.platform do
+              :android -> deploy_android(device, beam_dirs, restart: restart, dist_port: dist_port)
+              :ios     -> deploy_ios(device, beam_dirs, restart: restart, dist_port: dist_port)
+            end
+            {:adb, fallback}
+          end
+
         case result do
           {:ok, d} ->
-            IO.puts("  #{color(:green)}✓#{color(:reset)}")
+            suffix = if method == :dist, do: " (dist, no restart)", else: ""
+            IO.puts(" #{color(:green)}✓#{suffix}#{color(:reset)}")
             {:ok, d}
           {:error, reason} ->
-            IO.puts("  #{color(:red)}✗#{color(:reset)}")
+            IO.puts(" #{color(:red)}✗#{color(:reset)}")
             IO.puts("    #{color(:red)}#{reason}#{color(:reset)}")
             {:error, %{device | status: :error, error: reason}}
         end
@@ -115,13 +141,20 @@ defmodule MobDev.Deployer do
     if rooted? do
       :timer.sleep(600)
       run_adb(["-s", serial, "shell", "mkdir -p #{android_beams_dir()}"])
-      Enum.reduce_while(beam_dirs, :ok, fn dir, _ ->
+      result = Enum.reduce_while(beam_dirs, :ok, fn dir, _ ->
         case run_adb(["-s", serial, "push", "#{Path.expand(dir)}/.",
                       "#{android_beams_dir()}/"]) do
           {:ok, _}        -> {:cont, :ok}
           {:error, reason} -> {:halt, {:error, "push failed: #{reason}"}}
         end
       end)
+      # Fix SELinux MCS categories on pushed files. adb push (as root) labels
+      # files with the root process's categories, not the app's. restorecon
+      # only restores the type label — it cannot fix MCS categories. We use
+      # chcon with the context from the app's own files/ directory instead.
+      run_adb(["-s", serial, "shell",
+        "chcon -hR $(stat -c %C #{android_app_data()}) #{android_app_data()}/otp"])
+      result
     else
       # Fall back to run-as tar (non-rooted physical devices).
       push_beams_android_runas(serial, beam_dirs)
@@ -174,6 +207,11 @@ defmodule MobDev.Deployer do
   defp restart_android(serial, opts) do
     dist_port = Keyword.get(opts, :dist_port, 9100)
     run_adb(["-s", serial, "shell", "am", "force-stop", android_package()])
+    # Heal SELinux MCS category mismatch before start — APK reinstall changes
+    # the app's category but leaves OTP files with stale labels. chcon copies
+    # the correct context from the app's own files/ directory.
+    run_adb(["-s", serial, "shell",
+      "chcon -hR $(stat -c %C #{android_app_data()}) #{android_app_data()}/otp"])
     :timer.sleep(300)
     run_adb(["-s", serial, "shell", "am", "start",
              "-n", "#{android_package()}/#{@android_activity}",
@@ -206,6 +244,39 @@ defmodule MobDev.Deployer do
       {:ok, device}
     catch
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # ── Dist push ────────────────────────────────────────────────────────────────
+
+  # Try to connect via Erlang dist to each discovered device. Returns a list of
+  # connected node atoms. Devices that don't respond are left for the adb fallback.
+  defp connect_dist(devices) do
+    ensure_local_dist()
+    Enum.flat_map(devices, fn device ->
+      node = Device.node_name(device)
+      Node.set_cookie(node, @cookie)
+      if Node.connect(node), do: [node], else: []
+    end)
+  rescue
+    _ -> []
+  end
+
+  defp ensure_local_dist do
+    unless Node.alive?() do
+      Node.start(:"mob_dev@127.0.0.1", :longnames)
+      Node.set_cookie(@cookie)
+    end
+  end
+
+  # Push all compiled BEAMs to a single dist-connected node.
+  defp push_via_dist(node, device) do
+    {_pushed, failed} = HotPush.push_all([node])
+    if failed == [] do
+      {:ok, device}
+    else
+      mods = Enum.map_join(failed, ", ", fn {mod, _} -> inspect(mod) end)
+      {:error, "dist push failed for: #{mods}"}
     end
   end
 

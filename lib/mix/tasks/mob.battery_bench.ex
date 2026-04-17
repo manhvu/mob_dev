@@ -46,6 +46,35 @@ defmodule Mix.Tasks.Mob.BatteryBench do
   with no BEAM at all (~200 mAh/hr on a Moto G, 30-min run). The untuned BEAM
   uses ~25% more power due to scheduler busy-waiting. For most apps the overhead
   is in the noise; tune if you have stricter power budgets.
+
+  ## Under the hood
+
+  `mix mob.battery_bench` orchestrates the following adb and Gradle commands:
+
+      # Build and install
+      ./gradlew assembleDebug [-PextraCppFlags="-DNO_BEAM|..."]
+      adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+      # Push BEAMs
+      adb push _build/dev/lib/*/ebin/*.beam /data/data/<pkg>/files/otp/<app>/
+
+      # Reset battery stats and launch
+      adb shell dumpsys batterystats --reset
+      adb shell am start -n <pkg>/.MainActivity
+
+      # Turn screen off
+      adb shell input keyevent 26          # KEYCODE_POWER
+
+      # Poll battery every 10s
+      adb shell dumpsys battery            # reads "Charge counter: <µAh>"
+
+      # Stop app and collect final reading
+      adb shell am force-stop <pkg>
+      adb shell dumpsys battery
+
+  BEAM tuning flags are injected as C preprocessor defines (`-DBEAM_UNTUNED`,
+  `-DBEAM_FULL_NERVES`, etc.) or via a generated `mob_beam_flags.h` header, so
+  each preset compiles a different variant of the BEAM startup C code.
   """
 
   @switches [

@@ -110,9 +110,10 @@ defmodule MobDev.HotPush do
     fname = String.to_charlist(path)
     errors = Enum.flat_map(nodes, fn node ->
       case :rpc.call(node, :code, :load_binary, [module, fname, binary]) do
-        {:module, ^module}  -> []
-        {:badrpc, reason}   -> [{node, reason}]
-        {:error, reason}    -> [{node, reason}]
+        {:module, ^module}       -> []
+        {:error, :on_load_failure} -> []  # NIF modules already loaded — safe to ignore
+        {:badrpc, reason}        -> [{node, reason}]
+        {:error, reason}         -> [{node, reason}]
       end
     end)
     if errors == [], do: :ok, else: {:error, {module, errors}}

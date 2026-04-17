@@ -6,9 +6,11 @@ defmodule MobDev.MixProject do
       app: :mob_dev,
       version: "0.2.2",
       elixir: "~> 1.17",
-      description: "Project runner for the Mob mobile framework",
+      description: "Development tooling for the Mob mobile framework",
+      source_url: "https://github.com/genericjam/mob_dev",
       deps: deps(),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -30,6 +32,20 @@ defmodule MobDev.MixProject do
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:jump_credo_checks, "~> 0.1.0", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_url: "https://github.com/genericjam/mob_dev",
+      source_url_pattern: "https://github.com/genericjam/mob_dev/blob/main/%{path}#L%{line}",
+      extras: ["README.md": [title: "mob_dev"]],
+      groups_for_modules: [
+        "Mix Tasks": ~r/Mix\.Tasks\./,
+        "Server": ~r/MobDev\.Server/,
+        "Internals": ~r/MobDev/,
+      ],
     ]
   end
 

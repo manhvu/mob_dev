@@ -19,6 +19,20 @@ defmodule Mix.Tasks.Mob.Push do
       mix mob.push
       mix mob.push --all
       mix mob.push --cookie my_cookie
+
+  ## Under the hood
+
+  `mix mob.push` is a scripted version of the IEx hot-code-push workflow:
+
+      mix compile
+
+      # For each changed module, on each connected node:
+      nl(MyApp.SomeScreen)
+      # which calls:
+      :rpc.call(node, :code, :load_binary, [MyApp.SomeScreen, path, beam_binary])
+
+  The `nl/1` built-in in IEx does the same thing for a single module. `mix mob.push`
+  does it for all changed modules across all connected nodes in one shot.
   """
 
   @impl Mix.Task

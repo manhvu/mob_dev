@@ -21,6 +21,28 @@ defmodule Mix.Tasks.Mob.Watch do
       mix mob.watch
       mix mob.watch --debounce 500
       mix mob.watch --cookie my_cookie
+
+  ## Under the hood
+
+  `mix mob.watch` is an mtime-polling file watcher that drives `mix compile` and
+  `nl/1` in a loop:
+
+      # On startup:
+      writes OS PID → _build/mob_watch.pid    # used by mix mob.watch_stop
+
+      # Each cycle (every --interval ms):
+      snapshot mtimes of lib/**/*.ex
+      if any changed:
+        :timer.sleep(debounce_ms)             # wait for format-on-save to settle
+        System.cmd("mix", ["compile"])        # compile in a subprocess
+        for each changed BEAM, on each node:
+          :rpc.call(node, :code, :load_binary, [...])
+
+  Compile runs in a subprocess (not `Mix.Task.run("compile")`) so that Mix's
+  task cache doesn't prevent recompilation on subsequent file saves.
+
+  The watch loop is equivalent to running `mix compile && nl(ChangedModule)` in
+  a terminal after every save — `mix mob.watch` just does it automatically.
   """
 
   @pid_file "_build/mob_watch.pid"

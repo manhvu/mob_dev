@@ -9,9 +9,16 @@ defmodule MobDev.Connector do
   @android_activity ".MainActivity"
 
   defp app_name,        do: Mix.Project.config()[:app] |> to_string()
-  defp bundle_id,       do: "com.mob.#{app_name()}"
+  defp bundle_id,       do: load_mob_config()[:bundle_id] || "com.mob.#{app_name()}"
   defp android_package, do: bundle_id()
   defp ios_bundle_id,   do: bundle_id()
+
+  defp load_mob_config do
+    config_file = Path.join(File.cwd!(), "mob.exs")
+    if File.exists?(config_file),
+      do: Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, []),
+      else: []
+  end
   @connect_timeout  10_000   # ms to wait for node to appear
   @connect_interval 500      # ms between polls
 

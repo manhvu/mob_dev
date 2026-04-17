@@ -119,12 +119,39 @@ defmodule MobDev.NativeBuild do
                      stderr_to_stdout: true)
           System.cmd("adb", ["-s", serial, "uninstall", bundle_id], stderr_to_stdout: true)
           System.cmd("adb", ["-s", serial, "install", apk], stderr_to_stdout: true)
+          fix_erts_helper_labels(serial, bundle_id)
         end)
 
         :ok
 
       {out, _} ->
         {:error, "adb devices failed: #{out}"}
+    end
+  end
+
+  # Android 15 streaming install labels ERTS helper .so files as app_data_file
+  # instead of apk_data_file, blocking execute_no_trans by untrusted_app.
+  # Fix by chcon-ing them back to apk_data_file (requires root / emulator).
+  defp fix_erts_helper_labels(serial, bundle_id) do
+    adb = fn args -> System.cmd("adb", ["-s", serial | args], stderr_to_stdout: true) end
+
+    # Only works on rooted/emulator builds — silently skip on real devices.
+    rooted? = case adb.(["root"]) do
+      {out, 0} -> out =~ "restarting" or out =~ "already running as root"
+      _        -> false
+    end
+
+    if rooted? do
+      :timer.sleep(800)
+      {lib_dir_out, _} = adb.(["shell",
+        "pm dump #{bundle_id} | grep nativeLibraryDir | head -1 | awk '{print $NF}'"])
+      lib_dir = String.trim(lib_dir_out)
+
+      if lib_dir != "" do
+        for lib <- ["liberl_child_setup.so", "libinet_gethost.so", "libepmd.so"] do
+          adb.(["shell", "chcon", "u:object_r:apk_data_file:s0", "#{lib_dir}/#{lib}"])
+        end
+      end
     end
   end
 

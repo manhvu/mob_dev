@@ -15,6 +15,33 @@ defmodule Mix.Tasks.Mob.Server do
   - Streaming log panel (logcat / iOS simulator console)
 
   The server runs until you press Ctrl+C.
+
+  For an interactive IEx session alongside the dashboard:
+
+      iex -S mix mob.server
+
+  ## Under the hood
+
+  `mix mob.server` starts a Phoenix + Bandit supervision tree directly in the
+  Mix process — equivalent to `iex -S mix phx.server` for a Phoenix app, except
+  it starts the supervisor inline rather than through the application callback:
+
+      Application.ensure_all_started(:bandit)
+      Application.ensure_all_started(:phoenix_live_view)
+
+      Supervisor.start_link([
+        {Phoenix.PubSub, name: MobDev.PubSub},
+        MobDev.Server.Endpoint,          # Bandit HTTP server on port 4040
+        MobDev.Server.DevicePoller,      # polls adb + xcrun simctl
+        MobDev.Server.LogStreamerSupervisor,  # logcat / simctl log streams
+        MobDev.Server.WatchWorker,       # optional file-watch loop
+        ...
+      ], strategy: :one_for_one)
+
+      open "http://localhost:4040"       # macOS: open, Linux: xdg-open
+
+  The endpoint uses `Bandit.PhoenixAdapter` instead of Cowboy, so there is no
+  `:plug_cowboy` dependency. Everything else is standard Phoenix LiveView.
   """
 
   @default_port 4040
@@ -32,13 +59,18 @@ defmodule Mix.Tasks.Mob.Server do
     children = [
       {Phoenix.PubSub,                  name: MobDev.PubSub},
       MobDev.Server.LogBuffer,
+      MobDev.Server.ElixirLogBuffer,
       MobDev.Server.Endpoint,
       MobDev.Server.DevicePoller,
       MobDev.Server.LogStreamerSupervisor,
+      MobDev.Server.WatchWorker,
       {Task.Supervisor,                  name: MobDev.Server.TaskSupervisor}
     ]
 
     {:ok, _sup} = Supervisor.start_link(children, strategy: :one_for_one, name: MobDev.Server.Supervisor)
+
+    # Attach the Elixir logger handler now that PubSub and the buffer are up
+    MobDev.Server.ElixirLogger.attach()
 
     local_url = "http://localhost:#{port}"
     IO.puts("")
@@ -53,11 +85,17 @@ defmodule Mix.Tasks.Mob.Server do
     end
 
     IO.puts("")
-    IO.puts("  Press Ctrl+C to stop.")
-    IO.puts("")
-
     open_browser(local_url)
-    Process.sleep(:infinity)
+
+    if IEx.started?() do
+      IO.puts("  #{IO.ANSI.green()}IEx ready.#{IO.ANSI.reset()} Elixir log output appears in the dashboard → Elixir panel.")
+      IO.puts("")
+    else
+      IO.puts("  Tip: run #{IO.ANSI.cyan()}iex -S mix mob.server#{IO.ANSI.reset()} for an interactive terminal.")
+      IO.puts("  Press Ctrl+C to stop.")
+      IO.puts("")
+      Process.sleep(:infinity)
+    end
   end
 
   defp configure_endpoint(port, lan_ip) do

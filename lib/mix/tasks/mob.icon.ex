@@ -19,6 +19,21 @@ defmodule Mix.Tasks.Mob.Icon do
     - `ios/Assets.xcassets/AppIcon.appiconset/icon_*.png`
     - `ios/Assets.xcassets/AppIcon.appiconset/Contents.json`
     - `icon_source.png` (1024×1024 master, only when generating)
+
+  ## Under the hood
+
+  `mix mob.icon` uses the `image` Elixir library (backed by `libvips`) to resize a
+  1024×1024 source PNG into every required platform size:
+
+      # Android (mipmap-mdpi through mipmap-xxxhdpi: 48px → 192px)
+      Image.thumbnail(source, size) |> Image.write(dest)
+
+      # iOS (20px → 1024px, all required AppIcon sizes)
+      Image.thumbnail(source, size) |> Image.write(dest)
+      # also writes Contents.json for Xcode
+
+  No external tools (ImageMagick, Xcode, etc.) are required — `libvips` is
+  bundled as a precompiled NIF via the `image` dependency.
   """
 
   @switches [source: :string]

@@ -12,7 +12,10 @@ defmodule Mix.Tasks.Mob.Install do
 
   ## What it does
 
-    1. Generates app icons (random robot avatar, or a provided source image)
+    1. Prompts for machine-specific paths (`mob_dir`, `elixir_lib`) and writes them
+       to `mob.exs` (gitignored) and `android/local.properties`
+    2. Downloads and caches the pre-built OTP runtime tarballs for Android and iOS
+    3. Generates app icons (random robot avatar, or a provided source image)
 
   ## Options
 
@@ -29,6 +32,26 @@ defmodule Mix.Tasks.Mob.Install do
 
       mix mob.install --no-icon        # skip icons, re-run other setup steps
       mix mob.icon                     # icon only, any time after install
+
+  ## Under the hood
+
+  `mix mob.install` does three things that would otherwise require manual steps:
+
+  **1. Path configuration** — reads `mob.exs`, detects sensible defaults, prompts
+  for missing values, and writes them back. Equivalent to:
+
+      # mob.exs (gitignored, machine-specific)
+      config :mob_dev,
+        mob_dir:    "/Users/me/code/mob",
+        elixir_lib: "/usr/local/lib/elixir/lib"
+
+  **2. OTP download** — fetches pre-built ERTS tarballs from GitHub Releases:
+
+      # Roughly equivalent to:
+      curl -L https://github.com/genericjam/mob/releases/download/<tag>/otp-android-arm64.tar.gz \
+           -o ~/.mob_dev/otp-android-arm64.tar.gz
+
+  **3. Icon generation** — calls `mix mob.icon` internally (see that task for details).
   """
 
   @switches [no_icon: :boolean, icon: :string]
