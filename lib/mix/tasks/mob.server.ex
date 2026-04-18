@@ -67,7 +67,7 @@ defmodule Mix.Tasks.Mob.Server do
       {Task.Supervisor,                  name: MobDev.Server.TaskSupervisor}
     ]
 
-    {:ok, _sup} = Supervisor.start_link(children, strategy: :one_for_one, name: MobDev.Server.Supervisor)
+    {:ok, sup} = Supervisor.start_link(children, strategy: :one_for_one, name: MobDev.Server.Supervisor)
 
     # Attach the Elixir logger handler now that PubSub and the buffer are up
     MobDev.Server.ElixirLogger.attach()
@@ -88,6 +88,9 @@ defmodule Mix.Tasks.Mob.Server do
     open_browser(local_url)
 
     if IEx.started?() do
+      # Unlink the supervisor from this task process so it survives after run/1 returns.
+      # Without this the supervisor exits when the Mix task process exits.
+      Process.unlink(sup)
       IO.puts("  #{IO.ANSI.green()}IEx ready.#{IO.ANSI.reset()} Elixir log output appears in the dashboard → Elixir panel.")
       IO.puts("")
     else
