@@ -76,7 +76,7 @@ defmodule Mix.Tasks.Mob.Deploy do
     Mix.Task.run("compile")
     IO.puts("\n#{IO.ANSI.cyan()}Deploying to devices...#{IO.ANSI.reset()}\n")
 
-    if native do
+    native_ok = if native do
       MobDev.NativeBuild.build_all(platforms: platforms)
     end
 
@@ -101,6 +101,12 @@ defmodule Mix.Tasks.Mob.Deploy do
           IO.puts("  ✗ #{d.name || d.serial}: #{d.error}")
         end)
       end
+    end
+
+    if native and native_ok == false do
+      IO.puts("\n#{IO.ANSI.red()}Native build had failures — see errors above.#{IO.ANSI.reset()}")
+      IO.puts("#{IO.ANSI.yellow()}Hint: run `mix mob.deploy` (without --native) to push BEAMs only once the issue is fixed.#{IO.ANSI.reset()}")
+      Mix.raise("Native build failed")
     end
   end
 
