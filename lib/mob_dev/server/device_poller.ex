@@ -99,8 +99,10 @@ defmodule MobDev.Server.DevicePoller do
   end
 
   defp beam_running_android?(serial) do
+    # Use pm list packages to find the installed third-party app rather than
+    # hardcoding a bundle ID — works for any app name.
     case System.cmd("adb", ["-s", serial, "shell",
-                            "pidof com.mob.demo || pidof $(pm list packages -3 | head -1 | cut -d: -f2)"],
+                            "pidof $(pm list packages -3 | head -1 | cut -d: -f2)"],
                    stderr_to_stdout: true) do
       {out, 0} -> String.trim(out) != ""
       _ -> false

@@ -42,8 +42,7 @@ defmodule Mix.Tasks.Mob.Install do
 
       # mob.exs (gitignored, machine-specific)
       config :mob_dev,
-        mob_dir:    "/Users/me/code/mob",
-        elixir_lib: "/usr/local/lib/elixir/lib"
+        mob_dir: "/Users/me/code/mob"
 
   **2. OTP download** — fetches pre-built ERTS tarballs from GitHub Releases:
 
@@ -104,7 +103,8 @@ defmodule Mix.Tasks.Mob.Install do
 
   # ── Path configuration ───────────────────────────────────────────────────────
 
-  @required_keys [:mob_dir, :elixir_lib]
+  # elixir_lib is no longer prompted — it's always auto-detected from the running BEAM.
+  @required_keys [:mob_dir]
 
   defp configure_paths(project_dir) do
     mob_exs = Path.join(project_dir, "mob.exs")
@@ -118,7 +118,7 @@ defmodule Mix.Tasks.Mob.Install do
 
     missing = Enum.filter(@required_keys, fn key ->
       val = cfg[key]
-      is_nil(val) or String.contains?(val, "/path/to/")
+      is_nil(val) or (is_binary(val) and String.contains?(val, "/path/to/"))
     end)
 
     if missing != [] do
@@ -189,8 +189,7 @@ defmodule Mix.Tasks.Mob.Install do
     import Config
 
     config :mob_dev,
-      mob_dir:    #{inspect(cfg[:mob_dir])},
-      elixir_lib: #{inspect(cfg[:elixir_lib])}
+      mob_dir: #{inspect(cfg[:mob_dir])}
     """
 
     File.write!(path, content)

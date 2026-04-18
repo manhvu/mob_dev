@@ -188,11 +188,13 @@ defmodule MobDev.Server.LogStreamer do
   end
 
   defp mob_line?(line) do
+    app       = Mix.Project.config()[:app] |> to_string()
+    app_camel = app |> Macro.camelize()
     String.contains?(line, "MobBeam") or
       String.contains?(line, "MobNIF") or
       String.contains?(line, "MobBridge") or
-      String.contains?(line, "mob_demo") or
-      String.contains?(line, "MobDemo")
+      String.contains?(line, app) or
+      String.contains?(line, app_camel)
   end
 
   defp unique_id, do: :erlang.unique_integer([:monotonic, :positive])

@@ -322,8 +322,24 @@ defmodule MobDev.NativeBuild do
       """)
     end
 
-    Config.Reader.read!(config_file)
-    |> Keyword.get(:mob_dev, [])
+    cfg = Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, [])
+
+    # elixir_lib is always detectable from the running BEAM — no need to store it
+    # in mob.exs. If the stored value is missing or stale (e.g. after a version
+    # upgrade or on a different developer's machine), detect it automatically.
+    elixir_lib = resolve_elixir_lib(cfg[:elixir_lib])
+    Keyword.put(cfg, :elixir_lib, elixir_lib)
+  end
+
+  # Use the mob.exs value if it exists on disk; otherwise detect from the running BEAM.
+  defp resolve_elixir_lib(configured) when is_binary(configured) do
+    expanded = Path.expand(configured)
+    if File.exists?(expanded), do: configured, else: detect_elixir_lib()
+  end
+  defp resolve_elixir_lib(_), do: detect_elixir_lib()
+
+  defp detect_elixir_lib do
+    :code.lib_dir(:elixir) |> to_string() |> Path.dirname()
   end
 
   # ── Helpers ──────────────────────────────────────────────────────────────────

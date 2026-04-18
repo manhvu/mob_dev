@@ -42,21 +42,22 @@ defmodule MobDev.Device do
   Returns the Erlang node name atom for a device.
   Uses 127.0.0.1 for USB-connected devices (tunneled).
 
-  Node names are `<app>_<platform>@127.0.0.1` by convention:
-  - Android: `mob_demo_android@127.0.0.1`
-  - iOS:     `mob_demo_ios@127.0.0.1`
+  Node names are `<app>_<platform>@127.0.0.1` where `<app>` is the OTP
+  application name from the current Mix project (e.g. `my_app_android@127.0.0.1`).
 
   Multi-device support (where unique per-device names are needed) is future work
   and will require the app to receive its node name dynamically via intent extras.
   """
   @spec node_name(t()) :: atom()
   def node_name(%__MODULE__{platform: :android}) do
-    :"mob_demo_android@127.0.0.1"
+    :"#{app_name()}_android@127.0.0.1"
   end
 
   def node_name(%__MODULE__{platform: :ios}) do
-    :"mob_demo_ios@127.0.0.1"
+    :"#{app_name()}_ios@127.0.0.1"
   end
+
+  defp app_name, do: Mix.Project.config()[:app]
 
   @doc "Human-readable one-line summary."
   @spec summary(t()) :: String.t()
