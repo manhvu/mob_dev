@@ -55,7 +55,10 @@ defmodule MobDev.OtpDownloader do
   end
 
   defp cache_dir(name) do
-    Path.join([System.get_env("HOME"), ".mob", "cache", name])
+    base =
+      System.get_env("MOB_CACHE_DIR") ||
+        Path.join([System.get_env("HOME"), ".mob", "cache"])
+    Path.join(base, name)
   end
 
   defp download_and_extract(name, tarball, dest_dir) do

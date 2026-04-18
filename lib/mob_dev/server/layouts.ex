@@ -11,6 +11,7 @@ defmodule MobDev.Server.Layouts do
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()}/>
         <title>Mob Dev</title>
+        <link rel="icon" href="data:,"/>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="/assets/phoenix/phoenix.min.js"></script>
         <script src="/assets/plv/phoenix_live_view.js"></script>

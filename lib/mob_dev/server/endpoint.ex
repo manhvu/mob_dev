@@ -1,12 +1,6 @@
 defmodule MobDev.Server.Endpoint do
   use Phoenix.Endpoint, otp_app: :mob_dev
 
-  @spec init(atom(), keyword()) :: {:ok, keyword()}
-  def init(_key, config) do
-    {:ok, Keyword.put_new(config, :render_errors,
-      view: MobDev.ErrorView, accepts: ~w(html), layout: false)}
-  end
-
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: [store: :cookie, key: "_mob_dev_session", signing_salt: "mob_dev"]]]
 

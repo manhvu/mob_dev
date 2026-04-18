@@ -114,9 +114,44 @@ defmodule MobDev.Connector do
 
   defp ensure_local_dist(cookie) do
     unless Node.alive?() do
-      Node.start(:"mob_dev@127.0.0.1", :longnames)
-      Node.set_cookie(cookie)
+      # On Nix and some Linux setups, EPMD is not started automatically.
+      # Try to start it before Node.start so distribution can register.
+      start_epmd()
+      handle_dist_start(Node.start(:"mob_dev@127.0.0.1", :longnames), cookie)
     end
+  end
+
+  # Attempt to start EPMD in daemon mode. Safe to call when already running —
+  # epmd -daemon exits 0 immediately in that case.
+  # Public for testing.
+  @doc false
+  def start_epmd do
+    System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
+  rescue
+    _ -> :ok  # epmd not in PATH — Node.start will surface a clear error
+  end
+
+  # Handle the return value of Node.start/2.
+  # Public for testing.
+  @doc false
+  def handle_dist_start({:ok, _}, cookie),
+    do: Node.set_cookie(cookie)
+
+  def handle_dist_start({:error, {:already_started, _}}, cookie),
+    do: Node.set_cookie(cookie)
+
+  def handle_dist_start({:error, reason}, _cookie) do
+    Mix.raise("""
+    Failed to start Erlang distribution: #{inspect(reason)}
+
+    EPMD (Erlang Port Mapper Daemon) may not be running or reachable.
+    Try starting it manually:
+
+        epmd -daemon
+
+    Then retry: mix mob.connect
+    Run `mix mob.doctor` for a full environment diagnosis.
+    """)
   end
 
   defp wait_for_nodes(devices, cookie) do

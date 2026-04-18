@@ -73,6 +73,7 @@ defmodule Mix.Tasks.Mob.Doctor do
   defp check_tools do
     List.flatten([
       check_elixir_versions(),
+      check_epmd(),
       check_adb(),
       check_xcrun(),
       if(has_android_project?(), do: check_android_build_tools(), else: []),
@@ -81,6 +82,25 @@ defmodule Mix.Tasks.Mob.Doctor do
         "optional — needed for iOS physical device battery benchmarks",
         "brew install libimobiledevice")
     ])
+  end
+
+  defp check_epmd do
+    case System.find_executable("epmd") do
+      nil ->
+        {:fail, "epmd",
+         "not found in PATH — required for Erlang distribution (mix mob.connect)",
+         "Ensure OTP's bin directory is in PATH. On Nix: add epmd to your shell environment."}
+
+      path ->
+        # Check if it's reachable by attempting a names query
+        case System.cmd("epmd", ["-names"], stderr_to_stdout: true) do
+          {_, 0} -> {:ok, "epmd", path, nil}
+          {_, _} ->
+            {:warn, "epmd",
+             "#{path} found but not running — mix mob.connect will attempt to start it",
+             "Run `epmd -daemon` if mob.connect fails to start distribution"}
+        end
+    end
   end
 
   @min_elixir "1.18.0"
