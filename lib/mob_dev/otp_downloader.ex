@@ -37,11 +37,21 @@ defmodule MobDev.OtpDownloader do
   defp ensure(name, tarball) do
     dir = cache_dir(name)
 
-    if File.dir?(dir) do
+    if valid_otp_dir?(dir) do
       {:ok, dir}
     else
+      # Remove stale/incomplete directory before re-downloading.
+      # This happens when a previous download attempt failed after mkdir
+      # but before (or during) extraction — e.g. on Nix where curl may use
+      # different CA certificates, or on a flaky network.
+      if File.dir?(dir), do: File.rm_rf!(dir)
       download_and_extract(name, tarball, dir)
     end
+  end
+
+  # A valid extracted OTP dir must contain at least one erts-* subdirectory.
+  defp valid_otp_dir?(dir) do
+    File.dir?(dir) and Path.wildcard(Path.join(dir, "erts-*")) != []
   end
 
   defp cache_dir(name) do
@@ -58,13 +68,15 @@ defmodule MobDev.OtpDownloader do
     File.mkdir_p!(Path.dirname(dest_dir))
 
     with :ok <- download(url, tmp_file),
-         :ok <- extract(tmp_file, dest_dir) do
+         :ok <- extract(tmp_file, dest_dir),
+         :ok <- verify_erts(dest_dir) do
       File.rm(tmp_file)
       IO.puts("  Cached at #{dest_dir}")
       {:ok, dest_dir}
     else
       {:error, reason} ->
         File.rm(tmp_file)
+        File.rm_rf(dest_dir)
         {:error, reason}
     end
   end
@@ -84,6 +96,17 @@ defmodule MobDev.OtpDownloader do
                     stderr_to_stdout: true) do
       {_, 0}    -> :ok
       {out, rc} -> {:error, "tar failed (exit #{rc}): #{String.trim(out)}"}
+    end
+  end
+
+  defp verify_erts(dir) do
+    case Path.wildcard(Path.join(dir, "erts-*")) do
+      [_ | _] -> :ok
+      [] ->
+        {:error,
+         "OTP extraction produced no erts-* directory in #{dir}. " <>
+         "The tarball may have an unexpected structure — please report this at " <>
+         "https://github.com/GenericJam/mob/issues"}
     end
   end
 end
