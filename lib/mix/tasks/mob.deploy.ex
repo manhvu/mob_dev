@@ -105,7 +105,7 @@ defmodule Mix.Tasks.Mob.Deploy do
 
     if native and native_ok == false do
       IO.puts("\n#{IO.ANSI.red()}Native build had failures — see errors above.#{IO.ANSI.reset()}")
-      IO.puts("#{IO.ANSI.yellow()}Hint: run `mix mob.deploy` (without --native) to push BEAMs only once the issue is fixed.#{IO.ANSI.reset()}")
+      IO.puts("#{IO.ANSI.yellow()}Run `mix mob.doctor` to check your environment, or `mix mob.deploy` (without --native) once the issue is fixed.#{IO.ANSI.reset()}")
       Mix.raise("Native build failed")
     end
   end

@@ -318,7 +318,8 @@ defmodule MobDev.NativeBuild do
       Mix.raise("""
       mob.exs not found in #{File.cwd!()}.
 
-      Run `mix mob.install` to configure your project.
+      Run `mix mob.install` to configure your project, or
+      `mix mob.doctor` to diagnose your environment.
       """)
     end
 
@@ -350,9 +351,9 @@ defmodule MobDev.NativeBuild do
     expanded = if is_binary(path), do: Path.expand(path), else: path
     cond do
       is_nil(path) or path =~ "/path/to/" ->
-        {:error, "#{key} not configured in mob.exs"}
+        {:error, "#{key} not configured in mob.exs — run `mix mob.doctor` for setup help"}
       not File.exists?(expanded) ->
-        {:error, "#{key} path not found: #{path}"}
+        {:error, "#{key} path not found: #{path} — run `mix mob.doctor` to diagnose"}
       true ->
         :ok
     end

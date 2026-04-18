@@ -104,9 +104,9 @@ defmodule MobDev.OtpDownloader do
       [_ | _] -> :ok
       [] ->
         {:error,
-         "OTP extraction produced no erts-* directory in #{dir}. " <>
-         "The tarball may have an unexpected structure — please report this at " <>
-         "https://github.com/GenericJam/mob/issues"}
+         "OTP extraction produced no erts-* directory in #{dir}.\n" <>
+         "       The tarball may have an unexpected layout.\n" <>
+         "       Run `mix mob.doctor` for diagnosis, or report at https://github.com/GenericJam/mob/issues"}
     end
   end
 end
