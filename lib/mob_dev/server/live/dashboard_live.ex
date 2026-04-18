@@ -459,8 +459,17 @@ defmodule MobDev.Server.DashboardLive do
         </div>
       </div>
 
-      <%!-- Vertical divider --%>
-      <div class="w-px bg-zinc-800 shrink-0"></div>
+      <%!-- Draggable divider --%>
+      <div id="log-divider"
+           phx-hook="ResizableDivider"
+           class="relative flex items-center justify-center w-3 shrink-0 cursor-col-resize select-none group">
+        <div class="w-px h-full bg-zinc-800 group-hover:bg-violet-700 transition-colors"></div>
+        <div class="absolute flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div class="w-1 h-1 rounded-full bg-violet-500"></div>
+          <div class="w-1 h-1 rounded-full bg-violet-500"></div>
+          <div class="w-1 h-1 rounded-full bg-violet-500"></div>
+        </div>
+      </div>
 
       <%!-- Elixir / IEx logs --%>
       <div class="flex flex-col w-96 shrink-0 min-h-0 pl-3">

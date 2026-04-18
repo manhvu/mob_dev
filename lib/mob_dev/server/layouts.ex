@@ -28,6 +28,48 @@ defmodule MobDev.Server.Layouts do
             scrollToBottom() { this.el.scrollTop = this.el.scrollHeight; }
           };
 
+          // Draggable divider between device logs and Elixir logs.
+          // Dragging left widens the Elixir pane; dragging right narrows it.
+          Hooks.ResizableDivider = {
+            mounted() {
+              const elixirPane = this.el.nextElementSibling;
+              const container  = this.el.parentElement;
+              const minWidth   = 180;
+
+              this.onMouseDown = (e) => {
+                e.preventDefault();
+                const startX     = e.clientX;
+                const startWidth = elixirPane.offsetWidth;
+
+                const onMouseMove = (e) => {
+                  const delta    = startX - e.clientX;
+                  const maxWidth = container.offsetWidth - 300;
+                  const newWidth = Math.max(minWidth, Math.min(startWidth + delta, maxWidth));
+                  elixirPane.style.width     = newWidth + 'px';
+                  elixirPane.style.flexShrink = '0';
+                  elixirPane.style.flexBasis  = newWidth + 'px';
+                };
+
+                const onMouseUp = () => {
+                  document.removeEventListener('mousemove', onMouseMove);
+                  document.removeEventListener('mouseup',  onMouseUp);
+                  document.body.style.cursor     = '';
+                  document.body.style.userSelect = '';
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup',   onMouseUp);
+                document.body.style.cursor     = 'col-resize';
+                document.body.style.userSelect = 'none';
+              };
+
+              this.el.addEventListener('mousedown', this.onMouseDown);
+            },
+            destroyed() {
+              this.el.removeEventListener('mousedown', this.onMouseDown);
+            }
+          };
+
           let liveSocket = new LiveView.LiveSocket("/live", Phoenix.Socket, {
             hooks: Hooks,
             params: { _csrf_token: document.querySelector("meta[name='csrf-token']").getAttribute("content") }
