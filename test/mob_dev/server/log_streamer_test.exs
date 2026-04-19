@@ -52,14 +52,15 @@ defmodule MobDev.Server.LogStreamerTest do
     end
 
     test "falls back gracefully for unparsed lines" do
-      line = "[2024-01-01 12:00:00] Some iOS syslog line about mob_demo"
+      app = Mix.Project.config()[:app] |> to_string()
+      line = "[2024-01-01 12:00:00] Some iOS syslog line from #{app}"
       result = LogStreamer.parse_line(line, "sim-udid")
 
       assert result.serial  == "sim-udid"
       assert result.level   == "I"
       assert result.tag     == nil
       assert result.message == line
-      assert result.mob     == true   # contains "mob_demo"
+      assert result.mob     == true   # contains the current app name
     end
 
     test "unparsed line without mob content is mob: false" do
@@ -73,8 +74,9 @@ defmodule MobDev.Server.LogStreamerTest do
       assert result.mob == true
     end
 
-    test "iOS syslog Logger output from nif_log2 is mob: true" do
-      line = "2026-04-14 07:45:04.099 MobDemo[1234:5678] [info] Tap me pressed — count is now 1"
+    test "iOS syslog Logger output with current app name is mob: true" do
+      app_camel = Mix.Project.config()[:app] |> to_string() |> Macro.camelize()
+      line = "2026-04-14 07:45:04.099 #{app_camel}[1234:5678] [info] Tap me pressed — count is now 1"
       result = LogStreamer.parse_line(line, "sim-udid")
       assert result.mob == true
     end

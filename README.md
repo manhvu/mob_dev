@@ -32,7 +32,8 @@ end
 | `mix mob.server` | Start the dev dashboard at `localhost:4040` |
 | `mix mob.icon` | Regenerate app icons |
 | `mix mob.routes` | Validate navigation destinations across the codebase |
-| `mix mob.battery_bench` | Measure BEAM idle power draw on an Android device |
+| `mix mob.battery_bench_android` | Measure BEAM idle power draw on an Android device |
+| `mix mob.battery_bench_ios` | Measure BEAM idle power draw on a physical iOS device |
 
 ## Dev dashboard (`mix mob.server`)
 
@@ -102,24 +103,51 @@ mix mob.routes --strict  # exit non-zero (for CI)
 
 Dynamic destinations (`push_screen(socket, var)`) and registered name atoms (`:main`) are skipped with a note.
 
-## Battery benchmark (`mix mob.battery_bench`)
+## Battery benchmarks
 
-Deploys an APK with specific BEAM tuning flags and measures battery drain via the hardware charge counter (`dumpsys battery`). Reports mAh every 10 seconds.
+Measure BEAM idle power draw with specific tuning flags. Both tasks share the same presets and flag interface.
+
+### Android (`mix mob.battery_bench_android`)
+
+Deploys an APK and measures drain via the hardware charge counter (`dumpsys battery`). Reports mAh every 10 seconds.
 
 **WiFi ADB required** — a USB cable charges the device and skews measurements.
 
 ```bash
-mix mob.battery_bench                           # default: Nerves-tuned BEAM, 30 min
-mix mob.battery_bench --no-beam                 # baseline: no BEAM at all
-mix mob.battery_bench --preset untuned          # raw BEAM, no tuning
-mix mob.battery_bench --flags "-sbwt none -S 1:1"
-mix mob.battery_bench --duration 3600 --device 192.168.1.42:5555
+# One-time WiFi ADB setup (while plugged in):
+adb -s SERIAL tcpip 5555
+adb connect PHONE_IP:5555
+# then unplug
+
+mix mob.battery_bench_android                              # default: Nerves-tuned BEAM, 30 min
+mix mob.battery_bench_android --no-beam                    # baseline: no BEAM at all
+mix mob.battery_bench_android --preset untuned             # raw BEAM, no tuning
+mix mob.battery_bench_android --flags "-sbwt none -S 1:1"
+mix mob.battery_bench_android --duration 3600 --device 192.168.1.42:5555
+mix mob.battery_bench_android --no-build                   # re-run without rebuilding
 ```
+
+### iOS (`mix mob.battery_bench_ios`)
+
+Deploys to a physical iPhone/iPad and reads battery via `ideviceinfo`. Reports mAh (if `BatteryMaxCapacity` is available) or percentage points.
+
+**Prerequisites:** `brew install libimobiledevice`, Xcode 15+, device trusted on this Mac.
+
+```bash
+mix mob.battery_bench_ios                                  # default: Nerves-tuned BEAM, 30 min
+mix mob.battery_bench_ios --no-beam                        # baseline: no BEAM at all
+mix mob.battery_bench_ios --preset untuned                 # raw BEAM, no tuning
+mix mob.battery_bench_ios --flags "-sbwt none -S 1:1"
+mix mob.battery_bench_ios --duration 3600 --device UDID
+mix mob.battery_bench_ios --no-build                       # re-run without rebuilding
+```
+
+### Presets and results
 
 | Preset | Flags | mAh/hr (Moto G) |
 |--------|-------|----------------|
 | No BEAM | — | ~200 |
-| Nerves (default) | `-S 1:1 -SDcpu 1:1 -SDio 1 -A 1 -sbwt none +C multi_time_warp` | ~202 |
+| Nerves (default) | `-S 1:1 -SDcpu 1:1 -SDio 1 -A 1 -sbwt none` | ~202 |
 | Untuned | *(none)* | ~250 |
 
 The Nerves-tuned BEAM is essentially indistinguishable from a stock Android app at idle. The untuned BEAM costs ~25% more because schedulers spin-wait instead of sleeping.
@@ -304,7 +332,8 @@ Mob.Test.screen(node)
 ## Hot-pushing code changes
 
 ```bash
-mix compile && nl(MyApp.SomeScreen)
+mix mob.push          # compile + push all changed modules to all connected devices
+mix mob.push --all    # force-push every module
 ```
 
 ## Deploying
@@ -326,7 +355,7 @@ A typical agent session for debugging or feature work:
 4. Mob.Test.tap(node, :some_button)       — interact with the UI
 5. Mob.Test.screen(node)                  — confirm navigation happened
 6. edit lib/my_app/screen.ex              — make a code change
-7. mix compile && nl(MyApp.Screen)        — hot-push without restart
+7. mix mob.push                           — hot-push changed modules without restart
 8. Mob.Test.assigns(node)                 — verify state updated as expected
 ```
 

@@ -34,13 +34,15 @@ defmodule MobDev.DeviceTest do
 
   describe "node_name/1" do
     test "returns android node name for android device" do
+      app = Mix.Project.config()[:app]
       device = %Device{platform: :android, serial: "emulator-5554"}
-      assert Device.node_name(device) == :"mob_demo_android@127.0.0.1"
+      assert Device.node_name(device) == :"#{app}_android@127.0.0.1"
     end
 
     test "returns ios node name for ios device" do
+      app = Mix.Project.config()[:app]
       device = %Device{platform: :ios, serial: "78354490-EF38-44D7-A437-DD941C20524D"}
-      assert Device.node_name(device) == :"mob_demo_ios@127.0.0.1"
+      assert Device.node_name(device) == :"#{app}_ios@127.0.0.1"
     end
 
     test "android node name uses 127.0.0.1" do

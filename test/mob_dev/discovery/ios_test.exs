@@ -62,6 +62,7 @@ defmodule MobDev.Discovery.IOSTest do
     end
 
     test "assigns node name to each device" do
+      app = Mix.Project.config()[:app]
       json = Jason.encode!(%{
         "devices" => %{
           "com.apple.CoreSimulator.SimRuntime.iOS-18-0" => [
@@ -70,7 +71,7 @@ defmodule MobDev.Discovery.IOSTest do
         }
       })
       [device] = IOS.parse_simctl_json(json)
-      assert device.node == :"mob_demo_ios@127.0.0.1"
+      assert device.node == :"#{app}_ios@127.0.0.1"
     end
   end
 
