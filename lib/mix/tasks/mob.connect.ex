@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Mob.Connect do
       Node.set_cookie(:mob_secret)
       Node.connect(:"my_app_android@127.0.0.1")
       Node.connect(:"my_app_ios@127.0.0.1")
-      IEx.start()
+      IEx.start([])
 
   You can do all of this by hand in any IEx session — `mix mob.connect` just
   discovers the device node names and wires up the tunnels automatically.
@@ -110,6 +110,6 @@ defmodule Mix.Tasks.Mob.Connect do
     end)
 
     # Hand off to IEx in this process — tunnels stay alive via adb daemon.
-    IEx.start()
+    IEx.start([])
   end
 end
