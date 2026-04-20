@@ -72,6 +72,7 @@ defmodule Mix.Tasks.Mob.Doctor do
 
   defp check_tools do
     List.flatten([
+      check_version_manager(),
       check_elixir_versions(),
       check_epmd(),
       check_adb(),
@@ -82,6 +83,31 @@ defmodule Mix.Tasks.Mob.Doctor do
         "optional — needed for iOS physical device battery benchmarks",
         "brew install libimobiledevice")
     ])
+  end
+
+  defp check_version_manager do
+    cond do
+      path = System.find_executable("mise") ->
+        {:ok, "version manager", "mise (#{path})", nil}
+
+      path = System.find_executable("asdf") ->
+        {:ok, "version manager", "asdf (#{path})", nil}
+
+      true ->
+        {:warn, "version manager",
+         "neither mise nor asdf detected",
+         "Mob requires specific Elixir and OTP versions that must match the\n" <>
+         "      device runtime. A version manager installs the exact toolchain\n" <>
+         "      from your project's .tool-versions file — no manual juggling.\n" <>
+         "\n" <>
+         "      mise is the modern standard in the Elixir community (fast, cross-platform):\n" <>
+         "        brew install mise            https://mise.jdx.dev\n" <>
+         "\n" <>
+         "      asdf is the established option if you already use it:\n" <>
+         "        brew install asdf            https://asdf-vm.com\n" <>
+         "\n" <>
+         "      After installing, run:  mise install  or  asdf install"}
+    end
   end
 
   defp check_epmd do

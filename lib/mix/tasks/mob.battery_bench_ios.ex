@@ -104,7 +104,8 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
     preset:   :string,
     flags:    :string,
     no_build: :boolean,
-    scheme:   :string
+    scheme:   :string,
+    dry_run:  :boolean
   ]
 
   @battery_domain "com.apple.mobile.battery"
@@ -115,6 +116,11 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
 
     unless match?({:unix, :darwin}, :os.type()) do
       Mix.raise("mob.battery_bench_ios requires macOS.")
+    end
+
+    if opts[:dry_run] do
+      dry_run!(opts)
+      exit(:normal)
     end
 
     check_prerequisites!()
@@ -133,16 +139,8 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
       d -> d
     end
 
-    cfg = load_config()
-    pkg = cfg[:bundle_id] || Mix.raise("""
-    bundle_id not set in mob.exs. Add it:
-
-        config :mob_dev,
-          mob_dir:   "/path/to/mob",
-          bundle_id: "com.example.myapp"
-
-    Find your bundle_id in Xcode → project → Signing & Capabilities → Bundle Identifier.
-    """)
+    pkg = MobDev.Config.bundle_id()
+    cfg = MobDev.Config.load_mob_config()
 
     scheme = opts[:scheme] || cfg[:ios_scheme] || default_scheme()
 
@@ -291,9 +289,38 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
     end
   end
 
+  # ── Dry run ───────────────────────────────────────────────────────────────────
+
+  defp dry_run!(opts) do
+    cfg    = MobDev.Config.load_mob_config()
+    pkg    = MobDev.Config.bundle_id()
+    scheme = opts[:scheme] || cfg[:ios_scheme] || default_scheme()
+    duration = opts[:duration] || 1800
+
+    # Validate preset / flags (raises on bad preset name)
+    {cflags, header_dir} = resolve_build_flags(opts)
+    if header_dir, do: File.rm_rf!(header_dir)
+
+    IO.puts("")
+    IO.puts("=== Mob Battery Benchmark (iOS) — Dry Run ===")
+    IO.puts("")
+    IO.puts("  Device:   #{opts[:device] || "(auto-detect at run time)"}")
+    IO.puts("  Bundle:   #{pkg || "(NOT SET)"}")
+    IO.puts("  Scheme:   #{scheme}")
+    IO.puts("  Duration: #{duration}s (#{div(duration, 60)} min)")
+    IO.puts("  Mode:     #{describe_mode(opts)}")
+    IO.puts("  Flags:    #{if cflags == "", do: "(default Nerves tuning)", else: cflags}")
+    IO.puts("  Build:    #{if opts[:no_build], do: "skip (--no-build)", else: "yes"}")
+    IO.puts("")
+
+    IO.puts("Dry run complete — no prerequisites checked, no device contacted.")
+    IO.puts("")
+  end
+
   # ── Build flags ──────────────────────────────────────────────────────────────
 
-  defp resolve_build_flags(opts) do
+  @doc false
+  def resolve_build_flags(opts) do
     cond do
       opts[:no_beam] ->
         {"-DNO_BEAM", nil}
@@ -322,7 +349,8 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
     end
   end
 
-  defp describe_mode(opts) do
+  @doc false
+  def describe_mode(opts) do
     cond do
       opts[:no_beam]  -> "no-beam (baseline)"
       opts[:flags]    -> "custom flags: #{opts[:flags]}"
@@ -344,7 +372,26 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
     case {workspaces, projects} do
       {[ws | _], _}   -> {:workspace, ws}
       {[], [proj | _]} -> {:project, proj}
-      _ -> Mix.raise("No .xcworkspace or .xcodeproj found in ios/")
+      _ ->
+        # Mob projects use ios/build.sh (simulator only) rather than an Xcode project.
+        # Physical device builds require xcodebuild, which needs a .xcodeproj or .xcworkspace.
+        build_sh = Path.join(ios_dir, "build.sh")
+        if File.exists?(build_sh) do
+          Mix.raise("""
+          This project uses ios/build.sh (mob's build system), which targets the \
+          iOS simulator only. Physical device builds require an Xcode project file.
+
+          To run the battery benchmark:
+            1. Open the project in Xcode, select a physical device, and run once.
+            2. Then use --no-build to skip the build step and measure the installed app:
+
+               mix mob.battery_bench_ios --no-build
+
+          Alternatively, add an Xcode project to ios/ and re-run without --no-build.
+          """)
+        else
+          Mix.raise("No .xcworkspace or .xcodeproj found in ios/")
+        end
     end
   end
 
@@ -529,12 +576,6 @@ defmodule Mix.Tasks.Mob.BatteryBenchIos do
   defp default_scheme, do: app_name() |> Macro.camelize()
   defp app_name, do: Mix.Project.config()[:app] |> to_string()
 
-  defp load_config do
-    config_file = Path.join(File.cwd!(), "mob.exs")
-    if File.exists?(config_file),
-      do: Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, []),
-      else: []
-  end
 
   defp time_string do
     {{_y, _mo, _d}, {h, m, s}} = :calendar.local_time()

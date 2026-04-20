@@ -110,6 +110,6 @@ defmodule Mix.Tasks.Mob.Connect do
     end)
 
     # Hand off to IEx in this process — tunnels stay alive via adb daemon.
-    IEx.start([])
+    IEx.start()
   end
 end

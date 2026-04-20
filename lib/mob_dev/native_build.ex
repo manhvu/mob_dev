@@ -50,7 +50,7 @@ defmodule MobDev.NativeBuild do
 
   defp build_android(cfg) do
     IO.puts("  Building Android APK...")
-    bundle_id = cfg[:bundle_id] || "com.mob.#{app_name()}"
+    bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
     apk = "android/app/build/outputs/apk/debug/app-debug.apk"
 
     with {:ok, otp_dir} <- MobDev.OtpDownloader.ensure_android(),
@@ -344,8 +344,6 @@ defmodule MobDev.NativeBuild do
   end
 
   # ── Helpers ──────────────────────────────────────────────────────────────────
-
-  defp app_name, do: Mix.Project.config()[:app] |> to_string()
 
   defp check_path(path, key) do
     expanded = if is_binary(path), do: Path.expand(path), else: path

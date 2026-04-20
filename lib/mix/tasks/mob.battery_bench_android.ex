@@ -91,7 +91,8 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
     no_beam:  :boolean,
     preset:   :string,
     flags:    :string,
-    no_build: :boolean
+    no_build: :boolean,
+    dry_run:  :boolean
   ]
 
   @android_activity ".MainActivity"
@@ -99,6 +100,11 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
   @impl Mix.Task
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, switches: @switches)
+
+    if opts[:dry_run] do
+      dry_run!(opts)
+      exit(:normal)
+    end
 
     duration = opts[:duration] || 1800
     no_build = opts[:no_build] || false
@@ -113,16 +119,7 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
       d -> d
     end
 
-    cfg      = load_config()
-    pkg = cfg[:bundle_id] || Mix.raise("""
-    bundle_id not set in mob.exs. Add it:
-
-        config :mob_dev,
-          mob_dir:   "/path/to/mob",
-          bundle_id: "com.example.myapp"
-
-    Find your bundle_id in android/app/build.gradle (applicationId).
-    """)
+    pkg      = MobDev.Config.bundle_id()
     app      = app_name()
 
     IO.puts("")
@@ -259,10 +256,36 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
     IO.puts("")
   end
 
+  # ── Dry run ───────────────────────────────────────────────────────────────────
+
+  defp dry_run!(opts) do
+    pkg      = MobDev.Config.bundle_id()
+    duration = opts[:duration] || 1800
+
+    # Validate preset / flags (raises on bad preset name)
+    {cflags, header_dir} = resolve_build_flags(opts)
+    if header_dir, do: File.rm_rf!(header_dir)
+
+    IO.puts("")
+    IO.puts("=== Mob Battery Benchmark (Android) — Dry Run ===")
+    IO.puts("")
+    IO.puts("  Device:   #{opts[:device] || "(auto-detect at run time)"}")
+    IO.puts("  Package:  #{pkg || "(NOT SET)"}")
+    IO.puts("  Duration: #{duration}s (#{div(duration, 60)} min)")
+    IO.puts("  Mode:     #{describe_mode(opts)}")
+    IO.puts("  Flags:    #{if cflags == "", do: "(default Nerves tuning)", else: cflags}")
+    IO.puts("  Build:    #{if opts[:no_build], do: "skip (--no-build)", else: "yes"}")
+    IO.puts("")
+
+    IO.puts("Dry run complete — no prerequisites checked, no device contacted.")
+    IO.puts("")
+  end
+
   # ── Build flags ──────────────────────────────────────────────────────────────
 
   # Returns {extra_cpp_flags_string, header_temp_dir_or_nil}
-  defp resolve_build_flags(opts) do
+  @doc false
+  def resolve_build_flags(opts) do
     cond do
       opts[:no_beam] ->
         {"-DNO_BEAM", nil}
@@ -292,7 +315,8 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
     end
   end
 
-  defp describe_mode(opts) do
+  @doc false
+  def describe_mode(opts) do
     cond do
       opts[:no_beam]  -> "no-beam (baseline)"
       opts[:flags]    -> "custom flags: #{opts[:flags]}"
@@ -469,13 +493,6 @@ defmodule Mix.Tasks.Mob.BatteryBenchAndroid do
   # ── Misc ──────────────────────────────────────────────────────────────────────
 
   defp app_name, do: Mix.Project.config()[:app] |> to_string()
-
-  defp load_config do
-    config_file = Path.join(File.cwd!(), "mob.exs")
-    if File.exists?(config_file),
-      do: Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, []),
-      else: []
-  end
 
   defp time_string do
     {{_y, _mo, _d}, {h, m, s}} = :calendar.local_time()

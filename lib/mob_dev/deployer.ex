@@ -30,12 +30,12 @@ defmodule MobDev.Deployer do
 
   @android_activity ".MainActivity"
 
-  defp app_name,         do: Mix.Project.config()[:app] |> to_string()
-  defp bundle_id,        do: load_mob_config()[:bundle_id] || "com.mob.#{app_name()}"
-  defp android_package,  do: bundle_id()
-  defp android_app_data, do: "/data/data/#{android_package()}/files"
+  defp app_name,          do: Mix.Project.config()[:app] |> to_string()
+  defp bundle_id,         do: MobDev.Config.bundle_id()
+  defp android_package,   do: bundle_id()
+  defp android_app_data,  do: "/data/data/#{android_package()}/files"
   defp android_beams_dir, do: "#{android_app_data()}/otp/#{app_name()}"
-  defp ios_bundle_id,    do: bundle_id()
+  defp ios_bundle_id,     do: bundle_id()
   defp ios_beams_dir do
     # mob_beam.m hardcodes /tmp/otp-ios-sim as OTP_ROOT.
     # If that directory exists (manually set up or from a prior native deploy),
@@ -44,13 +44,6 @@ defmodule MobDev.Deployer do
     tmp_path   = Path.join("/tmp/otp-ios-sim", app_name())
     cache_path = Path.join(MobDev.OtpDownloader.ios_sim_otp_dir(), app_name())
     if File.dir?("/tmp/otp-ios-sim"), do: tmp_path, else: cache_path
-  end
-
-  defp load_mob_config do
-    config_file = Path.join(File.cwd!(), "mob.exs")
-    if File.exists?(config_file),
-      do: Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, []),
-      else: []
   end
 
   @doc """
