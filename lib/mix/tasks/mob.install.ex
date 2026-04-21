@@ -161,13 +161,16 @@ defmodule Mix.Tasks.Mob.Install do
   end
 
   # Read the {:mob, path: "..."} dep from mix.exs and resolve it.
+  # Falls back to deps/mob for Hex installs.
   defp detect_mob_dir(project_dir) do
     mix_exs = Path.join(project_dir, "mix.exs")
     with {:ok, content} <- File.read(mix_exs),
          [_, rel] <- Regex.run(~r/\{:mob,\s+path:\s+"([^"]+)"/, content) do
       Path.expand(rel, project_dir)
     else
-      _ -> nil
+      _ ->
+        deps_mob = Path.join(project_dir, "deps/mob")
+        if File.dir?(deps_mob), do: deps_mob, else: nil
     end
   end
 
