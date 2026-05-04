@@ -11,40 +11,30 @@ defmodule Mix.Tasks.Mob.Push do
   `mix mob.deploy` first). Modules are loaded into the live BEAM in place,
   equivalent to calling `nl(Module)` in IEx for each changed module.
 
-  Options:
-    --all      Push all modules, not just those changed since last compile
-    --cookie   Erlang cookie (default: mob_secret)
+  ## Options
+    --all        Push all modules, not just those changed since last compile
+    --cookie     Erlang cookie (default: mob_secret)
+    --device     Target specific device by ID
 
-  Examples:
+  ## Examples
       mix mob.push
       mix mob.push --all
       mix mob.push --cookie my_cookie
-
-  ## Under the hood
-
-  `mix mob.push` is a scripted version of the IEx hot-code-push workflow:
-
-      mix compile
-
-      # For each changed module, on each connected node:
-      nl(MyApp.SomeScreen)
-      # which calls:
-      :rpc.call(node, :code, :load_binary, [MyApp.SomeScreen, path, beam_binary])
-
-  The `nl/1` built-in in IEx does the same thing for a single module. `mix mob.push`
-  does it for all changed modules across all connected nodes in one shot.
+      mix mob.push --device 5554
+      mix mob.push --device R5CW3089HVB
   """
 
   @impl Mix.Task
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        switches: [all: :boolean, cookie: :string],
-        aliases: [c: :cookie]
+        switches: [all: :boolean, cookie: :string, device: :string],
+        aliases: [c: :cookie, d: :device]
       )
 
     push_all = Keyword.get(opts, :all, false)
     cookie = opts |> Keyword.get(:cookie, "mob_secret") |> String.to_atom()
+    device_id = Keyword.get(opts, :device, nil)
 
     IO.puts("")
 
@@ -52,7 +42,7 @@ defmodule Mix.Tasks.Mob.Push do
     Mix.Task.run("compile")
 
     IO.puts("\n#{IO.ANSI.cyan()}Connecting to devices...#{IO.ANSI.reset()}")
-    nodes = MobDev.HotPush.connect(cookie: cookie)
+    nodes = MobDev.HotPush.connect(cookie: cookie, device: device_id)
 
     if nodes == [] do
       IO.puts("#{IO.ANSI.yellow()}No running nodes found.#{IO.ANSI.reset()}")

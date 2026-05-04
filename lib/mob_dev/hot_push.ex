@@ -16,14 +16,22 @@ defmodule MobDev.HotPush do
 
   @doc """
   Sets up adb tunnels (idempotent) and connects to all running device nodes.
+
   Returns list of connected node atoms.
+
+  ## Options
+
+  - `:cookie` - Erlang cookie (default: `:mob_secret`)
+  - `:device` - Target specific device by ID (optional)
   """
   @spec connect(keyword()) :: [node()]
   def connect(opts \\ []) do
     cookie = Keyword.get(opts, :cookie, @cookie)
+    device_id = Keyword.get(opts, :device, nil)
 
     nodes =
       (Android.list_devices() ++ IOS.list_simulators())
+      |> filter_by_device_id(device_id)
       |> Enum.with_index()
       |> Enum.flat_map(fn {device, idx} ->
         case Tunnel.setup(device, idx) do
@@ -44,6 +52,12 @@ defmodule MobDev.HotPush do
     nodes
   end
 
+  defp filter_by_device_id(devices, nil), do: devices
+
+  defp filter_by_device_id(devices, device_id) do
+    Enum.filter(devices, &MobDev.Device.match_id?(&1, device_id))
+  end
+
   @doc """
   Pushes all compiled BEAM files from `_build/dev/lib/*/ebin/` to `nodes`.
 
@@ -58,6 +72,23 @@ defmodule MobDev.HotPush do
   def push_all(nodes) do
     beams = runtime_beam_paths()
     push_beams(nodes, beams)
+  end
+
+  @doc """
+  Pushes all compiled BEAM files to devices specified by ID.
+
+  Convenience function that combines `connect/1` and `push_all/1`.
+  """
+  @spec push_all_to_device(String.t(), keyword()) :: {non_neg_integer(), list()}
+  def push_all_to_device(device_id, opts \\ []) do
+    cookie = Keyword.get(opts, :cookie, @cookie)
+    nodes = connect(cookie: cookie, device: device_id)
+
+    if nodes == [] do
+      {:error, "No running node found for device: #{device_id}"}
+    else
+      push_all(nodes)
+    end
   end
 
   @doc """
@@ -216,15 +247,17 @@ defmodule MobDev.HotPush do
 
   defp load_on_nodes(nodes, module, path, binary) do
     fname = String.to_charlist(path)
+    # 10 seconds
+    rpc_timeout = 10_000
 
     errors =
       Enum.flat_map(nodes, fn node ->
-        case :rpc.call(node, :code, :load_binary, [module, fname, binary]) do
+        case :rpc.call(node, :code, :load_binary, [module, fname, binary], rpc_timeout) do
           {:module, ^module} -> []
           # NIF modules already loaded — safe to ignore
           {:error, :on_load_failure} -> []
-          {:badrpc, reason} -> [{node, reason}]
-          {:error, reason} -> [{node, reason}]
+          {:badrpc, reason} -> [{node, MobDev.Error.format({:error, reason})}]
+          {:error, reason} -> [{node, MobDev.Error.format({:error, reason})}]
         end
       end)
 
