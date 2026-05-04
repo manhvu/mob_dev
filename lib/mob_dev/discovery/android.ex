@@ -271,12 +271,6 @@ defmodule MobDev.Discovery.Android do
   end
 
   defp run_adb(args) do
-    cmd = Enum.join(["adb" | args], " ")
-
-    case System.cmd("sh", ["-c", "timeout 8 #{cmd}"], stderr_to_stdout: true) do
-      {output, 0} -> {:ok, output}
-      {_output, 124} -> {:error, "adb timed out"}
-      {output, _} -> {:error, output}
-    end
+    MobDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
   end
 end

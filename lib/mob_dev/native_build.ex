@@ -483,11 +483,7 @@ defmodule MobDev.NativeBuild do
   end
 
   defp parse_adb_serials(output) do
-    output
-    |> String.split("\n")
-    |> Enum.drop(1)
-    |> Enum.filter(&String.contains?(&1, "\tdevice"))
-    |> Enum.map(&hd(String.split(&1, "\t")))
+    MobDev.Utils.parse_adb_devices_output(output)
   end
 
   # Filters a list of adb serials by `--device <id>`. The id is matched against
@@ -1480,7 +1476,7 @@ defmodule MobDev.NativeBuild do
   # backslash-colons on Windows; on Unix it round-trips fine. Just trim.
   defp expand_sdk_dir(raw), do: String.trim(raw) |> Path.expand()
 
-  defp adb_available?, do: System.find_executable("adb") != nil
+  defp adb_available?, do: MobDev.Utils.adb_available?()
 
   defp macos?, do: match?({:unix, :darwin}, :os.type())
 

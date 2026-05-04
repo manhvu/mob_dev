@@ -1,9 +1,27 @@
 defmodule MobDev.Device do
   @moduledoc """
   Represents a connected or available device (physical or emulator/simulator).
+
+  This struct is the central data structure used throughout mob_dev for device
+  identification, connection, and deployment operations.
   """
 
-  @type t :: %__MODULE__{}
+  @type platform :: :android | :ios
+  @type device_type :: :emulator | :simulator | :physical
+  @type status :: :discovered | :unauthorized | :tunneled | :connected | :error
+
+  @type t :: %__MODULE__{
+          platform: platform(),
+          serial: String.t(),
+          name: String.t() | nil,
+          version: String.t() | nil,
+          type: device_type() | nil,
+          node: atom() | nil,
+          dist_port: pos_integer() | nil,
+          host_ip: String.t() | nil,
+          status: status(),
+          error: String.t() | nil
+        }
 
   @enforce_keys [:platform, :serial]
   defstruct [
@@ -32,14 +50,19 @@ defmodule MobDev.Device do
   @doc """
   Derives a short identifier from a serial for use in node names.
 
-    iex> MobDev.Device.short_id("emulator-5554")
-    "5554"
+  Returns the last 4 alphanumeric characters of the serial (with dashes removed),
+  uppercased. This provides a short, somewhat human-readable identifier.
 
-    iex> MobDev.Device.short_id("R5CW3089HVB")
-    "HVBA"  # last 4 chars, uppercased
+  ## Examples
 
-    iex> MobDev.Device.short_id("78354490-EF38-44D7-A437-DD941C20524D")
-    "524D"
+      iex> MobDev.Device.short_id("emulator-5554")
+      "5554"
+
+      iex> MobDev.Device.short_id("R5CW3089HVB")
+      "HVBA"
+
+      iex> MobDev.Device.short_id("78354490-EF38-44D7-A437-DD941C20524D")
+      "524D"
   """
   @spec short_id(String.t()) :: String.t()
   def short_id(serial) do
@@ -52,12 +75,17 @@ defmodule MobDev.Device do
   @doc """
   Returns the Erlang node name atom for a device.
 
-  - Android (emulator/physical): `<app>_android_<serial-stub>@127.0.0.1`
-    (unique per device — Mac's EPMD is shared via adb-reverse so the suffix
-    is required to avoid collisions when two phones run the same app)
-  - iOS simulator: `<app>_ios_<8-char-udid>@127.0.0.1` (unique per simulator,
-    matches the name mob_beam.m builds using SIMULATOR_UDID)
-  - iOS physical: `<app>_ios@<device-ip>` (mob_beam.m finds IP: USB > WiFi/LAN > Tailscale)
+  The node name format varies by platform:
+
+  - **Android** (emulator/physical): `<app>_android_<serial-stub>@127.0.0.1`
+    Unique per device since Mac's EPMD is shared via adb-reverse, requiring
+    a suffix to avoid collisions when multiple phones run the same app.
+
+  - **iOS simulator**: `<app>_ios_<8-char-udid>@127.0.0.1`
+    Unique per simulator, matches the name mob_beam.m builds using SIMULATOR_UDID.
+
+  - **iOS physical**: `<app>_ios@<device-ip>`
+    mob_beam.m finds the device IP using priority: USB > WiFi/LAN > Tailscale.
   """
   @spec node_name(t()) :: atom()
   def node_name(%__MODULE__{platform: :android, serial: serial}) when is_binary(serial) do
@@ -106,8 +134,18 @@ defmodule MobDev.Device do
   @doc """
   Returns true if `input` identifies this device.
 
-  Matches `display_id/1` or the full serial, case-insensitively. Used by
-  `mix mob.deploy --device <id>` to target a specific device.
+  Matches against either `display_id/1` or the full serial, both case-insensitively.
+  This is used by `mix mob.deploy --device <id>` to target a specific device
+  by its short ID or full serial number.
+
+  ## Examples
+
+      iex> device = %MobDev.Device{platform: :android, serial: "R5CW3089HVB"}
+      iex> MobDev.Device.match_id?(device, "HVBA")
+      true
+
+      iex> MobDev.Device.match_id?(device, "R5CW3089HVB")
+      true
   """
   @spec match_id?(t(), String.t()) :: boolean()
   def match_id?(%__MODULE__{} = device, input) when is_binary(input) do

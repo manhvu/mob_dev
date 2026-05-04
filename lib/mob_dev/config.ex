@@ -4,6 +4,9 @@ defmodule MobDev.Config do
   # Shared config helpers used across deployer, connector, native_build, and
   # battery bench tasks.
 
+  # Note: Regex compilation is now centralized in MobDev.Utils.compile_regex/2
+  # New code should prefer that over calling Regex.compile! directly.
+
   @doc """
   Returns the app's bundle ID / Android package name.
 
@@ -62,7 +65,9 @@ defmodule MobDev.Config do
          {:ok, content} <- File.read(plist),
          [_, id] <-
            Regex.run(
-             Regex.compile!("<key>CFBundleIdentifier</key>\\s*<string>([^<]+)</string>"),
+             MobDev.Utils.compile_regex(
+               "<key>CFBundleIdentifier</key>\\s*<string>([^<]+)</string>"
+             ),
              content
            ) do
       id
@@ -77,8 +82,11 @@ defmodule MobDev.Config do
     with true <- File.exists?(gradle),
          {:ok, content} <- File.read(gradle),
          match when match != nil <-
-           Regex.run(Regex.compile!("applicationId\\s+[\"']([^\"']+)[\"']"), content) ||
-             Regex.run(Regex.compile!("applicationId\\s*=\\s*[\"']([^\"']+)[\"']"), content) do
+           Regex.run(MobDev.Utils.compile_regex("applicationId\\s+[\"']([^\"']+)[\"']"), content) ||
+             Regex.run(
+               MobDev.Utils.compile_regex("applicationId\\s*=\\s*[\"']([^\"']+)[\"']"),
+               content
+             ) do
       Enum.at(match, 1)
     else
       _ -> nil

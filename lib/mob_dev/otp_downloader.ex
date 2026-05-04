@@ -3,6 +3,11 @@ defmodule MobDev.OtpDownloader do
   Downloads and caches pre-built OTP releases from GitHub for Android and iOS simulator.
 
   Artifacts are cached at `~/.mob/cache/` and reused across projects.
+
+  ## Cache Validation
+
+  A valid OTP directory must contain at least one `erts-*` subdirectory.
+  iOS device tarballs have additional requirements (see `ios_device_extras_present?/1`).
   """
 
   @otp_hash "73ba6e0f"
@@ -14,7 +19,15 @@ defmodule MobDev.OtpDownloader do
   @ios_sim_name "otp-ios-sim-#{@otp_hash}"
   @ios_device_name "otp-ios-device-#{@otp_hash}"
 
-  @doc "Ensures the Android OTP release is cached. Returns {:ok, path} or {:error, reason}."
+  @doc """
+  Ensures the Android OTP release is cached.
+
+  Returns `{:ok, path}` on success, `{:error, reason}` on failure.
+
+  ## Parameters
+
+  - `abi`: Android ABI (default: "arm64-v8a"). Use "armeabi-v7a" for 32-bit ARM.
+  """
   @spec ensure_android(String.t()) :: {:ok, String.t()} | {:error, term()}
   def ensure_android(abi \\ "arm64-v8a") do
     case abi do
@@ -23,13 +36,21 @@ defmodule MobDev.OtpDownloader do
     end
   end
 
-  @doc "Ensures the iOS simulator OTP release is cached. Returns {:ok, path} or {:error, reason}."
+  @doc """
+  Ensures the iOS simulator OTP release is cached.
+
+  Returns `{:ok, path}` on success, `{:error, reason}` on failure.
+  """
   @spec ensure_ios_sim() :: {:ok, String.t()} | {:error, term()}
   def ensure_ios_sim do
     ensure(@ios_sim_name, "#{@ios_sim_name}.tar.gz")
   end
 
-  @doc "Ensures the iOS device OTP release is cached. Returns {:ok, path} or {:error, reason}."
+  @doc """
+  Ensures the iOS device OTP release is cached.
+
+  Returns `{:ok, path}` on success, `{:error, reason}` on failure.
+  """
   @spec ensure_ios_device() :: {:ok, String.t()} | {:error, term()}
   def ensure_ios_device do
     ensure(@ios_device_name, "#{@ios_device_name}.tar.gz")
@@ -142,11 +163,19 @@ defmodule MobDev.OtpDownloader do
   end
 
   defp download(url, dest) do
+    # 5 minutes for large downloads
+    timeout_ms = 300_000
+
     case System.cmd("curl", ["-L", "--fail", "--progress-bar", "-o", dest, url],
-           stderr_to_stdout: false
+           stderr_to_stdout: true,
+           timeout: timeout_ms
          ) do
-      {_, 0} -> :ok
-      {out, rc} -> {:error, "curl failed (exit #{rc}): #{String.trim(out)}"}
+      {_, 0} ->
+        :ok
+
+      {out, rc} ->
+        {:error,
+         MobDev.Error.new(:otp_downloader, "curl failed (exit #{rc}): #{String.trim(out)}")}
     end
   end
 
@@ -168,9 +197,12 @@ defmodule MobDev.OtpDownloader do
 
       [] ->
         {:error,
-         "OTP extraction produced no erts-* directory in #{dir}.\n" <>
-           "       The tarball may have an unexpected layout.\n" <>
-           "       Run `mix mob.doctor` for diagnosis, or report at https://github.com/GenericJam/mob/issues"}
+         MobDev.Error.new(
+           :otp_downloader,
+           "OTP extraction produced no erts-* directory in #{dir}.\\n" <>
+             "       The tarball may have an unexpected layout.\\n" <>
+             "       Run `mix mob.doctor` for diagnosis, or report at https://github.com/GenericJam/mob/issues"
+         )}
     end
   end
 end

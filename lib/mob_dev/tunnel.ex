@@ -2,25 +2,24 @@ defmodule MobDev.Tunnel do
   @moduledoc """
   Manages port tunnels for Android and physical iOS devices.
 
-  Android (adb):
-    adb reverse tcp:4369 tcp:4369   — Android BEAM registers in Mac's EPMD
-    adb forward tcp:<dist> tcp:9100 — Mac reaches device's dist port
+  ## Android (adb)
+    - `adb reverse tcp:4369 tcp:4369` — Android BEAM registers in Mac's EPMD
+    - `adb forward tcp:<dist> tcp:9100` — Mac reaches device's dist port
 
-  Physical iOS (direct networking — USB preferred, WiFi/LAN fallback):
-    mob_beam.m finds the device's own IP via getifaddrs() and starts the BEAM
-    as mob_qa_ios@<device-ip>. The in-process EPMD binds 0.0.0.0:4369 so Mac
-    can query it at <device-ip>:4369. The dist port is directly reachable.
+  ## Physical iOS (direct networking — USB preferred, WiFi/LAN fallback)
+    - mob_beam.m finds the device's own IP via getifaddrs() and starts the BEAM
+      as mob_qa_ios@<device-ip>
+    - The in-process EPMD binds 0.0.0.0:4369 so Mac can query it at <device-ip>:4369
+    - The dist port is directly reachable
 
-    Connection priority (mirrors mob_beam.m priority):
-      1. USB link-local (169.254.x.x) — detected from Mac ARP table
-      2. WiFi/LAN (10.x, 172.16-31.x, 192.168.x) — EPMD scan of ARP table
-      3. Tailscale (100.64-127.x) — EPMD scan of ARP table
-
-  iOS simulator:
-    Shares Mac network stack — no tunnels needed.
+  ## iOS Simulator
+    - Shares Mac network stack — no tunnels needed
   """
 
   alias MobDev.Device
+
+  @type result :: {:ok, Device.t()} | {:error, String.t()}
+  @type teardown_result :: :ok
 
   # EPMD port — shared across all devices (same Mac EPMD).
   @epmd_port 4369
@@ -201,12 +200,6 @@ defmodule MobDev.Tunnel do
   end
 
   defp run_adb(args) do
-    cmd = Enum.join(["adb" | args], " ")
-
-    case System.cmd("sh", ["-c", "timeout 8 #{cmd}"], stderr_to_stdout: true) do
-      {output, 0} -> {:ok, String.trim(output)}
-      {_output, 124} -> {:error, "adb timed out"}
-      {output, _} -> {:error, String.trim(output)}
-    end
+    MobDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
   end
 end
