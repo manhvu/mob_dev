@@ -46,6 +46,19 @@ defmodule DalaDev.Utils do
     stderr_to_stdout = Keyword.get(opts, :stderr_to_stdout, true)
     cmd = Enum.join(["adb" | args], " ")
 
+    if timeout_available?() do
+      run_with_timeout(cmd, timeout, stderr_to_stdout)
+    else
+      IO.puts(
+        "#{IO.ANSI.yellow()}[dala_dev] Warning: 'timeout' command not found. Running without timeout protection.\n" <>
+          "           Commands may hang indefinitely on unresponsive devices.#{IO.ANSI.reset()}"
+      )
+
+      run_without_timeout(cmd, stderr_to_stdout)
+    end
+  end
+
+  defp run_with_timeout(cmd, timeout, stderr_to_stdout) do
     case System.cmd("sh", ["-c", "timeout #{div(timeout, 1000)} #{cmd}"],
            stderr_to_stdout: stderr_to_stdout
          ) do
@@ -53,6 +66,17 @@ defmodule DalaDev.Utils do
       {_output, 124} -> {:error, :timeout}
       {output, _code} -> {:error, String.trim(output)}
     end
+  end
+
+  defp run_without_timeout(cmd, stderr_to_stdout) do
+    case System.cmd("sh", ["-c", cmd], stderr_to_stdout: stderr_to_stdout) do
+      {output, 0} -> {:ok, String.trim(output)}
+      {output, _code} -> {:error, String.trim(output)}
+    end
+  end
+
+  defp timeout_available? do
+    System.find_executable("timeout") != nil
   end
 
   @doc """

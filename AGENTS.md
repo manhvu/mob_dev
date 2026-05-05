@@ -263,6 +263,13 @@ Many of these functions contain parsing logic or platform-specific narrowing log
 
 This file is a living document that should evolve with the codebase. Keep it current to help future contributors (including yourself) avoid past mistakes.
 
+### Related Documentation
+
+- **[Architecture Guide](guides/architecture.md)** — Complete technical reference for dala_dev architecture
+- **[Dala Commands Guide](guides/dala_commands.md)** — Complete reference for all `mix dala.*` commands with detailed explanations
+- **[README.md](../README.md)** — Project overview, architecture, and quick command reference
+- **[build_release.md](../build_release.md)** — Release build walkthrough with step-by-step instructions
+
 ### When to Update
 
 Update this file in the **same commit** when you:

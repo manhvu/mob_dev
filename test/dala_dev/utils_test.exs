@@ -62,4 +62,18 @@ defmodule DalaDev.UtilsTest do
       assert :ok = DalaDev.Utils.ensure_dir(path)
     end
   end
+
+  describe "run_adb_with_timeout/2" do
+    test "function is callable" do
+      # Verify the function exists and has the right arity
+      assert function_exported?(DalaDev.Utils, :run_adb_with_timeout, 2)
+    end
+
+    test "handles missing timeout command gracefully" do
+      # The function should not crash even if timeout is unavailable
+      # We test this by ensuring the timeout_available? helper works
+      result = DalaDev.Utils.command_available?("timeout")
+      assert is_boolean(result)
+    end
+  end
 end

@@ -58,6 +58,29 @@ dala_dev/
 
 For more details on the codebase architecture and development practices, see [AGENTS.md](AGENTS.md).
 
+## Command Reference
+
+For a complete guide to all `mix dala.*` commands with detailed explanations of how they work, see:
+- **[Dala Commands Guide](guides/dala_commands.md)** — Complete reference with usage, options, and internals
+
+### Quick Command Overview
+
+| Command | Description |
+|---------|-------------|
+| `mix dala.devices` | List connected Android and iOS devices |
+| `mix dala.connect` | Connect IEx to running device nodes |
+| `mix dala.deploy` | Build and deploy to connected devices |
+| `mix dala.server` | Start dev dashboard (localhost:4040) |
+| `mix dala.emulators` | Manage Android emulators and iOS simulators |
+| `mix dala.doctor` | Diagnose setup and configuration issues |
+| `mix dala.provision` | iOS provisioning profile management |
+| `mix dala.battery_bench_android` | Android battery benchmarking |
+| `mix dala.battery_bench_ios` | iOS battery benchmarking |
+| `mix dala.release` | Build release for distribution |
+| `mix dala.watch` | Auto-deploy on file changes |
+
+See the [full guide](guides/dala_commands.md) for detailed usage, options, and "under the hood" explanations.
+
 ## Architecture Overview
 
 dala_dev follows a modular architecture with clear separation of concerns:
@@ -94,6 +117,14 @@ Provides web-based development dashboard with live feedback:
 - **PubSub**: Uses Phoenix PubSub for live updates via WebSocket
 
 ## Installation
+
+### Documentation
+
+- **[Architecture Guide](guides/architecture.md)** — Complete technical reference for dala_dev architecture
+- **[Dala Commands Guide](guides/dala_commands.md)** — Complete reference for all `mix dala.*` commands
+- **[AGENTS.md](AGENTS.md)** — Developer guide for contributing to dala_dev
+- **[build_release.md](build_release.md)** — Release build walkthrough
+- **[publishing_to_testflight.md](guides/publishing_to_testflight.md)** — iOS TestFlight publishing
 
 ### Prerequisites
 
