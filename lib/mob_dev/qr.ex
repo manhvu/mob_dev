@@ -1,4 +1,4 @@
-defmodule MobDev.QR do
+defmodule DalaDev.QR do
   @moduledoc """
   Renders QR codes in the terminal using Unicode half-block characters.
   Uses eqrcode for matrix generation.

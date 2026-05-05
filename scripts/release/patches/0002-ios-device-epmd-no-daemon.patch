@@ -6,7 +6,7 @@ index 1733e5b400..dde2fff710 100644
        g->max_conn = FD_SETSIZE;
      }
  
-+    /* mob_dev iOS device patch: NO_DAEMON strips run_daemon to avoid
++    /* dala_dev iOS device patch: NO_DAEMON strips run_daemon to avoid
 +     * pulling in fork() (denied by iOS sandbox). The -daemon flag is
 +     * never passed in our usage, so g->is_daemon is always 0; guard the
 +     * call site so the unused branch doesn't keep the symbol live. */

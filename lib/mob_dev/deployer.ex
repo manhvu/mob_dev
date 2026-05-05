@@ -1,9 +1,9 @@
-defmodule MobDev.Deployer do
+defmodule DalaDev.Deployer do
   @moduledoc """
   Pushes compiled BEAM files from `_build/dev/lib/*/ebin/` to connected devices.
 
   Does NOT rebuild APKs or recompile native code — that's `deploy.sh` (first-time setup).
-  Use this for day-to-day code iteration: edit Elixir → `mix mob.deploy` → code running.
+  Use this for day-to-day code iteration: edit Elixir → `mix dala.deploy` → code running.
 
   ## Transport selection
 
@@ -23,30 +23,30 @@ defmodule MobDev.Deployer do
   hop — the simulator shares the Mac filesystem).
   """
 
-  alias MobDev.Discovery.{Android, IOS}
-  alias MobDev.{Device, HotPush, Tunnel}
+  alias DalaDev.Discovery.{Android, IOS}
+  alias DalaDev.{Device, HotPush, Tunnel}
 
-  @cookie :mob_secret
+  @cookie :dala_secret
 
   @android_activity ".MainActivity"
 
   defp app_name, do: Mix.Project.config()[:app] |> to_string()
-  defp bundle_id, do: MobDev.Config.bundle_id()
+  defp bundle_id, do: DalaDev.Config.bundle_id()
   defp android_package, do: bundle_id()
   defp android_app_data, do: "/data/data/#{android_package()}/files"
   defp android_beams_dir, do: "#{android_app_data()}/otp/#{app_name()}"
   defp ios_bundle_id, do: bundle_id()
 
   defp ios_beams_dir do
-    # The simulator's OTP_ROOT is resolved by `MobDev.Paths.sim_runtime_dir/1`.
-    # New projects: ~/.mob/runtime/ios-sim. Legacy projects (build.sh predates
-    # MOB_SIM_RUNTIME_DIR support): /tmp/otp-ios-sim. Either way, if that
+    # The simulator's OTP_ROOT is resolved by `DalaDev.Paths.sim_runtime_dir/1`.
+    # New projects: ~/.dala/runtime/ios-sim. Legacy projects (build.sh predates
+    # DALA_SIM_RUNTIME_DIR support): /tmp/otp-ios-sim. Either way, if that
     # directory exists deploy beams there so the running BEAM picks them up
     # immediately. Fall back to the cache dir on a fresh machine that hasn't
     # done its first --native build yet.
-    runtime_dir = MobDev.Paths.sim_runtime_dir()
+    runtime_dir = DalaDev.Paths.sim_runtime_dir()
     runtime_path = Path.join(runtime_dir, app_name())
-    cache_path = Path.join(MobDev.OtpDownloader.ios_sim_otp_dir(), app_name())
+    cache_path = Path.join(DalaDev.OtpDownloader.ios_sim_otp_dir(), app_name())
     if File.dir?(runtime_dir), do: runtime_path, else: cache_path
   end
 
@@ -153,7 +153,7 @@ defmodule MobDev.Deployer do
         IO.puts("  #{color(:red)}No device matched \"#{id}\".#{color(:reset)}")
 
         IO.puts(
-          "  Run #{color(:cyan)}mix mob.devices#{color(:reset)} to see available device IDs."
+          "  Run #{color(:cyan)}mix dala.devices#{color(:reset)} to see available device IDs."
         )
 
         []
@@ -204,7 +204,7 @@ defmodule MobDev.Deployer do
   # Verify the OTP runtime (erts-X.Y/bin/erl_child_setup) is present on
   # the device. Without this, the BEAM can't start — symlinks fail with
   # ENOENT, the app crashes immediately. This typically happens when the
-  # device wasn't connected during a previous `mix mob.deploy --native`.
+  # device wasn't connected during a previous `mix dala.deploy --native`.
   #
   # Returns :ok if ERTS is present, {:error, message} with a helpful hint
   # if missing.
@@ -240,12 +240,12 @@ defmodule MobDev.Deployer do
     erl_child_setup failed: No such file or directory" in logcat).
 
     This usually means the device wasn't connected during a previous
-    `mix mob.deploy --native`. Provision it now:
+    `mix dala.deploy --native`. Provision it now:
 
-      mix mob.deploy --native --device #{serial}
+      mix dala.deploy --native --device #{serial}
 
     That rebuilds the APK and pushes the right OTP for this device's ABI.
-    Subsequent `mix mob.deploy` runs (without --native) will work normally.
+    Subsequent `mix dala.deploy` runs (without --native) will work normally.
     """
   end
 
@@ -315,11 +315,11 @@ defmodule MobDev.Deployer do
   # then extract into the app sandbox via `run-as`. Files created by run-as are
   # owned by the app user so they can be overwritten on the next sync.
   defp sync_elixir_stdlib_android_runas(serial, pkg, app_data, elixir_lib) do
-    stage_local = Path.join(System.tmp_dir!(), "mob_elixir_#{serial}.tar")
-    stage_device = "/data/local/tmp/mob_elixir.tar"
+    stage_local = Path.join(System.tmp_dir!(), "dala_elixir_#{serial}.tar")
+    stage_device = "/data/local/tmp/dala_elixir.tar"
 
     try do
-      tmp = Path.join(System.tmp_dir!(), "mob_elixir_stage_#{serial}")
+      tmp = Path.join(System.tmp_dir!(), "dala_elixir_stage_#{serial}")
       File.rm_rf!(tmp)
 
       for app <- [:elixir, :logger, :eex] do
@@ -347,7 +347,7 @@ defmodule MobDev.Deployer do
       run_adb(["-s", serial, "shell", "rm -f #{stage_device}"])
     after
       File.rm(stage_local)
-      File.rm_rf(Path.join(System.tmp_dir!(), "mob_elixir_stage_#{serial}"))
+      File.rm_rf(Path.join(System.tmp_dir!(), "dala_elixir_stage_#{serial}"))
     end
   end
 
@@ -355,7 +355,7 @@ defmodule MobDev.Deployer do
 
   defp write_beam_flags_android(serial, flags) do
     beams_dir = android_beams_dir()
-    tmp = Path.join(System.tmp_dir!(), "mob_beam_flags_#{serial}")
+    tmp = Path.join(System.tmp_dir!(), "dala_beam_flags_#{serial}")
     File.write!(tmp, flags)
 
     case System.cmd(
@@ -364,7 +364,7 @@ defmodule MobDev.Deployer do
            stderr_to_stdout: true
          ) do
       {_, 0} ->
-        System.cmd("adb", ["-s", serial, "push", tmp, "#{beams_dir}/mob_beam_flags"],
+        System.cmd("adb", ["-s", serial, "push", tmp, "#{beams_dir}/dala_beam_flags"],
           stderr_to_stdout: true
         )
 
@@ -380,7 +380,7 @@ defmodule MobDev.Deployer do
   # the OTP boot-time lib scan registers a correct lib_dir for the application.
   # Without this, code:lib_dir(:exqlite) returns {:error, :bad_name} and exqlite's
   # NIF on_load callback (which calls :code.priv_dir(:exqlite)) fails.
-  # mob_beam.c creates the sqlite3_nif.so symlink in priv/ at runtime (it knows
+  # dala_beam.c creates the sqlite3_nif.so symlink in priv/ at runtime (it knows
   # the APK-hash-dependent nativeLibraryDir; we don't at deploy time).
   defp setup_exqlite_android(serial) do
     with vsn when is_binary(vsn) <- exqlite_version(),
@@ -425,7 +425,7 @@ defmodule MobDev.Deployer do
   # WHY THIS IS NECESSARY
   #
   # Ecto.Migrator locates migration files via :code.priv_dir(app), which looks
-  # up the app's OTP lib directory ($OTP_ROOT/lib/APP-VERSION/ebin/). Mob apps
+  # up the app's OTP lib directory ($OTP_ROOT/lib/APP-VERSION/ebin/). Dala apps
   # are deployed as flat .beam files in a -pa directory — there is no versioned
   # lib structure — so :code.priv_dir/1 returns {error, bad_name}. When that
   # happens Ecto.Migrator.run silently finds zero migrations and logs "Migrations
@@ -433,7 +433,7 @@ defmodule MobDev.Deployer do
   #
   # The fix has two parts:
   #   1. This function pushes priv/ to {beams_dir}/priv/ on the device.
-  #   2. mob_beam.c sets MOB_BEAMS_DIR=beams_dir before erl_start so app code
+  #   2. dala_beam.c sets DALA_BEAMS_DIR=beams_dir before erl_start so app code
   #      can call Ecto.Migrator.run(repo, beams_dir <> "/priv/repo/migrations", ...)
   #      with an explicit path instead of relying on :code.priv_dir/1.
   #
@@ -488,8 +488,8 @@ defmodule MobDev.Deployer do
   # owned by the app user (u0_a0) so no chmod is needed — the app can read its
   # own files without any extra permission fixup.
   defp push_priv_android_runas(serial, local_priv, device_priv) do
-    stage_local = Path.join(System.tmp_dir!(), "mob_priv_#{serial}.tar")
-    stage_device = "/data/local/tmp/mob_priv.tar"
+    stage_local = Path.join(System.tmp_dir!(), "dala_priv_#{serial}.tar")
+    stage_device = "/data/local/tmp/dala_priv.tar"
 
     try do
       # Tar with priv/ as the top-level entry; extract relative to beams_dir so
@@ -529,9 +529,9 @@ defmodule MobDev.Deployer do
   end
 
   defp push_exqlite_runas(serial, exqlite_ebin, exqlite_lib) do
-    stage_local = Path.join(System.tmp_dir!(), "mob_exqlite_#{serial}.tar")
-    stage_device = "/data/local/tmp/mob_exqlite.tar"
-    tmp = Path.join(System.tmp_dir!(), "mob_exqlite_stage_#{serial}")
+    stage_local = Path.join(System.tmp_dir!(), "dala_exqlite_#{serial}.tar")
+    stage_device = "/data/local/tmp/dala_exqlite.tar"
+    tmp = Path.join(System.tmp_dir!(), "dala_exqlite_stage_#{serial}")
 
     try do
       File.rm_rf!(tmp)
@@ -673,11 +673,11 @@ defmodule MobDev.Deployer do
   end
 
   defp push_beams_android_runas(serial, beam_dirs) do
-    stage_local = System.tmp_dir!() |> Path.join("mob_beams_#{serial}.tar")
-    stage_device = "/data/local/tmp/mob_beams.tar"
+    stage_local = System.tmp_dir!() |> Path.join("dala_beams_#{serial}.tar")
+    stage_device = "/data/local/tmp/dala_beams.tar"
 
     try do
-      tmp = Path.join(System.tmp_dir!(), "mob_beam_stage_#{serial}")
+      tmp = Path.join(System.tmp_dir!(), "dala_beam_stage_#{serial}")
       File.rm_rf!(tmp)
       File.mkdir_p!(tmp)
 
@@ -754,10 +754,10 @@ defmodule MobDev.Deployer do
       "-n",
       "#{android_package()}/#{@android_activity}",
       "--ei",
-      "mob_dist_port",
+      "dala_dist_port",
       to_string(dist_port),
       "--es",
-      "mob_node_suffix",
+      "dala_node_suffix",
       node_suffix
     ])
 
@@ -813,9 +813,9 @@ defmodule MobDev.Deployer do
 
       # Push priv/ alongside the BEAMs so migrations and other priv assets are
       # available at runtime. On iOS, beams_dir = $RUNTIME_DIR/APP_NAME and
-      # MOB_DATA_DIR = the app's Documents directory — these are two different
-      # paths, so we can't derive beams_dir from MOB_DATA_DIR. mob_beam.m sets
-      # MOB_BEAMS_DIR=beams_dir explicitly so app code always knows where to look.
+      # DALA_DATA_DIR = the app's Documents directory — these are two different
+      # paths, so we can't derive beams_dir from DALA_DATA_DIR. dala_beam.m sets
+      # DALA_BEAMS_DIR=beams_dir explicitly so app code always knows where to look.
       local_priv = Path.join(File.cwd!(), "priv")
 
       if File.dir?(local_priv) do
@@ -833,7 +833,7 @@ defmodule MobDev.Deployer do
       end
 
       if beam_flags do
-        File.write!(Path.join(ios_beams_dir(), "mob_beam_flags"), beam_flags)
+        File.write!(Path.join(ios_beams_dir(), "dala_beam_flags"), beam_flags)
       end
 
       if restart do
@@ -849,7 +849,7 @@ defmodule MobDev.Deployer do
   end
 
   # Physical iOS deploy: push BEAMs into the app's Documents container via
-  # `xcrun devicectl`. mob_beam.m (MOB_BUNDLE_OTP build) checks
+  # `xcrun devicectl`. dala_beam.m (DALA_BUNDLE_OTP build) checks
   # Documents/otp/<app>/ at startup and prefers it over the read-only in-bundle
   # copy, enabling fast deploys without a full Xcode rebuild.
   #
@@ -869,13 +869,13 @@ defmodule MobDev.Deployer do
     if Regex.match?(Regex.compile!("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$"), udid) do
       throw(
         {:error,
-         "device only reachable via WiFi (#{udid}) — use `mix mob.push` for BEAM-only updates, or connect via USB for a native deploy"}
+         "device only reachable via WiFi (#{udid}) — use `mix dala.push` for BEAM-only updates, or connect via USB for a native deploy"}
       )
     end
 
     # Stage all BEAMs (and priv/) into a temp dir named <app>.
     staging_parent =
-      Path.join(System.tmp_dir!(), "mob_ios_deploy_#{:erlang.unique_integer([:positive])}")
+      Path.join(System.tmp_dir!(), "dala_ios_deploy_#{:erlang.unique_integer([:positive])}")
 
     staging_dir = Path.join(staging_parent, app)
     File.mkdir_p!(staging_dir)
@@ -905,7 +905,7 @@ defmodule MobDev.Deployer do
       end
 
       if beam_flags do
-        File.write!(Path.join(staging_dir, "mob_beam_flags"), beam_flags)
+        File.write!(Path.join(staging_dir, "dala_beam_flags"), beam_flags)
       end
 
       # devicectl copies the contents of --source into --destination.
@@ -948,9 +948,9 @@ defmodule MobDev.Deployer do
               Then select your device in Xcode and press Run (⌘R).
 
               Alternatively, if you have another app with a different bundle ID already
-              installed on the device, update bundle_id in mob.exs to match it:
+              installed on the device, update bundle_id in dala.exs to match it:
 
-                  config :mob_dev, bundle_id: "com.yourcompany.yourapp"
+                  config :dala_dev, bundle_id: "com.yourcompany.yourapp"
               """
             else
               "devicectl copy failed: #{out}"
@@ -1075,7 +1075,7 @@ defmodule MobDev.Deployer do
 
   defp ensure_local_dist do
     unless Node.alive?() do
-      Node.start(:"mob_dev@127.0.0.1", :longnames)
+      Node.start(:"dala_dev@127.0.0.1", :longnames)
       Node.set_cookie(@cookie)
     end
   end
@@ -1088,19 +1088,19 @@ defmodule MobDev.Deployer do
   #
   # Erlang hot code loading (`code:load_binary`) replaces the module in the
   # code server but does NOT cause running processes to re-execute. A
-  # Mob.Screen GenServer that is already mounted and displaying will continue
+  # Dala.Screen GenServer that is already mounted and displaying will continue
   # to sit in its receive loop waiting for the next message. Until something
   # sends it a message, `render/1` never runs again — so the user sees the
   # old UI even though the new code is live in memory.
   #
-  # The fix: immediately after the push, RPC-send `:__mob_hot_reload__` to the
-  # `:mob_screen` registered process on the device. Mob.Screen's handle_info
+  # The fix: immediately after the push, RPC-send `:__dala_hot_reload__` to the
+  # `:dala_screen` registered process on the device. Dala.Screen's handle_info
   # catch-all receives it, delegates to the user module's handle_info (which
   # ignores unknown messages), then calls do_render/2 using the now-current
   # version of the screen module. The screen repaints with the new code, with
   # no restart and no loss of GenServer state.
   #
-  # This is why `mix mob.deploy` appeared to do nothing before this fix — the
+  # This is why `mix dala.deploy` appeared to do nothing before this fix — the
   # code WAS pushed correctly, the screen just had no trigger to repaint.
   defp push_via_dist(node, device) do
     {_pushed, failed} = HotPush.push_all([node])
@@ -1108,7 +1108,7 @@ defmodule MobDev.Deployer do
     if failed == [] do
       # Best-effort: ignored if no screen is currently registered (nav edge
       # cases, app in background, etc.).
-      :rpc.call(node, :erlang, :send, [:mob_screen, :__mob_hot_reload__])
+      :rpc.call(node, :erlang, :send, [:dala_screen, :__dala_hot_reload__])
       {:ok, device}
     else
       mods = Enum.map_join(failed, ", ", fn {mod, _} -> inspect(mod) end)
@@ -1120,7 +1120,7 @@ defmodule MobDev.Deployer do
 
   defp collect_beam_dirs do
     # Use the same runtime-dep filter as HotPush so we don't push dev-only
-    # tooling (mob_dev, credo, etc.) to the device filesystem.
+    # tooling (dala_dev, credo, etc.) to the device filesystem.
     app_dirs = HotPush.runtime_beam_dirs()
 
     # EEx is part of the Elixir stdlib but not in _build/dev/lib/. Ecto depends
@@ -1154,7 +1154,7 @@ defmodule MobDev.Deployer do
   @doc false
   @spec generate_crypto_shim() :: {:ok, String.t()} | {:error, term()}
   def generate_crypto_shim do
-    dir = Path.join(System.tmp_dir!(), "mob_crypto_shim")
+    dir = Path.join(System.tmp_dir!(), "dala_crypto_shim")
     File.mkdir_p!(dir)
 
     src = Path.join(dir, "crypto.erl")

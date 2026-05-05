@@ -1,6 +1,6 @@
-defmodule MobDev.LogCollector do
+defmodule DalaDev.LogCollector do
   @moduledoc """
-  Unified log collection from mobile Elixir cluster nodes.
+  Unified log collection from dala Elixir cluster nodes.
 
   Collects logs from:
   - BEAM logger (via RPC from remote nodes)
@@ -11,16 +11,16 @@ defmodule MobDev.LogCollector do
   ## Examples
 
       # Stream logs from all connected nodes
-      MobDev.LogCollector.stream_logs(:all_nodes, level: :info)
+      DalaDev.LogCollector.stream_logs(:all_nodes, level: :info)
 
       # Collect last 100 log lines from a specific node
-      MobDev.LogCollector.collect_logs(:"mob_qa@192.168.1.5", last: 100)
+      DalaDev.LogCollector.collect_logs(:"dala_qa@192.168.1.5", last: 100)
 
       # Export logs to file
-      MobDev.LogCollector.export_logs("cluster_logs.jsonl", nodes: :all)
+      DalaDev.LogCollector.export_logs("cluster_logs.jsonl", nodes: :all)
   """
 
-  alias MobDev.{Device, Utils}
+  alias DalaDev.{Device, Utils}
 
   @type node_ref :: node() | :all_nodes | Device.t()
   @type log_entry :: %{
@@ -169,7 +169,7 @@ defmodule MobDev.LogCollector do
   """
   @spec collect_android_logs(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def collect_android_logs(serial, opts \\ []) do
-    package = Keyword.get(opts, :package, MobDev.Config.bundle_id())
+    package = Keyword.get(opts, :package, DalaDev.Config.bundle_id())
     lines = Keyword.get(opts, :lines, 100)
 
     args = ["-s", serial, "logcat", "-d", "-t", to_string(lines)]
@@ -189,7 +189,7 @@ defmodule MobDev.LogCollector do
   """
   @spec stream_android_logs(String.t(), keyword()) :: Enumerable.t()
   def stream_android_logs(serial, opts \\ []) do
-    package = Keyword.get(opts, :package, MobDev.Config.bundle_id())
+    package = Keyword.get(opts, :package, DalaDev.Config.bundle_id())
 
     Stream.resource(
       fn ->
@@ -213,7 +213,7 @@ defmodule MobDev.LogCollector do
   """
   @spec collect_ios_sim_logs(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def collect_ios_sim_logs(udid, opts \\ []) do
-    bundle_id = Keyword.get(opts, :bundle_id, MobDev.Config.bundle_id())
+    bundle_id = Keyword.get(opts, :bundle_id, DalaDev.Config.bundle_id())
     predicate = "process == \"#{bundle_id}\""
 
     case System.cmd(

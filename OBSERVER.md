@@ -1,8 +1,8 @@
-# Mob Observer - Remote Node Monitoring
+# Dala Observer - Remote Node Monitoring
 
 ## Overview
 
-The `MobDev.Observer` module provides a web-based alternative to Erlang's `:observer.start()` for monitoring remote Elixir nodes. It collects comprehensive system information via RPC calls and displays them in separated LiveView pages with a dashboard for navigation.
+The `DalaDev.Observer` module provides a web-based alternative to Erlang's `:observer.start()` for monitoring remote Elixir nodes. It collects comprehensive system information via RPC calls and displays them in separated LiveView pages with a dashboard for navigation.
 
 ## Features
 
@@ -25,16 +25,16 @@ The `MobDev.Observer` module provides a web-based alternative to Erlang's `:obse
 
 ```bash
 # Start on default port 4000, monitor local node
-mix mob.observer
+mix dala.observer
 
 # Start on custom port
-mix mob.observer --port 8080
+mix dala.observer --port 8080
 
 # Connect to and monitor a remote node
-mix mob.observer --node other@192.168.1.100
+mix dala.observer --node other@192.168.1.100
 
 # Run as a named distributed node
-mix mob.observer --name observer@localhost --cookie mycookie
+mix dala.observer --name observer@localhost --cookie mycookie
 ```
 
 The observer will be available at: `http://localhost:PORT/observer`
@@ -42,7 +42,7 @@ The observer will be available at: `http://localhost:PORT/observer`
 ### Using the Observer Module Directly
 
 ```elixir
-alias MobDev.Observer
+alias DalaDev.Observer
 
 # Observe local node
 {:ok, data} = Observer.observe(Node.self())
@@ -115,21 +115,21 @@ All functions are public for testing and extensibility:
 ## File Structure
 
 ### New Files
-- `lib/mob_dev/observer.ex` - Core Observer module
-- `lib/mob_dev/server/live/observer_live.ex` - Dashboard LiveView
-- `lib/mob_dev/server/live/observer/system.ex` - System Info LiveView
-- `lib/mob_dev/server/live/observer/processes.ex` - Processes LiveView
-- `lib/mob_dev/server/live/observer/ets.ex` - ETS Tables LiveView
-- `lib/mob_dev/server/live/observer/applications.ex` - Applications LiveView
-- `lib/mob_dev/server/live/observer/modules.ex` - Modules LiveView
-- `lib/mob_dev/server/live/observer/ports.ex` - Ports LiveView
-- `lib/mob_dev/server/live/observer/load.ex` - System Load LiveView
-- `lib/mob_dev/server/live/observer/tracing.ex` - Tracing LiveView
-- `lib/mix/tasks/mob.observer.ex` - Mix task to start observer
-- `test/mob_dev/observer_test.exs` - Test suite
+- `lib/dala_dev/observer.ex` - Core Observer module
+- `lib/dala_dev/server/live/observer_live.ex` - Dashboard LiveView
+- `lib/dala_dev/server/live/observer/system.ex` - System Info LiveView
+- `lib/dala_dev/server/live/observer/processes.ex` - Processes LiveView
+- `lib/dala_dev/server/live/observer/ets.ex` - ETS Tables LiveView
+- `lib/dala_dev/server/live/observer/applications.ex` - Applications LiveView
+- `lib/dala_dev/server/live/observer/modules.ex` - Modules LiveView
+- `lib/dala_dev/server/live/observer/ports.ex` - Ports LiveView
+- `lib/dala_dev/server/live/observer/load.ex` - System Load LiveView
+- `lib/dala_dev/server/live/observer/tracing.ex` - Tracing LiveView
+- `lib/mix/tasks/dala.observer.ex` - Mix task to start observer
+- `test/dala_dev/observer_test.exs` - Test suite
 
 ### Modified Files
-- `lib/mob_dev/server/router.ex` - Added routes for all Observer pages
+- `lib/dala_dev/server/router.ex` - Added routes for all Observer pages
 - `AGENTS.md` - Documented new public API
 
 ## Usage Examples
@@ -138,7 +138,7 @@ All functions are public for testing and extensibility:
 
 ```bash
 # Assuming your mobile node is running with name 'myphone@192.168.1.50'
-mix mob.observer --node myphone@192.168.1.50
+mix dala.observer --node myphone@192.168.1.50
 ```
 
 Then open `http://localhost:4000/observer` in your browser to see:
@@ -151,7 +151,7 @@ Then open `http://localhost:4000/observer` in your browser to see:
 
 ```elixir
 # In IEx or your application
-alias MobDev.Observer
+alias DalaDev.Observer
 
 # Get all data from a remote node
 {:ok, data} = Observer.observe(:"device@192.168.1.100")
@@ -179,7 +179,7 @@ No new dependencies were required - the project already had all necessary packag
 
 ## Testing
 
-Tests are located at `test/mob_dev/observer_test.exs` and cover:
+Tests are located at `test/dala_dev/observer_test.exs` and cover:
 
 - Local node observation
 - System info structure validation
@@ -194,13 +194,13 @@ Tests are located at `test/mob_dev/observer_test.exs` and cover:
 Run tests with:
 
 ```bash
-mix test test/mob_dev/observer_test.exs
+mix test test/dala_dev/observer_test.exs
 mix test --exclude integration  # All tests (517 tests, 0 failures)
 ```
 
 ## Comparison to :observer.start()
 
-| Feature | :observer.start() | MobDev.Observer |
+| Feature | :observer.start() | DalaDev.Observer |
 |---------|-------------------|------------------|
 | Platform | Local GUI (wxWidgets) | Web browser |
 | Remote nodes | Limited | Full support via RPC |
@@ -217,7 +217,7 @@ mix test --exclude integration  # All tests (517 tests, 0 failures)
 ## Notes
 
 - The observer connects to remote nodes via `Node.connect/1` and uses `:rpc.call/4` to collect data
-- All data collection happens in the `MobDev.Observer.call_remote/2` helper
+- All data collection happens in the `DalaDev.Observer.call_remote/2` helper
 - Each LiveView page auto-refreshes every 5 seconds
 - Process and ETS table lists are limited to top 100 by memory usage in the UI
 - Error handling is included for unreachable nodes

@@ -1,9 +1,9 @@
-defmodule MobDev.Server.ObserverLive.Modules do
+defmodule DalaDev.Server.ObserverLive.Modules do
   @moduledoc "LiveView for loaded modules display."
 
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.Observer
+  alias DalaDev.Observer
 
   @refresh_interval 5_000
 

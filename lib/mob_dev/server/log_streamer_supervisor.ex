@@ -1,4 +1,4 @@
-defmodule MobDev.Server.LogStreamerSupervisor do
+defmodule DalaDev.Server.LogStreamerSupervisor do
   @moduledoc """
   Isolated supervisor for LogStreamer.
 
@@ -16,7 +16,7 @@ defmodule MobDev.Server.LogStreamerSupervisor do
   @impl Supervisor
   @spec init(term()) :: {:ok, tuple()}
   def init(_opts) do
-    children = [MobDev.Server.LogStreamer]
+    children = [DalaDev.Server.LogStreamer]
     # Allow frequent restarts — port exits are normal, not bugs.
     Supervisor.init(children, strategy: :one_for_one, max_restarts: 50, max_seconds: 10)
   end

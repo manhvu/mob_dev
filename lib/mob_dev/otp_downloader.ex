@@ -1,8 +1,8 @@
-defmodule MobDev.OtpDownloader do
+defmodule DalaDev.OtpDownloader do
   @moduledoc """
   Downloads and caches pre-built OTP releases from GitHub for Android and iOS simulator.
 
-  Artifacts are cached at `~/.mob/cache/` and reused across projects.
+  Artifacts are cached at `~/.dala/cache/` and reused across projects.
 
   ## Cache Validation
 
@@ -12,7 +12,7 @@ defmodule MobDev.OtpDownloader do
 
   @otp_hash "73ba6e0f"
   @release_tag "otp-#{@otp_hash}"
-  @base_url "https://github.com/GenericJam/mob/releases/download/#{@release_tag}"
+  @base_url "https://github.com/GenericJam/dala/releases/download/#{@release_tag}"
 
   @android_name "otp-android-#{@otp_hash}"
   @android_arm32_name "otp-android-arm32-#{@otp_hash}"
@@ -133,8 +133,8 @@ defmodule MobDev.OtpDownloader do
 
   defp cache_dir(name) do
     base =
-      System.get_env("MOB_CACHE_DIR") ||
-        Path.join([System.get_env("HOME"), ".mob", "cache"])
+      System.get_env("DALA_CACHE_DIR") ||
+        Path.join([System.get_env("HOME"), ".dala", "cache"])
 
     Path.join(base, name)
   end
@@ -175,7 +175,7 @@ defmodule MobDev.OtpDownloader do
 
       {out, rc} ->
         {:error,
-         MobDev.Error.new(:otp_downloader, "curl failed (exit #{rc}): #{String.trim(out)}")}
+         DalaDev.Error.new(:otp_downloader, "curl failed (exit #{rc}): #{String.trim(out)}")}
     end
   end
 
@@ -197,11 +197,11 @@ defmodule MobDev.OtpDownloader do
 
       [] ->
         {:error,
-         MobDev.Error.new(
+         DalaDev.Error.new(
            :otp_downloader,
            "OTP extraction produced no erts-* directory in #{dir}.\\n" <>
              "       The tarball may have an unexpected layout.\\n" <>
-             "       Run `mix mob.doctor` for diagnosis, or report at https://github.com/GenericJam/mob/issues"
+             "       Run `mix dala.doctor` for diagnosis, or report at https://github.com/GenericJam/dala/issues"
          )}
     end
   end

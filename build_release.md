@@ -1,7 +1,7 @@
 # Building and Publishing OTP Release Tarballs
 
-`MobDev.OtpDownloader` pulls pre-built OTP runtimes from a GitHub release on
-`GenericJam/mob`. This file documents how to build and publish those tarballs
+`DalaDev.OtpDownloader` pulls pre-built OTP runtimes from a GitHub release on
+`GenericJam/dala`. This file documents how to build and publish those tarballs
 when upgrading OTP.
 
 > **TL;DR — runnable form:** every step below is also implemented as a script
@@ -64,7 +64,7 @@ Built from a full cross-compiled OTP release for `aarch64-unknown-linux-android`
 Needs the same extra static libs and headers as iOS (see Step 2).
 
 The ERTS helper binaries (`erl_child_setup`, `inet_gethost`, `epmd`) must be
-in `erts-<vsn>/bin/`; `mob_dev` copies them into the APK as `lib*.so` (required
+in `erts-<vsn>/bin/`; `dala_dev` copies them into the APK as `lib*.so` (required
 for SELinux `execve` permission on Android).
 
 **Required static libs:**
@@ -87,7 +87,7 @@ for SELinux `execve` permission on Android).
 
 **Bundled exqlite BEAMs:**
 - `exqlite-<vsn>/ebin/` — platform-independent bytecode
-- Note: The native `.so` NIF is in the APK, symlinked at runtime by `mob_beam.c`
+- Note: The native `.so` NIF is in the APK, symlinked at runtime by `dala_beam.c`
 
 ### Android arm32 (`otp-android-arm32-<hash>.tar.gz`)
 
@@ -125,7 +125,7 @@ Then include it in the tarball at `erts-<vsn>/lib/asn1rt_nif.a` (see Step 2b).
 
 Built from a cross-compiled OTP for `aarch64-apple-ios`. Same install-tree
 contents as the simulator tarball (libs, headers, ERTS bin), **plus** EPMD
-source files and iOS configure output that `mob_dev`'s `build_device.sh`
+source files and iOS configure output that `dala_dev`'s `build_device.sh`
 needs at native-build time to static-link EPMD into the app.
 
 The extra files added on top of the install tree:
@@ -143,7 +143,7 @@ intentional: `erts-<vsn>/` is the *install* tree (compiled artifacts), `erts/`
 is a stripped-down *source* tree fragment carrying just what `build_device.sh`
 needs to compile EPMD against the iOS arm64 SDK.
 
-`MobDev.OtpDownloader` validates these files are present after extraction;
+`DalaDev.OtpDownloader` validates these files are present after extraction;
 older tarballs without them are treated as invalid and re-downloaded.
 
 **Required patches (applied by `xcompile_ios_device.sh`):**
@@ -204,14 +204,14 @@ where the previous build left it).
 (`_build/dev/lib/exqlite/ebin/` must exist — run `mix deps.get && mix compile`
 from any app that uses ecto_sqlite3). The exqlite BEAMs are platform-independent
 bytecode and can be bundled directly; the native `.so` is already in the APK and
-is symlinked at runtime by `mob_beam.c`.
+is symlinked at runtime by `dala_beam.c`.
 
 ### arm64
 
 ```bash
 OTP_SRC=~/code/otp
 OTP_RELEASE=/tmp/otp-android   # adjust if different
-EXQLITE_BUILD=~/code/mob_test_liveview/_build/dev/lib/exqlite  # any project with exqlite
+EXQLITE_BUILD=~/code/dala_test_liveview/_build/dev/lib/exqlite  # any project with exqlite
 HASH=<hash>
 STAGE=$(mktemp -d)
 
@@ -243,7 +243,7 @@ for app in elixir logger eex; do
 done
 echo "Bundled Elixir $(elixir --version | grep Elixir | awk '{print $2}')"
 
-# Add exqlite BEAMs. The .so NIF is in the APK (symlinked at runtime by mob_beam.c);
+# Add exqlite BEAMs. The .so NIF is in the APK (symlinked at runtime by dala_beam.c);
 # only the ebin/ bytecode goes in the tarball.
 EXQLITE_VSN=$(grep '"exqlite"' "$EXQLITE_BUILD/../../../mix.lock" | grep -o '"[0-9][^"]*"' | head -1 | tr -d '"')
 EXQLITE_LIB="$STAGE/lib/exqlite-$EXQLITE_VSN"
@@ -360,7 +360,7 @@ tar tzf "/tmp/otp-ios-sim-$HASH.tar.gz" | grep "lib/elixir/ebin/elixir.app"
 
 The iOS device runtime is the cross-compiled install dir for `aarch64-apple-ios`.
 On top of the runtime, this tarball must ship EPMD source files and the iOS-arm64
-configure output so `mix mob.deploy --native` can static-link EPMD into the iOS
+configure output so `mix dala.deploy --native` can static-link EPMD into the iOS
 app at build time.
 
 ### 3b.0 — Cross-compile OTP for iOS arm64 (only needed once per OTP version)
@@ -393,7 +393,7 @@ xcrun --sdk iphoneos --show-sdk-path
 export RELEASE_LIBBEAM=yes
 
 # Configure for the iOS arm64 device target. --without-ssl skips OpenSSL
-# (Mob ships an Elixir-side crypto shim for HTTP-only Phoenix on-device).
+# (Dala ships an Elixir-side crypto shim for HTTP-only Phoenix on-device).
 ./otp_build configure \
     --xcomp-conf=./xcomp/erl-xcomp-arm64-ios.conf \
     --without-ssl
@@ -488,7 +488,7 @@ HASH=<hash>
 
 # Create the release (or use an existing one)
 gh release create "otp-$HASH" \
-    --repo GenericJam/mob \
+    --repo GenericJam/dala \
     --title "OTP pre-built runtime $HASH" \
     --notes "Pre-built OTP for Android (aarch64 + arm32), iOS simulator (aarch64-apple-iossimulator), and iOS device (aarch64-apple-ios). OTP source commit: $HASH."
 
@@ -498,27 +498,27 @@ gh release upload "otp-$HASH" \
     "/tmp/otp-android-arm32-$HASH.tar.gz" \
     "/tmp/otp-ios-sim-$HASH.tar.gz" \
     "/tmp/otp-ios-device-$HASH.tar.gz" \
-    --repo GenericJam/mob
+    --repo GenericJam/dala
 
 # Verify
-gh release view "otp-$HASH" --repo GenericJam/mob --json assets \
+gh release view "otp-$HASH" --repo GenericJam/dala --json assets \
     -q '.assets[] | "\(.name) \(.size)"'
 ```
 
 To replace a bad asset:
 ```bash
-gh release delete-asset "otp-$HASH" otp-ios-sim-$HASH.tar.gz --repo GenericJam/mob --yes
-gh release upload "otp-$HASH" /tmp/otp-ios-sim-$HASH.tar.gz --repo GenericJam/mob
+gh release delete-asset "otp-$HASH" otp-ios-sim-$HASH.tar.gz --repo GenericJam/dala --yes
+gh release upload "otp-$HASH" /tmp/otp-ios-sim-$HASH.tar.gz --repo GenericJam/dala
 ```
 
 ### Re-uploading without bumping the hash (schema-bump pattern)
 
 When the tarball *contents* change but the underlying OTP commit hasn't (e.g.
 adding EPMD source to the iOS device tarball), the canonical move is to
-re-upload at the same hash. `MobDev.OtpDownloader.valid_otp_dir?/2` is the
+re-upload at the same hash. `DalaDev.OtpDownloader.valid_otp_dir?/2` is the
 gate that decides whether a cached extracted dir is still acceptable — if you
 add a new schema requirement there, existing users' caches fail validation
-and the next `mix mob.deploy --native` re-downloads the asset automatically.
+and the next `mix dala.deploy --native` re-downloads the asset automatically.
 No hash bump, no user action needed.
 
 **Example schema bumps:**
@@ -530,7 +530,7 @@ No hash bump, no user action needed.
 
 ## Step 5 — Update OtpDownloader
 
-Edit `lib/mob_dev/otp_downloader.ex` — update the hash and ERTS version:
+Edit `lib/dala_dev/otp_downloader.ex` — update the hash and ERTS version:
 
 ```elixir
 @otp_hash    "73ba6e0f"    # ← new hash
@@ -541,7 +541,7 @@ to match (search for `erts-16.3` and replace).
 
 **Verification:**
 ```bash
-mix test test/mob_dev/otp_downloader_test.exs
+mix test test/dala_dev/otp_downloader_test.exs
 ```
 
 ---

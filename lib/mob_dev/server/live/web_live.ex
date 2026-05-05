@@ -1,7 +1,7 @@
-defmodule MobDev.Server.WebLive do
+defmodule DalaDev.Server.WebLive do
   @moduledoc """
-  Main web UI layout for mob.web - provides navigation and integration
-  for all mob_dev features in a single interface.
+  Main web UI layout for dala.web - provides navigation and integration
+  for all dala_dev features in a single interface.
   """
   use Phoenix.LiveView
 
@@ -21,27 +21,27 @@ defmodule MobDev.Server.WebLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mob-web-container">
+    <div class="dala-web-container">
       <!-- Sidebar Navigation -->
-      <aside class="mob-sidebar">
-        <div class="mob-sidebar-header">
-          <h1 class="mob-logo">Mob</h1>
-          <span class="mob-version">v0.3.28</span>
+      <aside class="dala-sidebar">
+        <div class="dala-sidebar-header">
+          <h1 class="dala-logo">Dala</h1>
+          <span class="dala-version">v0.3.28</span>
         </div>
 
-        <nav class="mob-nav">
+        <nav class="dala-nav">
           <%= for feature <- @features do %>
-            <a href={feature.path} class={"mob-nav-item #{if @active_feature == feature.id, do: "active"}"}>
-              <span class="mob-nav-icon">
+            <a href={feature.path} class={"dala-nav-item #{if @active_feature == feature.id, do: "active"}"}>
+              <span class="dala-nav-icon">
                 <%= render_icon(feature.icon) %>
               </span>
-              <span class="mob-nav-text"><%= feature.name %></span>
+              <span class="dala-nav-text"><%= feature.name %></span>
             </a>
           <% end %>
         </nav>
 
-        <div class="mob-sidebar-footer">
-          <div class="mob-connection-status">
+        <div class="dala-sidebar-footer">
+          <div class="dala-connection-status">
             <span class={"status-dot #{if @node_connected, do: "connected", else: "disconnected"}"}></span>
             <span><%= if @node_connected, do: "Node Connected", else: "Local Mode" %></span>
           </div>
@@ -49,15 +49,15 @@ defmodule MobDev.Server.WebLive do
       </aside>
 
       <!-- Main Content Area -->
-      <main class="mob-main-content">
-        <div class="mob-content-header">
+      <main class="dala-main-content">
+        <div class="dala-content-header">
           <h2><%= @page_title %></h2>
-          <div class="mob-actions">
+          <div class="dala-actions">
             <%= render_quick_actions(assigns) %>
           </div>
         </div>
 
-        <div class="mob-content-body">
+        <div class="dala-content-body">
           <%= render_content(@active_feature, assigns) %>
         </div>
       </main>
@@ -170,30 +170,30 @@ defmodule MobDev.Server.WebLive do
 
   defp render_quick_actions(assigns) do
     ~H"""
-    <button class="mob-btn mob-btn-primary">Quick Action 1</button>
-    <button class="mob-btn mob-btn-secondary">Quick Action 2</button>
+    <button class="dala-btn dala-btn-primary">Quick Action 1</button>
+    <button class="dala-btn dala-btn-secondary">Quick Action 2</button>
     """
   end
 
   defp render_content(:dashboard, assigns) do
     ~H"""
-    <div class="mob-dashboard">
-      <div class="mob-stats-grid">
-        <div class="mob-stat-card">
+    <div class="dala-dashboard">
+      <div class="dala-stats-grid">
+        <div class="dala-stat-card">
           <h3>Devices</h3>
-          <p class="mob-stat-number"><%= @device_count %></p>
+          <p class="dala-stat-number"><%= @device_count %></p>
         </div>
-        <div class="mob-stat-card">
+        <div class="dala-stat-card">
           <h3>Emulators</h3>
-          <p class="mob-stat-number"><%= @emulator_count %></p>
+          <p class="dala-stat-number"><%= @emulator_count %></p>
         </div>
-        <div class="mob-stat-card">
+        <div class="dala-stat-card">
           <h3>Status</h3>
-          <p class="mob-stat-text">Online</p>
+          <p class="dala-stat-text">Online</p>
         </div>
       </div>
 
-      <div class="mob-recent-activity">
+      <div class="dala-recent-activity">
         <h3>Recent Activity</h3>
         <p>Activity feed coming soon...</p>
       </div>
@@ -203,37 +203,37 @@ defmodule MobDev.Server.WebLive do
 
   defp render_content(:devices, assigns) do
     ~H"""
-    <div class="mob-devices-view">
+    <div class="dala-devices-view">
       <h3>Device Management</h3>
       <p>Android and iOS device management interface.</p>
-      <!-- Will integrate MobDev.Discovery modules -->
+      <!-- Will integrate DalaDev.Discovery modules -->
     </div>
     """
   end
 
   defp render_content(:deploy, assigns) do
     ~H"""
-    <div class="mob-deploy-view">
+    <div class="dala-deploy-view">
       <h3>Deploy Applications</h3>
       <p>Deploy to connected devices and emulators.</p>
-      <!-- Will integrate MobDev.Deployer -->
+      <!-- Will integrate DalaDev.Deployer -->
     </div>
     """
   end
 
   defp render_content(:emulators, assigns) do
     ~H"""
-    <div class="mob-emulators-view">
+    <div class="dala-emulators-view">
       <h3>Emulator Management</h3>
       <p>Manage Android AVDs and iOS simulators.</p>
-      <!-- Will integrate MobDev.Emulators -->
+      <!-- Will integrate DalaDev.Emulators -->
     </div>
     """
   end
 
   defp render_content(:observer, assigns) do
     ~H"""
-    <div class="mob-observer-view">
+    <div class="dala-observer-view">
       <h3>Observer</h3>
       <p>Remote node monitoring. <a href="/observer">Open Full Observer</a></p>
     </div>
@@ -242,57 +242,57 @@ defmodule MobDev.Server.WebLive do
 
   defp render_content(:provision, assigns) do
     ~H"""
-    <div class="mob-provision-view">
+    <div class="dala-provision-view">
       <h3>Provisioning</h3>
       <p>Code signing and provisioning profile management.</p>
-      <!-- Will integrate MobDev.Provision -->
+      <!-- Will integrate DalaDev.Provision -->
     </div>
     """
   end
 
   defp render_content(:release, assigns) do
     ~H"""
-    <div class="mob-release-view">
+    <div class="dala-release-view">
       <h3>Release Management</h3>
       <p>Build and manage releases for Android and iOS.</p>
-      <!-- Will integrate MobDev.NativeBuild, release tasks -->
+      <!-- Will integrate DalaDev.NativeBuild, release tasks -->
     </div>
     """
   end
 
   defp render_content(:profiling, assigns) do
     ~H"""
-    <div class="mob-profiling-view">
+    <div class="dala-profiling-view">
       <h3>Profiling</h3>
       <p>Performance profiling and analysis tools.</p>
-      <!-- Will integrate MobDev.Profiling -->
+      <!-- Will integrate DalaDev.Profiling -->
     </div>
     """
   end
 
   defp render_content(:ci, assigns) do
     ~H"""
-    <div class="mob-ci-view">
+    <div class="dala-ci-view">
       <h3>CI Testing</h3>
       <p>Continuous integration test management.</p>
-      <!-- Will integrate MobDev.CITesting -->
+      <!-- Will integrate DalaDev.CITesting -->
     </div>
     """
   end
 
   defp render_content(:logs, assigns) do
     ~H"""
-    <div class="mob-logs-view">
+    <div class="dala-logs-view">
       <h3>Logs</h3>
       <p>Centralized log viewing and filtering.</p>
-      <!-- Will integrate MobDev.Server.LogBuffer -->
+      <!-- Will integrate DalaDev.Server.LogBuffer -->
     </div>
     """
   end
 
   defp render_content(:settings, assigns) do
     ~H"""
-    <div class="mob-settings-view">
+    <div class="dala-settings-view">
       <h3>Settings</h3>
       <p>Configuration and preferences.</p>
     </div>
@@ -301,7 +301,7 @@ defmodule MobDev.Server.WebLive do
 
   defp render_content(_, assigns) do
     ~H"""
-    <div class="mob-not-found">
+    <div class="dala-not-found">
       <h3>Feature not found</h3>
     </div>
     """

@@ -1,12 +1,12 @@
-defmodule MobDev.Bench.DeviceObserver do
+defmodule DalaDev.Bench.DeviceObserver do
   @moduledoc """
-  Subscribes to `Mob.Device` events on the running app over Erlang
+  Subscribes to `Dala.Device` events on the running app over Erlang
   distribution and tracks ground-truth screen/app state for the bench.
 
   Without this, the bench only knows what *it* asked the device to do
   ("we just ran lock_screen, so the screen *should* be off"). With this,
   the bench learns from the device what's actually happening
-  (`{:mob_device, :did_enter_background}`, `{:mob_device, :screen_off}`),
+  (`{:dala_device, :did_enter_background}`, `{:dala_device, :screen_off}`),
   and the probe snapshots reflect reality.
 
   ## Lifecycle
@@ -19,7 +19,7 @@ defmodule MobDev.Bench.DeviceObserver do
       observer.events   # => list of recent events (most recent first)
 
   Subscription is best-effort — if the device's BEAM doesn't have
-  `Mob.Device.subscribe/1` exported (older app build), `subscribe/2`
+  `Dala.Device.subscribe/1` exported (older app build), `subscribe/2`
   returns an observer that just passes through the caller's expected
   state.
   """
@@ -50,7 +50,7 @@ defmodule MobDev.Bench.DeviceObserver do
   @max_events_kept 100
 
   @doc """
-  Try to subscribe the calling process to `Mob.Device` events on `node`.
+  Try to subscribe the calling process to `Dala.Device` events on `node`.
   Returns an observer struct, possibly with `subscribed?: false` if the
   device's app doesn't support it (older build).
   """
@@ -72,7 +72,7 @@ defmodule MobDev.Bench.DeviceObserver do
 
     subscribed? =
       try do
-        case :rpc.call(node, Mob.Device, :subscribe, [categories], 3_000) do
+        case :rpc.call(node, Dala.Device, :subscribe, [categories], 3_000) do
           :ok -> true
           {:badrpc, _} -> false
           _ -> false
@@ -98,7 +98,7 @@ defmodule MobDev.Bench.DeviceObserver do
   end
 
   @doc """
-  Drain the calling process's mailbox of pending Mob.Device messages and
+  Drain the calling process's mailbox of pending Dala.Device messages and
   update the observer's tracked state. Returns the updated observer.
 
   Call this at the top of each poll cycle. Non-blocking — uses `receive`
@@ -111,12 +111,12 @@ defmodule MobDev.Bench.DeviceObserver do
 
   defp do_consume(obs) do
     receive do
-      {:mob_device, event} when is_atom(event) ->
+      {:dala_device, event} when is_atom(event) ->
         obs
         |> apply_event(event, nil)
         |> do_consume()
 
-      {:mob_device, event, payload} when is_atom(event) ->
+      {:dala_device, event, payload} when is_atom(event) ->
         obs
         |> apply_event(event, payload)
         |> do_consume()
@@ -155,8 +155,8 @@ defmodule MobDev.Bench.DeviceObserver do
   observer has authoritative state, prefer it over what the probe inferred;
   fall back to the probe's view otherwise.
   """
-  @spec apply_to_probe(t(), MobDev.Bench.Probe.t()) :: MobDev.Bench.Probe.t()
-  def apply_to_probe(%__MODULE__{} = obs, %MobDev.Bench.Probe{} = probe) do
+  @spec apply_to_probe(t(), DalaDev.Bench.Probe.t()) :: DalaDev.Bench.Probe.t()
+  def apply_to_probe(%__MODULE__{} = obs, %DalaDev.Bench.Probe{} = probe) do
     screen =
       case obs.screen do
         :unknown -> probe.screen

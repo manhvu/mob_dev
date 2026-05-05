@@ -1,8 +1,8 @@
-defmodule MobDev.Bench.Summary do
+defmodule DalaDev.Bench.Summary do
   @moduledoc """
   Post-run analysis of a bench CSV log.
 
-  Reads a `MobDev.Bench.Logger` CSV and produces a summary map with
+  Reads a `DalaDev.Bench.Logger` CSV and produces a summary map with
   metrics that tell you whether the bench measurement is trustworthy:
 
   - `total_samples` — how many polls completed
@@ -17,7 +17,7 @@ defmodule MobDev.Bench.Summary do
   - `effective_rate_pct_per_hour` — drain extrapolated to per-hour
   """
 
-  alias MobDev.Bench.Logger
+  alias DalaDev.Bench.Logger
 
   @type metrics :: %{
           total_samples: non_neg_integer(),

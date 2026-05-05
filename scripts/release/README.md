@@ -34,7 +34,7 @@ are documented in each script's header.
 ## Typical full-release flow
 
 ```bash
-cd ~/code/mob_dev/scripts/release
+cd ~/code/dala_dev/scripts/release
 
 # (one time per OTP hash, ~10 min)
 ./xcompile_ios_device.sh

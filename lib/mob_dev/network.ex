@@ -1,5 +1,5 @@
-defmodule MobDev.Network do
-  @moduledoc "Network utilities for mob_dev."
+defmodule DalaDev.Network do
+  @moduledoc "Network utilities for dala_dev."
 
   @doc """
   Returns the first LAN IPv4 address found on this machine, or nil.

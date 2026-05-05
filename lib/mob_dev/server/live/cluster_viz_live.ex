@@ -1,4 +1,4 @@
-defmodule MobDev.Server.ClusterVizLive do
+defmodule DalaDev.Server.ClusterVizLive do
   @moduledoc """
   LiveView for cluster visualization with D3.js.
 
@@ -9,9 +9,9 @@ defmodule MobDev.Server.ClusterVizLive do
   - LiveView message flow
   """
 
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.ClusterViz
+  alias DalaDev.ClusterViz
 
   @refresh_interval 5_000
 

@@ -1,17 +1,17 @@
-defmodule MobDev.Release do
+defmodule DalaDev.Release do
   @moduledoc """
-  Build a signed, App-Store-ready iOS `.ipa` for the current Mob project.
+  Build a signed, App-Store-ready iOS `.ipa` for the current Dala project.
 
-  Mirrors `MobDev.NativeBuild`'s physical-device build pipeline but signs
+  Mirrors `DalaDev.NativeBuild`'s physical-device build pipeline but signs
   with a distribution identity, embeds an App Store provisioning profile,
-  drops EPMD + the distribution-related BEAM args (the `MOB_RELEASE` flag),
+  drops EPMD + the distribution-related BEAM args (the `DALA_RELEASE` flag),
   and packages the `.app` as a `.ipa` instead of installing it.
 
-  Output path: `_build/mob_release/<App>.ipa`.
+  Output path: `_build/dala_release/<App>.ipa`.
 
-  ## Required mob.exs keys
+  ## Required dala.exs keys
 
-      config :mob_dev,
+      config :dala_dev,
         bundle_id:                "com.example.app",
         ios_team_id:              "ABC123XYZ4",
         # Distribution-only — falls back to auto-detect if absent:
@@ -30,21 +30,21 @@ defmodule MobDev.Release do
   """
   @spec build_ipa(keyword()) :: {:ok, String.t()} | {:error, String.t()}
   def build_ipa(_opts \\ []) do
-    cfg = MobDev.NativeBuild.__load_config__()
+    cfg = DalaDev.NativeBuild.__load_config__()
 
     with :ok <- check_macos(),
          :ok <- check_xcrun(),
          {:ok, cfg} <- resolve_distribution_signing(cfg),
-         {:ok, otp_root} <- MobDev.OtpDownloader.ensure_ios_device() do
+         {:ok, otp_root} <- DalaDev.OtpDownloader.ensure_ios_device() do
       script_path = "ios/release_device.sh"
       File.write!(script_path, release_device_sh())
       File.chmod!(script_path, 0o755)
 
       env = release_env(cfg, otp_root)
-      output_dir = Path.expand("_build/mob_release")
+      output_dir = Path.expand("_build/dala_release")
       File.mkdir_p!(output_dir)
 
-      env = [{"MOB_RELEASE_OUTPUT_DIR", output_dir} | env]
+      env = [{"DALA_RELEASE_OUTPUT_DIR", output_dir} | env]
 
       case System.cmd("bash", [script_path],
              env: env,
@@ -105,10 +105,10 @@ defmodule MobDev.Release do
                2. Click "Manage Certificates" → "+" → "Apple Distribution"
                3. Close Xcode
 
-             Then re-run `mix mob.release`.
+             Then re-run `mix dala.release`.
 
              (For development-only builds to your own device, use
-             `mix mob.deploy --native` — that uses an Apple Development cert.)
+             `mix dala.deploy --native` — that uses an Apple Development cert.)
              """}
 
           [identity] ->
@@ -124,9 +124,9 @@ defmodule MobDev.Release do
             {:error,
              """
              Multiple distribution identities found — set ios_dist_sign_identity
-             in mob.exs:
+             in dala.exs:
 
-                 config :mob_dev,
+                 config :dala_dev,
                    ios_dist_sign_identity: "Apple Distribution: You (ABC123XYZ4)"
 
              Available:
@@ -185,7 +185,7 @@ defmodule MobDev.Release do
 
          To create one:
            1. Enroll in the Apple Developer Program (paid, $99/yr)
-           2. Run: mix mob.provision --distribution
+           2. Run: mix dala.provision --distribution
 
          Or in Xcode: Settings → Accounts → Download Manual Profiles after
          registering an App Store distribution profile in App Store Connect.
@@ -199,7 +199,7 @@ defmodule MobDev.Release do
 
           if String.ends_with?(aid, ".*") do
             IO.puts(
-              "  #{IO.ANSI.yellow()}  using wildcard profile — run `mix mob.provision --distribution` to create a dedicated one for #{bundle_id}#{IO.ANSI.reset()}"
+              "  #{IO.ANSI.yellow()}  using wildcard profile — run `mix dala.provision --distribution` to create a dedicated one for #{bundle_id}#{IO.ANSI.reset()}"
             )
           end
         end
@@ -212,9 +212,9 @@ defmodule MobDev.Release do
         {:error,
          """
          Multiple App Store profiles match '#{bundle_id}' — set
-         ios_dist_profile_uuid in mob.exs:
+         ios_dist_profile_uuid in dala.exs:
 
-             config :mob_dev,
+             config :dala_dev,
                ios_dist_profile_uuid: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
          Matching profiles:
@@ -283,20 +283,22 @@ defmodule MobDev.Release do
     app_atom = Mix.Project.config()[:app]
     app_name = app_atom |> to_string() |> Macro.camelize()
     app_module = to_string(app_atom)
-    elixir_lib = MobDev.NativeBuild.__resolve_elixir_lib__(cfg[:elixir_lib])
+    elixir_lib = DalaDev.NativeBuild.__resolve_elixir_lib__(cfg[:elixir_lib])
     epmd_src = cfg[:ios_epmd_build_src] || otp_root
 
     [
-      {"MOB_DIR", Path.expand(cfg[:mob_dir])},
-      {"MOB_ELIXIR_LIB", Path.expand(elixir_lib)},
-      {"MOB_IOS_DEVICE_OTP_ROOT", otp_root},
-      {"MOB_IOS_EPMD_BUILD_SRC", epmd_src},
-      {"MOB_IOS_BUNDLE_ID", cfg[:bundle_id]},
-      {"MOB_IOS_TEAM_ID", cfg[:ios_team_id]},
-      {"MOB_IOS_SIGN_IDENTITY", cfg[:ios_dist_sign_identity]},
-      {"MOB_IOS_PROFILE_UUID", cfg[:ios_dist_profile_uuid]},
-      {"MOB_APP_NAME", app_name},
-      {"MOB_APP_MODULE", app_module}
+      env = [
+        {"DALA_DIR", Path.expand(cfg[:dala_dir])},
+        {"DALA_ELIXIR_LIB", Path.expand(elixir_lib)},
+        {"DALA_IOS_DEVICE_OTP_ROOT", otp_root},
+        {"DALA_IOS_EPMD_BUILD_SRC", epmd_src},
+        {"DALA_IOS_BUNDLE_ID", cfg[:bundle_id]},
+        {"DALA_IOS_TEAM_ID", cfg[:ios_team_id]},
+        {"DALA_IOS_SIGN_IDENTITY", cfg[:ios_dist_sign_identity]},
+        {"DALA_IOS_PROFILE_UUID", cfg[:ios_dist_profile_uuid]},
+        {"DALA_APP_NAME", app_name},
+        {"DALA_APP_MODULE", app_module}
+      ]
     ]
   end
 
@@ -305,7 +307,7 @@ defmodule MobDev.Release do
   defp check_macos do
     case :os.type() do
       {:unix, :darwin} -> :ok
-      _ -> {:error, "mix mob.release is only supported on macOS (Xcode is required)."}
+      _ -> {:error, "mix dala.release is only supported on macOS (Xcode is required)."}
     end
   end
 
@@ -322,25 +324,25 @@ defmodule MobDev.Release do
   defp release_device_sh do
     ~S"""
     #!/bin/bash
-    # ios/release_device.sh — App Store / TestFlight build for Mob (generated
-    # by `mix mob.release`). Mirrors build_device.sh but with distribution
+    # ios/release_device.sh — App Store / TestFlight build for Dala (generated
+    # by `mix dala.release`). Mirrors build_device.sh but with distribution
     # signing, no EPMD, no distribution BEAM args, and IPA packaging.
     set -e
     cd "$(dirname "$0")/.."
 
-    MOB_DIR="${MOB_DIR:?MOB_DIR not set}"
+    DALA_DIR="${DALA_DIR:?DALA_DIR not set}"
     ELIXIR_LIB=$(elixir -e "IO.puts(Path.dirname(to_string(:code.lib_dir(:elixir))))" 2>/dev/null)
     if [ -z "$ELIXIR_LIB" ] || [ ! -d "$ELIXIR_LIB/elixir/ebin" ]; then
-        ELIXIR_LIB="${MOB_ELIXIR_LIB:?MOB_ELIXIR_LIB not set}"
+        ELIXIR_LIB="${DALA_ELIXIR_LIB:?DALA_ELIXIR_LIB not set}"
     fi
-    OTP_ROOT="${MOB_IOS_DEVICE_OTP_ROOT:?MOB_IOS_DEVICE_OTP_ROOT not set}"
-    BUNDLE_ID="${MOB_IOS_BUNDLE_ID:?bundle_id not set}"
-    TEAM_ID="${MOB_IOS_TEAM_ID:?ios_team_id not set}"
-    SIGN_IDENTITY="${MOB_IOS_SIGN_IDENTITY:?distribution signing identity not set}"
-    PROFILE_UUID="${MOB_IOS_PROFILE_UUID:?App Store profile UUID not set}"
-    APP_NAME="${MOB_APP_NAME:?MOB_APP_NAME not set}"
-    APP_MODULE="${MOB_APP_MODULE:?MOB_APP_MODULE not set}"
-    OUTPUT_DIR="${MOB_RELEASE_OUTPUT_DIR:?MOB_RELEASE_OUTPUT_DIR not set}"
+    OTP_ROOT="${DALA_IOS_DEVICE_OTP_ROOT:?DALA_IOS_DEVICE_OTP_ROOT not set}"
+    BUNDLE_ID="${DALA_IOS_BUNDLE_ID:?bundle_id not set}"
+    TEAM_ID="${DALA_IOS_TEAM_ID:?ios_team_id not set}"
+    SIGN_IDENTITY="${DALA_IOS_SIGN_IDENTITY:?distribution signing identity not set}"
+    PROFILE_UUID="${DALA_IOS_PROFILE_UUID:?App Store profile UUID not set}"
+    APP_NAME="${DALA_APP_NAME:?DALA_APP_NAME not set}"
+    APP_MODULE="${DALA_APP_MODULE:?DALA_APP_MODULE not set}"
+    OUTPUT_DIR="${DALA_RELEASE_OUTPUT_DIR:?DALA_RELEASE_OUTPUT_DIR not set}"
 
     ERTS_VSN=$(ls "$OTP_ROOT" | grep '^erts-' | sort -V | tail -1)
     [ -z "$ERTS_VSN" ] && echo "ERROR: No erts-* in $OTP_ROOT" && exit 1
@@ -355,7 +357,7 @@ defmodule MobDev.Release do
 
     IFLAGS="-I$OTP_ROOT/$ERTS_VSN/include \
             -I$OTP_ROOT/$ERTS_VSN/include/internal \
-            -I$MOB_DIR/ios"
+            -I$DALA_DIR/ios"
 
     LIBS="
       $OTP_ROOT/$ERTS_VSN/lib/libbeam.a
@@ -524,44 +526,44 @@ defmodule MobDev.Release do
         fi
     fi
 
-    cp "$MOB_DIR/assets/logo/logo_dark.png"  "$OTP_ROOT/mob_logo_dark.png"  2>/dev/null || true
-    cp "$MOB_DIR/assets/logo/logo_light.png" "$OTP_ROOT/mob_logo_light.png" 2>/dev/null || true
+    cp "$DALA_DIR/assets/logo/logo_dark.png"  "$OTP_ROOT/dala_logo_dark.png"  2>/dev/null || true
+    cp "$DALA_DIR/assets/logo/logo_light.png" "$OTP_ROOT/dala_logo_light.png" 2>/dev/null || true
 
-    echo "=== Compiling native sources (release: -DMOB_RELEASE, no EPMD) ==="
+    echo "=== Compiling native sources (release: -DDALA_RELEASE, no EPMD) ==="
     BUILD_DIR=$(mktemp -d)
-    SWIFT_BRIDGING="$MOB_DIR/ios/MobDemo-Bridging-Header.h"
+    SWIFT_BRIDGING="$DALA_DIR/ios/DalaDemo-Bridging-Header.h"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
-        -c "$MOB_DIR/ios/MobNode.m" -o "$BUILD_DIR/MobNode.o"
+        -c "$DALA_DIR/ios/DalaNode.m" -o "$BUILD_DIR/DalaNode.o"
 
     xcrun -sdk iphoneos swiftc \
         -target arm64-apple-ios17.0 \
         -module-name "$APP_NAME" \
-        -emit-objc-header -emit-objc-header-path "$BUILD_DIR/MobApp-Swift.h" \
+        -emit-objc-header -emit-objc-header-path "$BUILD_DIR/DalaApp-Swift.h" \
         -import-objc-header "$SWIFT_BRIDGING" \
-        -I "$MOB_DIR/ios" \
+        -I "$DALA_DIR/ios" \
         -parse-as-library -wmo \
         -O \
-        "$MOB_DIR/ios/MobViewModel.swift" \
-        "$MOB_DIR/ios/MobRootView.swift" \
-        -c -o "$BUILD_DIR/swift_mob.o"
+        "$DALA_DIR/ios/DalaViewModel.swift" \
+        "$DALA_DIR/ios/DalaRootView.swift" \
+        -c -o "$BUILD_DIR/swift_dala.o"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
         -I "$BUILD_DIR" -DSTATIC_ERLANG_NIF \
-        -c "$MOB_DIR/ios/mob_nif.m" -o "$BUILD_DIR/mob_nif.o"
+        -c "$DALA_DIR/ios/dala_nif.m" -o "$BUILD_DIR/dala_nif.o"
 
-    # MOB_RELEASE: drops -name/-setcookie/-kernel-dist BEAM args + EPMD thread.
+    # DALA_RELEASE: drops -name/-setcookie/-kernel-dist BEAM args + EPMD thread.
     $CC -fobjc-arc -fmodules $IFLAGS \
-        -DMOB_BUNDLE_OTP \
-        -DMOB_RELEASE \
+        -DDALA_BUNDLE_OTP \
+        -DDALA_RELEASE \
         -DERTS_VSN=\"$ERTS_VSN\" \
         -DOTP_RELEASE=\"$OTP_RELEASE\" \
-        -c "$MOB_DIR/ios/mob_beam.m" -o "$BUILD_DIR/mob_beam.o"
+        -c "$DALA_DIR/ios/dala_beam.m" -o "$BUILD_DIR/dala_beam.o"
 
     SQLITE_FLAG=""
-    [ -n "$SQLITE_STATIC_LIB" ] && SQLITE_FLAG="-DMOB_STATIC_SQLITE_NIF"
+    [ -n "$SQLITE_STATIC_LIB" ] && SQLITE_FLAG="-DDALA_STATIC_SQLITE_NIF"
     $CC $IFLAGS $SQLITE_FLAG \
-        -c "$MOB_DIR/ios/driver_tab_ios.c" -o "$BUILD_DIR/driver_tab_ios.o"
+        -c "$DALA_DIR/ios/driver_tab_ios.c" -o "$BUILD_DIR/driver_tab_ios.o"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
         -I "$BUILD_DIR" \
@@ -574,10 +576,10 @@ defmodule MobDev.Release do
     xcrun -sdk iphoneos swiftc \
         -target arm64-apple-ios17.0 \
         "$BUILD_DIR/driver_tab_ios.o" \
-        "$BUILD_DIR/MobNode.o" \
-        "$BUILD_DIR/swift_mob.o" \
-        "$BUILD_DIR/mob_nif.o" \
-        "$BUILD_DIR/mob_beam.o" \
+        "$BUILD_DIR/DalaNode.o" \
+        "$BUILD_DIR/swift_dala.o" \
+        "$BUILD_DIR/dala_nif.o" \
+        "$BUILD_DIR/dala_beam.o" \
         "$BUILD_DIR/AppDelegate.o" \
         "$BUILD_DIR/beam_main.o" \
         $LIBS \
@@ -636,7 +638,7 @@ defmodule MobDev.Release do
     cp "$PROFILE" "$APP/embedded.mobileprovision"
 
     echo "=== Code signing (distribution, no get-task-allow) ==="
-    ENTITLEMENTS_FILE="$BUILD_DIR/mob_release.entitlements"
+    ENTITLEMENTS_FILE="$BUILD_DIR/dala_release.entitlements"
     cat > "$ENTITLEMENTS_FILE" << ENTEOF
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

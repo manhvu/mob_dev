@@ -1,6 +1,6 @@
-defmodule MobDev.Benchmark do
+defmodule DalaDev.Benchmark do
   @moduledoc """
-  Runtime benchmarking for mobile Elixir nodes.
+  Runtime benchmarking for dala Elixir nodes.
 
   Measure execution time, memory usage, reductions, and compare
   performance across different devices in the cluster.
@@ -8,19 +8,19 @@ defmodule MobDev.Benchmark do
   ## Examples
 
       # Measure a function on a remote node
-      {:ok, result, stats} = MobDev.Benchmark.measure(
-        :"mob_qa@192.168.1.5",
+      {:ok, result, stats} = DalaDev.Benchmark.measure(
+        :"dala_qa@192.168.1.5",
         fn -> MyApp.heavy_computation() end
       )
 
       # Compare performance across nodes
-      MobDev.Benchmark.compare([node1, node2], test_module: MyBench)
+      DalaDev.Benchmark.compare([node1, node2], test_module: MyBench)
 
       # Profile memory usage
-      MobDev.Benchmark.memory_profile(node, duration: 60_000)
+      DalaDev.Benchmark.memory_profile(node, duration: 60_000)
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type node_ref :: node() | Device.t() | :all_nodes
   @type benchmark_result :: %{

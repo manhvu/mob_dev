@@ -1,9 +1,9 @@
-defmodule MobDev.Paths do
+defmodule DalaDev.Paths do
   @moduledoc """
-  Resolution helpers for paths Mob writes to outside the project tree.
+  Resolution helpers for paths Dala writes to outside the project tree.
 
   Centralised here so the deployer, the build script, the iOS simulator
-  app's `mob_beam.m`, the cache-listing task, and the doctor all agree on
+  app's `dala_beam.m`, the cache-listing task, and the doctor all agree on
   one answer.
   """
 
@@ -12,8 +12,8 @@ defmodule MobDev.Paths do
 
   Resolution order:
 
-    1. `MOB_SIM_RUNTIME_DIR` env var if set
-    2. `~/.mob/runtime/ios-sim` (new default — managed by `mix mob.cache`)
+    1. `DALA_SIM_RUNTIME_DIR` env var if set
+    2. `~/.dala/runtime/ios-sim` (new default — managed by `mix dala.cache`)
     3. `/tmp/otp-ios-sim` (legacy fallback for projects whose `ios/build.sh`
        was generated before the env-var-aware template)
 
@@ -21,9 +21,9 @@ defmodule MobDev.Paths do
   generated once at project creation and kept thereafter, so old projects
   still write the OTP runtime to `/tmp/otp-ios-sim`. We detect that case
   by looking inside the project's own `ios/build.sh` for the
-  `MOB_SIM_RUNTIME_DIR` token. If it's missing, the project hasn't been
-  regenerated against the new mob_new template and we honor its old
-  hardcoded path so `mix mob.deploy` keeps working.
+  `DALA_SIM_RUNTIME_DIR` token. If it's missing, the project hasn't been
+  regenerated against the new dala_new template and we honor its old
+  hardcoded path so `mix dala.deploy` keeps working.
 
   When `:project_dir` is passed, the build.sh-presence check uses that
   directory; otherwise it uses `File.cwd!/0`. Pure of side effects.
@@ -33,7 +33,7 @@ defmodule MobDev.Paths do
     project_dir = Keyword.get(opts, :project_dir, File.cwd!())
 
     cond do
-      env = System.get_env("MOB_SIM_RUNTIME_DIR") ->
+      env = System.get_env("DALA_SIM_RUNTIME_DIR") ->
         env
 
       build_sh_aware?(project_dir) ->
@@ -45,12 +45,12 @@ defmodule MobDev.Paths do
   end
 
   @doc """
-  The new default runtime path — under `~/.mob/runtime/` so `mix mob.cache`
+  The new default runtime path — under `~/.dala/runtime/` so `mix dala.cache`
   can list and clear it the same way it handles the OTP cache.
   """
   @spec default_runtime_dir() :: String.t()
   def default_runtime_dir do
-    Path.join([System.user_home!(), ".mob", "runtime", "ios-sim"])
+    Path.join([System.user_home!(), ".dala", "runtime", "ios-sim"])
   end
 
   @doc """
@@ -62,7 +62,7 @@ defmodule MobDev.Paths do
 
   @doc """
   True when the project's `ios/build.sh` was generated from a template that
-  knows about `MOB_SIM_RUNTIME_DIR` (mob_new ≥ 0.1.20). False if the file
+  knows about `DALA_SIM_RUNTIME_DIR` (dala_new ≥ 0.1.20). False if the file
   is missing or predates the env-var support.
   """
   @spec build_sh_aware?(String.t()) :: boolean()
@@ -70,7 +70,7 @@ defmodule MobDev.Paths do
     path = Path.join([project_dir, "ios", "build.sh"])
 
     case File.read(path) do
-      {:ok, content} -> String.contains?(content, "MOB_SIM_RUNTIME_DIR")
+      {:ok, content} -> String.contains?(content, "DALA_SIM_RUNTIME_DIR")
       _ -> false
     end
   end

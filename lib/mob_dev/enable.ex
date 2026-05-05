@@ -1,6 +1,6 @@
-defmodule MobDev.Enable do
+defmodule DalaDev.Enable do
   @moduledoc """
-  Pure helpers for `mix mob.enable` — extracted for testability.
+  Pure helpers for `mix dala.enable` — extracted for testability.
 
   ## LiveView bridge architecture
 
@@ -9,78 +9,78 @@ defmodule MobDev.Enable do
 
   ### The two bridges
 
-  The native WebView (iOS WKWebView / Android WebView) injects a `window.mob`
+  The native WebView (iOS WKWebView / Android WebView) injects a `window.dala`
   JavaScript object into every page it loads. This object routes calls through
   the NIF bridge:
 
-      window.mob.send(data)      // JS → NIF → Elixir handle_info
-      window.mob.onMessage(fn)   // registers handler for NIF → JS messages
-      window.mob._dispatch(json) // called by the NIF to deliver messages to JS
+      window.dala.send(data)      // JS → NIF → Elixir handle_info
+      window.dala.onMessage(fn)   // registers handler for NIF → JS messages
+      window.dala._dispatch(json) // called by the NIF to deliver messages to JS
 
   In LiveView mode you want a different routing: JS messages should travel over
   the LiveView WebSocket so that `handle_event/3` in your LiveView receives them
-  and `push_event/3` delivers server messages to JS. The MobHook replaces
-  `window.mob` with a LiveView-backed version on mount:
+  and `push_event/3` delivers server messages to JS. The DalaHook replaces
+  `window.dala` with a LiveView-backed version on mount:
 
-      window.mob.send(data)      // JS → pushEvent("mob_message") → handle_event/3
-      window.mob.onMessage(fn)   // registers handler for handleEvent("mob_push")
-      window.mob._dispatch       // no-op: server messages arrive via handleEvent
+      window.dala.send(data)      // JS → pushEvent("dala_message") → handle_event/3
+      window.dala.onMessage(fn)   // registers handler for handleEvent("dala_push")
+      window.dala._dispatch       // no-op: server messages arrive via handleEvent
 
   ### Why a DOM element is required (the non-obvious part)
 
   Phoenix LiveView hooks only execute their `mounted()` callback when an element
-  carrying `phx-hook="MobHook"` is present in the rendered HTML *and* the
-  LiveView WebSocket has connected. Registering MobHook in the `hooks:` map in
+  carrying `phx-hook="DalaHook"` is present in the rendered HTML *and* the
+  LiveView WebSocket has connected. Registering DalaHook in the `hooks:` map in
   `app.js` is necessary but not sufficient — the hook is dormant until LiveView
   finds a matching DOM element.
 
   Without the element:
-  - MobHook never mounts
-  - `window.mob` is never replaced with the LiveView version
-  - `window.mob.send()` routes through the native NIF bridge instead of LiveView
+  - DalaHook never mounts
+  - `window.dala` is never replaced with the LiveView version
+  - `window.dala.send()` routes through the native NIF bridge instead of LiveView
   - `handle_event/3` never fires; your LiveView cannot receive JS messages
 
   The element is a hidden `<div>` placed immediately after the opening `<body>`
   tag in `root.html.heex`:
 
-      <div id="mob-bridge" phx-hook="MobHook" style="display:none"></div>
+      <div id="dala-bridge" phx-hook="DalaHook" style="display:none"></div>
 
   Placing it at the top of `<body>` ensures the hook mounts as early as possible,
-  so `window.mob` is overridden before any page-specific JS runs.
+  so `window.dala` is overridden before any page-specific JS runs.
 
   ### Android timing note
 
-  iOS injects the native `window.mob` shim via `WKUserScript` at
+  iOS injects the native `window.dala` shim via `WKUserScript` at
   `.atDocumentStart` — before any page JS runs. Android injects it via
   `evaluateJavascript` in `onPageFinished` — after the page has loaded. Between
-  page load and `onPageFinished` on Android, `window.mob` is undefined. In
+  page load and `onPageFinished` on Android, `window.dala` is undefined. In
   practice LiveView connects after `onPageFinished`, so both shims are available
-  by the time the MobHook mounts. If you call `window.mob` during
-  `DOMContentLoaded`, guard with `if (window.mob)`.
+  by the time the DalaHook mounts. If you call `window.dala` during
+  `DOMContentLoaded`, guard with `if (window.dala)`.
   """
 
-  @mob_hook_js ~S"""
-  // MobHook — Mob LiveView bridge. Added by `mix mob.enable liveview`.
+  @dala_hook_js ~S"""
+  // DalaHook — Dala LiveView bridge. Added by `mix dala.enable liveview`.
   //
-  // WHY THIS EXISTS: The native WebView injects window.mob pointing at the NIF
+  // WHY THIS EXISTS: The native WebView injects window.dala pointing at the NIF
   // bridge (postMessage on iOS, JavascriptInterface on Android). In LiveView
-  // mode we want window.mob to route through the LiveView WebSocket instead so
+  // mode we want window.dala to route through the LiveView WebSocket instead so
   // handle_event/3 in your LiveView receives JS messages and push_event/3
   // delivers server messages back to JS.
   //
-  // This hook replaces window.mob on mount. It requires a DOM element with
-  // phx-hook="MobHook" — see root.html.heex. Without that element this hook
+  // This hook replaces window.dala on mount. It requires a DOM element with
+  // phx-hook="DalaHook" — see root.html.heex. Without that element this hook
   // never runs and messages silently use the native bridge instead.
-  const MobHook = {
+  const DalaHook = {
     mounted() {
-      window.mob = {
-        // JS → LiveView: arrives as handle_event("mob_message", data, socket)
-        send: (data) => this.pushEvent("mob_message", data),
-        // LiveView → JS: push_event(socket, "mob_push", data) calls all handlers
-        onMessage: (handler) => this.handleEvent("mob_push", handler),
+      window.dala = {
+        // JS → LiveView: arrives as handle_event("dala_message", data, socket)
+        send: (data) => this.pushEvent("dala_message", data),
+        // LiveView → JS: push_event(socket, "dala_push", data) calls all handlers
+        onMessage: (handler) => this.handleEvent("dala_push", handler),
         // No-op in LiveView mode. The native bridge calls this to deliver
         // webview_post_message results, but in LiveView mode server messages
-        // arrive via handleEvent("mob_push") instead.
+        // arrive via handleEvent("dala_push") instead.
         _dispatch: () => {}
       }
     }
@@ -88,35 +88,35 @@ defmodule MobDev.Enable do
   """
 
   # The hidden bridge element injected into root.html.heex.
-  # id="mob-bridge" is used as the idempotency sentinel — do not change it.
-  @mob_bridge_element ~s(<div id="mob-bridge" phx-hook="MobHook" style="display:none"></div>)
+  # id="dala-bridge" is used as the idempotency sentinel — do not change it.
+  @dala_bridge_element ~s(<div id="dala-bridge" phx-hook="DalaHook" style="display:none"></div>)
 
   @doc """
-  Returns the MobHook JS constant to inject into app.js.
+  Returns the DalaHook JS constant to inject into app.js.
   """
-  @spec mob_hook_js() :: String.t()
-  def mob_hook_js, do: @mob_hook_js
+  @spec dala_hook_js() :: String.t()
+  def dala_hook_js, do: @dala_hook_js
 
   @doc """
   Returns the hidden bridge `<div>` element that must appear in `root.html.heex`.
 
   See the module doc for why this element is required.
   """
-  @spec mob_bridge_element() :: String.t()
-  def mob_bridge_element, do: @mob_bridge_element
+  @spec dala_bridge_element() :: String.t()
+  def dala_bridge_element, do: @dala_bridge_element
 
   @doc """
-  Injects the MobHook definition and registration into `content` (the full
+  Injects the DalaHook definition and registration into `content` (the full
   text of `assets/js/app.js`).
 
   - Inserts the hook constant after the last top-level `import` line.
-  - Registers `MobHook` in the `hooks:` option passed to `LiveSocket`.
+  - Registers `DalaHook` in the `hooks:` option passed to `LiveSocket`.
 
   Returns the patched JS string. Idempotency (skip if already present) is
   handled by the calling task, not by this function.
   """
-  @spec inject_mob_hook(String.t()) :: String.t()
-  def inject_mob_hook(content) do
+  @spec inject_dala_hook(String.t()) :: String.t()
+  def inject_dala_hook(content) do
     content
     |> insert_hook_definition()
     |> register_hook_in_live_socket()
@@ -126,22 +126,22 @@ defmodule MobDev.Enable do
   Injects the hidden bridge `<div>` into `content` (a `root.html.heex` file).
 
   The element is placed immediately after the opening `<body>` tag. This is
-  the mount point for MobHook — without it the hook never executes and
-  `window.mob` is never replaced with the LiveView version. See the module doc
+  the mount point for DalaHook — without it the hook never executes and
+  `window.dala` is never replaced with the LiveView version. See the module doc
   for the full explanation.
 
-  Returns the patched HTML string unchanged if `id="mob-bridge"` is already
+  Returns the patched HTML string unchanged if `id="dala-bridge"` is already
   present.
   """
-  @spec inject_mob_bridge_element(String.t()) :: String.t()
-  def inject_mob_bridge_element(content) do
-    if String.contains?(content, "mob-bridge") do
+  @spec inject_dala_bridge_element(String.t()) :: String.t()
+  def inject_dala_bridge_element(content) do
+    if String.contains?(content, "dala-bridge") do
       content
     else
       Regex.replace(
         Regex.compile!("<body([^>]*)>"),
         content,
-        "<body\\1>\n    #{@mob_bridge_element}",
+        "<body\\1>\n    #{@dala_bridge_element}",
         global: false
       )
     end
@@ -252,7 +252,7 @@ defmodule MobDev.Enable do
       |> List.last()
 
     insert_at = (last_import_idx || -1) + 1
-    hook_lines = String.split(@mob_hook_js, "\n")
+    hook_lines = String.split(@dala_hook_js, "\n")
 
     (Enum.take(lines, insert_at) ++ [""] ++ hook_lines ++ Enum.drop(lines, insert_at))
     |> Enum.join("\n")
@@ -261,10 +261,10 @@ defmodule MobDev.Enable do
   defp register_hook_in_live_socket(content) do
     cond do
       String.contains?(content, "hooks: {}") ->
-        String.replace(content, "hooks: {}", "hooks: {MobHook}")
+        String.replace(content, "hooks: {}", "hooks: {DalaHook}")
 
       Regex.match?(Regex.compile!("hooks:\\s*\\{"), content) ->
-        Regex.replace(Regex.compile!("(hooks:\\s*\\{)"), content, "\\1MobHook, ", global: false)
+        Regex.replace(Regex.compile!("(hooks:\\s*\\{)"), content, "\\1DalaHook, ", global: false)
 
       true ->
         Regex.replace(
@@ -272,9 +272,9 @@ defmodule MobDev.Enable do
           content,
           fn full, prefix ->
             if String.contains?(full, "{") do
-              String.replace(full, "}", ", hooks: {MobHook}}", global: false)
+              String.replace(full, "}", ", hooks: {DalaHook}}", global: false)
             else
-              "#{prefix}, {hooks: {MobHook}})"
+              "#{prefix}, {hooks: {DalaHook}})"
             end
           end,
           global: false

@@ -1,15 +1,15 @@
-# mob_dev
+# dala_dev
 
-Development tooling for [Mob](https://hexdocs.pm/mob) — the BEAM-on-device mobile framework for Elixir.
+Development tooling for [Dala](https://hexdocs.pm/dala) — the BEAM-on-device mobile framework for Elixir.
 
-[![Hex.pm](https://img.shields.io/hexpm/v/mob_dev.svg)](https://hex.pm/packages/mob_dev)
+[![Hex.pm](https://img.shields.io/hexpm/v/dala_dev.svg)](https://hex.pm/packages/dala_dev)
 
 ## Project Structure
 
 ```
-mob_dev/
+dala_dev/
 ├── lib/
-│   ├── mob_dev/
+│   ├── dala_dev/
 │   │   ├── discovery/          # Device discovery modules
 │   │   │   ├── android.ex      # Android device discovery via adb
 │   │   │   └── ios.ex          # iOS simulator/device discovery via xcrun simctl
@@ -27,18 +27,18 @@ mob_dev/
 │   │   ├── native_build.ex     # APK/.app bundle building and signing
 │   │   ├── otp_downloader.ex    # Pre-built OTP runtime downloads and caching
 │   │   ├── device.ex           # Unified device struct with common interface
-│   │   ├── config.ex           # Configuration handling (mob.exs)
+│   │   ├── config.ex           # Configuration handling (dala.exs)
 │   │   ├── utils.ex            # Centralized utility functions
 │   │   ├── error.ex            # Standardized error handling and formatting
 │   │   └── ...
-│   └── mix/tasks/              # Mix task implementations (mix mob.*)
-│       ├── mob.deploy.ex       # Deploy builds to devices
-│       ├── mob.connect.ex      # Connect to running device nodes
-│       ├── mob.devices.ex      # List connected devices
-│       ├── mob.server.ex       # Dev dashboard server (Phoenix)
+│   └── mix/tasks/              # Mix task implementations (mix dala.*)
+│       ├── dala.deploy.ex      # Deploy builds to devices
+│       ├── dala.connect.ex     # Connect to running device nodes
+│       ├── dala.devices.ex     # List connected devices
+│       ├── dala.server.ex      # Dev dashboard server (Phoenix)
 │       └── ...
 ├── test/                       # Test files (mirrors lib/ structure)
-│   ├── mob_dev/               # Unit tests for lib/mob_dev/*
+│   ├── dala_dev/               # Unit tests for lib/dala_dev/*
 │   └── mix/tasks/             # Tests for Mix tasks
 ├── scripts/
 │   └── release/                # OTP cross-compilation scripts
@@ -49,7 +49,7 @@ mob_dev/
 │           ├── forker_start    # Skip forker_start (fork issues on iOS)
 │           └── epmd_no_daemon  # EPMD NO_DAEMON guard (prevents daemonization)
 ├── priv/
-│   └── templates/              # EEx templates for project generation (mix mob.new)
+│   └── templates/              # EEx templates for project generation (mix dala.new)
 └── guides/                     # Additional documentation
     └── ...
 ```
@@ -58,33 +58,33 @@ For more details on the codebase architecture and development practices, see [AG
 
 ## Architecture Overview
 
-mob_dev follows a modular architecture with clear separation of concerns:
+dala_dev follows a modular architecture with clear separation of concerns:
 
-### Discovery Layer (`MobDev.Discovery.*`)
+### Discovery Layer (`DalaDev.Discovery.*`)
 Discovers connected devices using platform-specific tools:
 - **Android**: Uses `adb devices -l` to list connected Android devices and emulators
 - **iOS**: Uses `xcrun simctl list -j` for simulators and `devicectl` for physical devices
-- **Output**: Returns normalized `MobDev.Device` structs with platform, ID, status, and metadata
+- **Output**: Returns normalized `DalaDev.Device` structs with platform, ID, status, and metadata
 
-### Tunnel Layer (`MobDev.Tunnel`)
+### Tunnel Layer (`DalaDev.Tunnel`)
 Establishes network tunnels for Erlang distribution between dev machine and devices:
 - **Android**: Uses `adb forward` and `adb reverse` to tunnel EPMD and distribution ports
 - **iOS**: Uses `iproxy` (from libimobiledevice) to forward ports to the device
 - **Purpose**: Enables `Node.connect/1` and RPC calls to device nodes
 
-### Deployment Layer (`MobDev.Deployer`, `MobDev.HotPush`)
+### Deployment Layer (`DalaDev.Deployer`, `DalaDev.HotPush`)
 Handles both full deployment and hot-pushing:
-- **Full deployment** (`MobDev.Deployer`): Builds native app → installs → pushes BEAM files → restarts
-- **Hot-push** (`MobDev.HotPush`): Pushes only changed BEAM files via RPC → no restart needed
+- **Full deployment** (`DalaDev.Deployer`): Builds native app → installs → pushes BEAM files → restarts
+- **Hot-push** (`DalaDev.HotPush`): Pushes only changed BEAM files via RPC → no restart needed
 - **Fallback**: If dist isn't reachable, falls back to `adb push` + app restart
 
-### Build Layer (`MobDev.NativeBuild`)
+### Build Layer (`DalaDev.NativeBuild`)
 Compiles native Android/iOS apps and manages OTP runtimes:
 - **Native builds**: Compiles APK (Android) or .app (iOS) using platform tools
-- **OTP downloads**: Downloads pre-built OTP tarballs via `MobDev.OtpDownloader`
+- **OTP downloads**: Downloads pre-built OTP tarballs via `DalaDev.OtpDownloader`
 - **Cross-compilation**: Scripts in `scripts/release/` for building OTP from source
 
-### Dashboard Layer (`MobDev.Server`)
+### Dashboard Layer (`DalaDev.Server`)
 Provides web-based development dashboard with live feedback:
 - **Phoenix server**: Runs at `localhost:4040` with real-time updates
 - **Device cards**: Live status, deploy buttons, log streaming
@@ -95,7 +95,7 @@ Provides web-based development dashboard with live feedback:
 
 ### Prerequisites
 
-Before installing mob_dev, ensure you have:
+Before installing dala_dev, ensure you have:
 
 **For Android development**:
 - Android SDK installed with `adb` in PATH
@@ -119,7 +119,7 @@ Add to your project's `mix.exs` (dev only):
 ```elixir
   def deps do
     [
-      {:mob_dev, "~> 0.2", only: :dev}
+      {:dala_dev, "~> 0.2", only: :dev}
     ]
   end
 ```
@@ -128,44 +128,48 @@ Then run:
 
 ```bash
 mix deps.get
-mix mob.install   # First-run setup: download OTP runtime, generate icons, write mob.exs
+mix dala.install   # First-run setup: download OTP runtime, generate icons, write dala.exs
 ```
 
-The `mix mob.install` command will:
+The `mix dala.install` command will:
 1. Download pre-built OTP runtime for your target platforms
 2. Generate app icons for Android and iOS
-3. Create `mob.exs` configuration file in your project root
+3. Create `dala.exs` configuration file in your project root
 
-## Mix Tasks
+## Navigation validation (`mix dala.routes`)
 
-All tasks are run via `mix mob.<task>`. Here's a complete reference:
+Validates all `push_screen`, `reset_to`, and `pop_to` destinations across `lib/**/*.ex` via AST analysis. Module destinations are verified with `Code.ensure_loaded/1`.
 
+```bash
+mix dala.routes           # print warnings
+mix dala.routes --strict  # exit non-zero (for CI)
+```
 | Task | Description | Example Usage |
 |------|-------------|---------------|
-| `mix mob.new APP_NAME` | Generate a new Mob project (see `mob_new` archive) | `mix mob.new MyApp` |
-| `mix mob.install` | First-run setup: download OTP runtime, generate icons, write `mob.exs` | `mix mob.install` |
-| `mix mob.deploy` | Compile and push BEAMs to all connected devices | `mix mob.deploy` |
-| `mix mob.deploy --native` | Also build and install the native APK/iOS app | `mix mob.deploy --native --ios` |
-| `mix mob.connect` | Tunnel + restart + open IEx connected to device nodes | `mix mob.connect` |
-| `mix mob.connect --name my_node` | Connect with a named node (for multiple sessions) | `mix mob.connect --name dev@127.0.0.1` |
-| `mix mob.watch` | Auto-push BEAMs on file save | `mix mob.watch` |
-| `mix mob.watch_stop` | Stop a running `mix mob.watch` | `mix mob.watch_stop` |
-| `mix mob.devices` | List connected devices and their status | `mix mob.devices` |
-| `mix mob.push` | Hot-push only changed modules (no restart) | `mix mob.push --all` |
-| `mix mob.server` | Start the dev dashboard at `localhost:4040` | `mix mob.server` |
-| `mix mob.icon` | Regenerate app icons from a source image | `mix mob.icon --source assets/logo.png` |
-| `mix mob.routes` | Validate navigation destinations across the codebase | `mix mob.routes --strict` |
-| `mix mob.battery_bench_android` | Measure BEAM idle power draw on an Android device | `mix mob.battery_bench_android --duration 1800` |
-| `mix mob.battery_bench_ios` | Measure BEAM idle power draw on a physical iOS device | `mix mob.battery_bench_ios --wifi-ip 10.0.0.120` |
-| `mix mob.provision` | Handle iOS provisioning profiles and certificates | `mix mob.provision` |
-| `mix mob.doctor` | Diagnose common setup and configuration issues | `mix mob.doctor` |
-| `mix mob.emulators` | Manage and launch emulators/simulators | `mix mob.emulators` |
+| `mix dala.new APP_NAME` | Generate a new Dala project (see `dala_new` archive) | `mix dala.new MyApp` |
+| `mix dala.install` | First-run setup: download OTP runtime, generate icons, write `dala.exs` | `mix dala.install` |
+| `mix dala.deploy` | Compile and push BEAMs to all connected devices | `mix dala.deploy` |
+| `mix dala.deploy --native` | Also build and install the native APK/iOS app | `mix dala.deploy --native --ios` |
+| `mix dala.connect` | Tunnel + restart + open IEx connected to device nodes | `mix dala.connect` |
+| `mix dala.connect --name my_node` | Connect with a named node (for multiple sessions) | `mix dala.connect --name dev@127.0.0.1` |
+| `mix dala.watch` | Auto-push BEAMs on file save | `mix dala.watch` |
+| `mix dala.watch_stop` | Stop a running `mix dala.watch` | `mix dala.watch_stop` |
+| `mix dala.devices` | List connected devices and their status | `mix dala.devices` |
+| `mix dala.push` | Hot-push only changed modules (no restart) | `mix dala.push --all` |
+| `mix dala.server` | Start the dev dashboard at `localhost:4040` | `mix dala.server` |
+| `mix dala.icon` | Regenerate app icons from a source image | `mix dala.icon --source assets/logo.png` |
+| `mix dala.routes` | Validate navigation destinations across the codebase | `mix dala.routes --strict` |
+| `mix dala.battery_bench_android` | Measure BEAM idle power draw on an Android device | `mix dala.battery_bench_android --duration 1800` |
+| `mix dala.battery_bench_ios` | Measure BEAM idle power draw on a physical iOS device | `mix dala.battery_bench_ios --wifi-ip 10.0.0.120` |
+| `mix dala.provision` | Handle iOS provisioning profiles and certificates | `mix dala.provision` |
+| `mix dala.doctor` | Diagnose common setup and configuration issues | `mix dala.doctor` |
+| `mix dala.emulators` | Manage and launch emulators/simulators | `mix dala.emulators` |
 
-For detailed help on any task, run `mix help mob.<task>`.
+For detailed help on any task, run `mix help dala.<task>`.
 
-## Dev dashboard (`mix mob.server`)
+## Dev dashboard (`mix dala.server`)
 
-`mix mob.server` starts a local Phoenix server (default port 4040) with:
+`mix dala.server` starts a local Phoenix server (default port 4040) with:
 
 - **Device cards** — live status for connected Android emulators and iOS simulators, with Deploy and Update buttons per device
 - **Device log panel** — streaming logcat / iOS simulator console with text filter
@@ -176,7 +180,7 @@ For detailed help on any task, run `mix help mob.<task>`.
 Run with IEx for an interactive terminal alongside the dashboard:
 
 ```bash
-iex -S mix mob.server
+iex -S mix dala.server
 ```
 
 ### Watch mode
@@ -184,9 +188,9 @@ iex -S mix mob.server
 Click **Watch** in the dashboard header or control it programmatically:
 
 ```elixir
-MobDev.Server.WatchWorker.start_watching()
-MobDev.Server.WatchWorker.stop_watching()
-MobDev.Server.WatchWorker.status()
+DalaDev.Server.WatchWorker.start_watching()
+DalaDev.Server.WatchWorker.stop_watching()
+DalaDev.Server.WatchWorker.status()
 #=> %{active: true, nodes: [:"my_app_ios@127.0.0.1"], last_push: ~U[...]}
 ```
 
@@ -197,9 +201,9 @@ Watch events broadcast on `"watch"` PubSub topic:
 {:watch_push,   %{pushed: [...], failed: [...], nodes: [...], files: [...]}}
 ```
 
-## Hot-push transport (`mix mob.deploy`)
+## Hot-push transport (`mix dala.deploy`)
 
-When Erlang distribution is reachable, `mix mob.deploy` hot-pushes changed BEAMs in-place via RPC — no `adb push`, no app restart. The running modules are replaced exactly like `nl/1` in IEx.
+When Erlang distribution is reachable, `mix dala.deploy` hot-pushes changed BEAMs in-place via RPC — no `adb push`, no app restart. The running modules are replaced exactly like `nl/1` in IEx.
 
 ```
 Pushing 14 BEAM file(s) to 2 device(s)...
@@ -209,15 +213,15 @@ Pushing 14 BEAM file(s) to 2 device(s)...
 
 If dist is not reachable (first deploy, app not running), it falls back to `adb push` + restart. Mixed deploys work — one device can hot-push while another restarts.
 
-**Requirements:** The app must call `Mob.Dist.ensure_started/1` at startup, and the cookie must match the one in `mob.exs` (default `:mob_secret`).
+**Requirements:** The app must call `Dala.Dist.ensure_started/1` at startup, and the cookie must match the one in `dala.exs` (default `:dala_secret`).
 
-## Navigation validation (`mix mob.routes`)
+## Navigation validation (`mix dala.routes`)
 
 Validates all `push_screen`, `reset_to`, and `pop_to` destinations across `lib/**/*.ex` via AST analysis. Module destinations are verified with `Code.ensure_loaded/1`.
 
 ```bash
-mix mob.routes           # print warnings
-mix mob.routes --strict  # exit non-zero (for CI)
+mix dala.routes           # print warnings
+mix dala.routes --strict  # exit non-zero (for CI)
 ```
 
 ```
@@ -235,7 +239,7 @@ Dynamic destinations (`push_screen(socket, var)`) and registered name atoms (`:m
 
 Measure BEAM idle power draw with specific tuning flags. Both tasks share the same presets and flag interface.
 
-### Android (`mix mob.battery_bench_android`)
+### Android (`mix dala.battery_bench_android`)
 
 Deploys an APK and measures drain via the hardware charge counter (`dumpsys
 battery`). Reports mAh every 10 seconds. Uses the same probe / observer /
@@ -252,21 +256,21 @@ adb connect PHONE_IP:5555
 
 #### Two-step workflow (recommended)
 
-Same pattern as iOS — push BEAM flags via `mix mob.deploy`, then bench
+Same pattern as iOS — push BEAM flags via `mix dala.deploy`, then bench
 with `--no-build`. Saves the Gradle rebuild (~30+ seconds) when only
 changing flags.
 
 ```bash
-mix mob.deploy --beam-flags "" --android                # tuned (Nerves)
-mix mob.deploy --beam-flags "-S 4:4 -A 8" --android     # untuned variant
+mix dala.deploy --beam-flags "" --android                # tuned (Nerves)
+mix dala.deploy --beam-flags "-S 4:4 -A 8" --android     # untuned variant
 
-mix mob.battery_bench_android --no-build --device 192.168.1.42:5555
+mix dala.battery_bench_android --no-build --device 192.168.1.42:5555
 ```
 
 The bench will:
 - Run preflight checks (adb device, app installed, BEAM reachable, RPC
   responsive, NIF version, keep-alive NIF)
-- Subscribe to `Mob.Device` events on the running app for ground-truth
+- Subscribe to `Dala.Device` events on the running app for ground-truth
   screen/app-state tracking
 - Write a per-tick CSV log to `_build/bench/run_android_<ts>.csv`
 - Auto-reconnect with backoff if the dist connection flaps
@@ -278,25 +282,25 @@ The bench will:
 Still supported when you want a clean rebuild:
 
 ```bash
-mix mob.battery_bench_android                              # default: Nerves-tuned BEAM, 30 min
-mix mob.battery_bench_android --no-beam                    # baseline: no BEAM at all
-mix mob.battery_bench_android --preset untuned             # raw BEAM, no tuning
-mix mob.battery_bench_android --flags "-sbwt none -S 1:1"
-mix mob.battery_bench_android --duration 3600 --device 192.168.1.42:5555
-mix mob.battery_bench_android --no-build                   # re-run without rebuilding
+mix dala.battery_bench_android                              # default: Nerves-tuned BEAM, 30 min
+mix dala.battery_bench_android --no-beam                    # baseline: no BEAM at all
+mix dala.battery_bench_android --preset untuned             # raw BEAM, no tuning
+mix dala.battery_bench_android --flags "-sbwt none -S 1:1"
+mix dala.battery_bench_android --duration 3600 --device 192.168.1.42:5555
+mix dala.battery_bench_android --no-build                   # re-run without rebuilding
 ```
 
 #### Recovering from bad flags
 
-`mix mob.deploy --beam-flags "..."` saves to `mob.exs` so the flags persist
+`mix dala.deploy --beam-flags "..."` saves to `dala.exs` so the flags persist
 across runs. If a flag combination crashes the BEAM, every subsequent
 deploy re-applies them. Push an empty string to clear:
 
 ```bash
-mix mob.deploy --beam-flags "" --android
+mix dala.deploy --beam-flags "" --android
 ```
 
-### iOS (`mix mob.battery_bench_ios`)
+### iOS (`mix dala.battery_bench_ios`)
 
 Deploys to a physical iPhone/iPad and reads battery via `ideviceinfo` (USB)
 or via Erlang RPC over WiFi. Reports mAh (if `BatteryMaxCapacity` is
@@ -307,23 +311,23 @@ trusted on this Mac, phone on the same WiFi as the Mac.
 
 #### Two-step workflow (recommended)
 
-For Mob projects (which use `ios/build_device.sh` rather than a full Xcode
+For Dala projects (which use `ios/build_device.sh` rather than a full Xcode
 project), you can't rebuild + bench in one command — the bench task's
-built-in `xcodebuild` path doesn't support the Mob build system. Instead,
+built-in `xcodebuild` path doesn't support the Dala build system. Instead,
 do the two steps separately:
 
 ```bash
 # Step 1 — deploy with whatever BEAM flags you want.
-# This pushes the .beam files PLUS a runtime mob_beam_flags file that
+# This pushes the .beam files PLUS a runtime dala_beam_flags file that
 # the launcher reads at startup. No native rebuild required (~5 seconds).
-mix mob.deploy --beam-flags "" --ios                       # tuned (Nerves defaults)
-mix mob.deploy --beam-flags "-S 6:6 -A 16" --ios           # untuned variant
-mix mob.deploy --ios                                       # uses flags saved in mob.exs
+mix dala.deploy --beam-flags "" --ios                       # tuned (Nerves defaults)
+mix dala.deploy --beam-flags "-S 6:6 -A 16" --ios           # untuned variant
+mix dala.deploy --ios                                       # uses flags saved in dala.exs
 
 # Step 2 — run the bench with --no-build, since we already deployed.
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --duration 600
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --skip-preflight
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --duration 600
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --skip-preflight
 ```
 
 Find your phone's WiFi IP in **Settings → Wi-Fi → (i) → IP Address**.
@@ -349,21 +353,21 @@ flapping connection).
 
 #### Recovering from bad flags
 
-`mix mob.deploy --beam-flags "..."` saves the flags to `mob.exs` so they
+`mix dala.deploy --beam-flags "..."` saves the flags to `dala.exs` so they
 persist across runs. If a flag combination crashes the BEAM (e.g.
 requesting more threads than iOS allows per process), every subsequent
-`mix mob.deploy` re-applies the same bad flags and the app keeps crashing.
+`mix dala.deploy` re-applies the same bad flags and the app keeps crashing.
 
-To recover, push an empty flags string — clears `mob.exs` *and* the
+To recover, push an empty flags string — clears `dala.exs` *and* the
 runtime override file on every device:
 
 ```bash
-mix mob.deploy --beam-flags "" --ios
+mix dala.deploy --beam-flags "" --ios
 ```
 
 #### Flag prefix convention (iOS)
 
-The Mob iOS BEAM build is conservative about flag syntax. Match the
+The Dala iOS BEAM build is conservative about flag syntax. Match the
 compile-time defaults' format — `-` prefix, space-separated values:
 
 ```
@@ -377,28 +381,27 @@ configs incrementally:
 
 ```bash
 # Smallest delta from defaults — multi-scheduler but everything else minimal:
-mix mob.deploy --beam-flags "-S 2:2 -SDcpu 2:2 -SDio 2 -A 2" --ios
+mix dala.deploy --beam-flags "-S 2:2 -SDcpu 2:2 -SDio 2 -A 2" --ios
 # Bench. If the app launches and runs, ramp up:
-mix mob.deploy --beam-flags "-S 6:6 -SDcpu 6:6 -SDio 6 -A 8" --ios
+mix dala.deploy --beam-flags "-S 6:6 -SDcpu 6:6 -SDio 6 -A 8" --ios
 ```
 
 #### Other options
 
 ```bash
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --no-keep-alive
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --no-keep-alive
 # Skips the silent-audio keep-alive call. Use when the keep-alive NIF is
 # misbehaving or you want to verify how much drain comes from background
 # audio session vs the BEAM itself.
 
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --skip-preflight
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --skip-preflight
 # Bypass the pre-flight checks (useful when the checks are spuriously
 # failing on devicectl noise or similar).
 
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --no-csv
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --no-csv
 # Don't write the CSV log (run is purely live-trace + final summary).
 
-mix mob.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --log-path /tmp/run.csv
-# Override CSV location.
+mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --log-path /tmp/run.csv
 ```
 
 ### Presets and results
@@ -415,7 +418,7 @@ The Nerves-tuned BEAM is essentially indistinguishable from a stock Android app 
 device, different methodology — physical iPhone with screen on/off
 distinction). The `--preset` shortcuts (`untuned`/`sbwt`/`nerves`) aren't
 useful on iOS because they require a full Xcode rebuild (which Mob projects
-don't have), so on iOS you set flags via `mix mob.deploy --beam-flags ...`
+don't have), so on iOS you set flags via `mix dala.deploy --beam-flags ...`
 and bench with `--no-build`.
 
 ### Battery-read precision (iOS)
@@ -463,9 +466,9 @@ Because OTP runs on the device, an agent can connect directly to the running app
 ```
 Agent (Claude Code)
     │
-    ├── mix mob.connect      → tunnels EPMD, connects IEx to device node
+    ├── mix dala.connect      → tunnels EPMD, connects IEx to device node
     │
-    ├── Mob.Test.*           → inspect screen state, trigger taps via RPC
+    ├── Dala.Test.*           → inspect screen state, trigger taps via RPC
     │   (exact state: module, assigns, render tree)
     │
     └── MCP tools            → native UI when needed
@@ -473,50 +476,51 @@ Agent (Claude Code)
         └── ios-simulator-mcp → iOS: screenshot, tap, describe UI
 ```
 
-### Mob.Test — preferred for agents
+### Dala.Test — preferred for agents
 
-`Mob.Test` gives exact app state via Erlang distribution. Prefer it over screenshots whenever possible — it doesn't depend on rendering, is instantaneous, and works offline.
+`Dala.Test` gives exact app state via Erlang distribution. Prefer it over screenshots whenever possible — it doesn't depend on rendering, is instantaneous, and works offline.
 
 ```elixir
 node = :"my_app_ios@127.0.0.1"
 
 # Inspection
-Mob.Test.screen(node)               #=> MyApp.HomeScreen
-Mob.Test.assigns(node)              #=> %{count: 3, user: %{name: "Alice"}, ...}
-Mob.Test.find(node, "Save")         #=> [{[0, 2], %{"type" => "button", ...}}]
-Mob.Test.inspect(node)              # full snapshot: screen + assigns + nav history + tree
+Dala.Test.screen(node)               #=> MyApp.HomeScreen
+Dala.Test.assigns(node)              #=> %{count: 3, user: %{name: "Alice"}, ...}
+Dala.Test.find(node, "Save")         #=> [{[0, 2], %{"type" => "button", ...}}]
+Dala.Test.inspect(node)              # full snapshot: screen + assigns + nav history + tree
 
 # Tap a button by tag atom (from on_tap: {self(), :save} in render/1)
-Mob.Test.tap(node, :save)
+Dala.Test.tap(node, :save)
 
 # Navigation — synchronous, safe to read state immediately after
-Mob.Test.back(node)                 # system back gesture (fire-and-forget)
-Mob.Test.pop(node)                  # pop to previous screen (synchronous)
-Mob.Test.navigate(node, MyApp.DetailScreen, %{id: 42})
-Mob.Test.pop_to(node, MyApp.HomeScreen)
-Mob.Test.pop_to_root(node)
-Mob.Test.reset_to(node, MyApp.HomeScreen)
+Dala.Test.back(node)                 # system back gesture (fire-and-forget)
+Dala.Test.pop(node)                  # pop to previous screen (synchronous)
+Dala.Test.navigate(node, MyApp.DetailScreen, %{id: 42})
+Dala.Test.pop_to(node, MyApp.HomeScreen)
+Dala.Test.pop_to_root(node)
+Dala.Test.reset_to(node, MyApp.HomeScreen)
 
 # List interaction
-Mob.Test.select(node, :my_list, 0)  # select first row
+Dala.Test.select(node, :my_list, 0)  # select first row
+```
 
 # Simulate device API results (permission dialogs, camera, location, etc.)
-Mob.Test.send_message(node, {:permission, :camera, :granted})
-Mob.Test.send_message(node, {:camera, :photo, %{path: "/tmp/p.jpg", width: 1920, height: 1080}})
-Mob.Test.send_message(node, {:location, %{lat: 43.65, lon: -79.38, accuracy: 10.0, altitude: 80.0}})
-Mob.Test.send_message(node, {:notification, %{id: "n1", title: "Hi", body: "Hey", data: %{}, source: :push}})
-Mob.Test.send_message(node, {:biometric, :success})
+Dala.Test.send_message(node, {:permission, :camera, :granted})
+Dala.Test.send_message(node, {:camera, :photo, %{path: "/tmp/p.jpg", width: 1920, height: 1080}})
+Dala.Test.send_message(node, {:location, %{lat: 43.65, lon: -79.38, accuracy: 10.0, altitude: 80.0}})
+Dala.Test.send_message(node, {:notification, %{id: "n1", title: "Hi", body: "Hey", data: %{}, source: :push}})
+Dala.Test.send_message(node, {:biometric, :success})
 ```
 
 ### Accessing IEx alongside an agent
 
-**Option 1 — shared session (`iex -S mix mob.server`):**
+**Option 1 — shared session (`iex -S mix dala.server`):**
 
 ```bash
-iex -S mix mob.server
+iex -S mix dala.server
 ```
 
-Starts the dev dashboard and gives you an IEx prompt in the same process. The agent uses Tidewave to execute `Mob.Test.*` calls in this session; you type directly in the same IEx prompt. Both share the same connected node and see the same live state. This is the recommended setup for working alongside an agent.
+Starts the dev dashboard and gives you an IEx prompt in the same process. The agent uses Tidewave to execute `Dala.Test.*` calls in this session; you type directly in the same IEx prompt. Both share the same connected node and see the same live state. This is the recommended setup for working alongside an agent.
 
 **Option 2 — separate sessions (`--name`):**
 
@@ -524,13 +528,13 @@ Because Erlang distribution allows multiple nodes to connect to the same device,
 
 ```bash
 # Your terminal
-mix mob.connect --name mob_dev_1@127.0.0.1
+mix dala.connect --name dala_dev_1@127.0.0.1
 
 # Agent's terminal (or a second developer)
-mix mob.connect --name mob_dev_2@127.0.0.1
+mix dala.connect --name dala_dev_2@127.0.0.1
 ```
 
-Both connect to the same device nodes, can call `Mob.Test.*` and `nl/1`, and don't interfere with each other.
+Both connect to the same device nodes, can call `Dala.Test.*` and `nl/1`, and don't interfere with each other.
 
 ### MCP tool setup
 
@@ -585,9 +589,9 @@ Add a `CLAUDE.md` to your Mob project root to give an agent the context it needs
 ## Connecting to a running device
 
 ```bash
-mix mob.connect          # discover, tunnel, connect IEx
-mix mob.connect --no-iex # print node names without IEx
-mix mob.devices          # list connected devices
+mix dala.connect          # discover, tunnel, connect IEx
+mix dala.connect --no-iex # print node names without IEx
+mix dala.devices          # list connected devices
 ```
 
 Node names:
@@ -596,28 +600,28 @@ Node names:
 
 ## Inspecting and driving the running app
 
-Prefer `Mob.Test` over screenshots — it gives exact state, not a visual approximation.
+Prefer `Dala.Test` over screenshots — it gives exact state, not a visual approximation.
 
 ```elixir
 node = :"my_app_ios@127.0.0.1"
 
 # Inspection
-Mob.Test.screen(node)       # current screen module
-Mob.Test.assigns(node)      # current assigns map
-Mob.Test.find(node, "text") # find UI nodes by visible text
-Mob.Test.inspect(node)      # full snapshot: screen + assigns + nav history + tree
+Dala.Test.screen(node)       # current screen module
+Dala.Test.assigns(node)      # current assigns map
+Dala.Test.find(node, "text") # find UI nodes by visible text
+Dala.Test.inspect(node)      # full snapshot: screen + assigns + nav history + tree
 
 # Interaction
-Mob.Test.tap(node, :tag)              # tap by tag atom (from on_tap: {self(), :tag} in render/1)
-Mob.Test.back(node)                   # system back gesture
-Mob.Test.pop(node)                    # pop to previous screen (synchronous)
-Mob.Test.navigate(node, Screen, %{})  # push a screen (synchronous)
-Mob.Test.select(node, :list_id, 0)    # select a list row
+Dala.Test.tap(node, :tag)              # tap by tag atom (from on_tap: {self(), :tag} in render/1)
+Dala.Test.back(node)                   # system back gesture
+Dala.Test.pop(node)                    # pop to previous screen (synchronous)
+Dala.Test.navigate(node, Screen, %{})  # push a screen (synchronous)
+Dala.Test.select(node, :list_id, 0)    # select a list row
 
 # Simulate device API results
-Mob.Test.send_message(node, {:permission, :camera, :granted})
-Mob.Test.send_message(node, {:camera, :photo, %{path: "/tmp/p.jpg", width: 1920, height: 1080}})
-Mob.Test.send_message(node, {:biometric, :success})
+Dala.Test.send_message(node, {:permission, :camera, :granted})
+Dala.Test.send_message(node, {:camera, :photo, %{path: "/tmp/p.jpg", width: 1920, height: 1080}})
+Dala.Test.send_message(node, {:biometric, :success})
 ```
 
 Navigation functions (`pop`, `navigate`, `pop_to`, `pop_to_root`, `reset_to`) are
@@ -626,23 +630,23 @@ synchronous — safe to read state immediately after.
 `back/1` and `send_message/2` are fire-and-forget. If you need to wait:
 
 ```elixir
-Mob.Test.back(node)
-:rpc.call(node, :sys, :get_state, [:mob_screen])  # flush
-Mob.Test.screen(node)
+Dala.Test.back(node)
+:rpc.call(node, :sys, :get_state, [:dala_screen])  # flush
+Dala.Test.screen(node)
 ```
 
 ## Hot-pushing code changes
 
 ```bash
-mix mob.push          # compile + push all changed modules to all connected devices
-mix mob.push --all    # force-push every module
+mix dala.push          # compile + push all changed modules to all connected devices
+mix dala.push --all    # force-push every module
 ```
 
 ## Deploying
 
 ```bash
-mix mob.deploy          # push changed BEAMs, restart
-mix mob.deploy --native # full native rebuild + install
+mix dala.deploy          # push changed BEAMs, restart
+mix dala.deploy --native # full native rebuild + install
 ```
 ````
 
@@ -651,24 +655,24 @@ mix mob.deploy --native # full native rebuild + install
 A typical agent session for debugging or feature work:
 
 ```
-1. mix mob.connect                        — connect to the running device node
-2. Mob.Test.screen(node)                  — confirm which screen is showing
-3. Mob.Test.assigns(node)                 — inspect current state
-4. Mob.Test.tap(node, :some_button)       — interact with the UI
-5. Mob.Test.screen(node)                  — confirm navigation happened
+1. mix dala.connect                        — connect to the running device node
+2. Dala.Test.screen(node)                  — confirm which screen is showing
+3. Dala.Test.assigns(node)                 — inspect current state
+4. Dala.Test.tap(node, :some_button)       — interact with the UI
+5. Dala.Test.screen(node)                  — confirm navigation happened
 6. edit lib/my_app/screen.ex              — make a code change
-7. mix mob.push                           — hot-push changed modules without restart
-8. Mob.Test.assigns(node)                 — verify state updated as expected
+7. mix dala.push                           — hot-push changed modules without restart
+8. Dala.Test.assigns(node)                 — verify state updated as expected
 ```
 
 For device API interactions, simulate the result rather than triggering real hardware:
 
 ```elixir
 # Instead of actually opening the camera:
-Mob.Test.tap(node, :take_photo)     # triggers handle_event → Mob.Camera.capture_photo
+Dala.Test.tap(node, :take_photo)     # triggers handle_event → Dala.Camera.capture_photo
 # Simulate the result:
-Mob.Test.send_message(node, {:camera, :photo, %{path: "/tmp/test.jpg", width: 1920, height: 1080}})
-Mob.Test.assigns(node)              # verify photo_path was stored
+Dala.Test.send_message(node, {:camera, :photo, %{path: "/tmp/test.jpg", width: 1920, height: 1080}})
+Dala.Test.assigns(node)              # verify photo_path was stored
 ```
 
-If you need to see the rendered UI, take a screenshot with the native MCP tool, then use `Mob.Test.find/2` to correlate what you see with the component tree.
+If you need to see the rendered UI, take a screenshot with the native MCP tool, then use `Dala.Test.find/2` to correlate what you see with the component tree.

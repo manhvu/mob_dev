@@ -1,8 +1,8 @@
-defmodule MobDev.Device do
+defmodule DalaDev.Device do
   @moduledoc """
   Represents a connected or available device (physical or emulator/simulator).
 
-  This struct is the central data structure used throughout mob_dev for device
+  This struct is the central data structure used throughout dala_dev for device
   identification, connection, and deployment operations.
   """
 
@@ -35,7 +35,7 @@ defmodule MobDev.Device do
     :version,
     # :emulator | :simulator | :physical
     :type,
-    # :"mob_demo_android@127.0.0.1"
+    # :"dala_demo_android@127.0.0.1"
     :node,
     # 9100
     :dist_port,
@@ -55,13 +55,13 @@ defmodule MobDev.Device do
 
   ## Examples
 
-      iex> MobDev.Device.short_id("emulator-5554")
+      iex> DalaDev.Device.short_id("emulator-5554")
       "5554"
 
-      iex> MobDev.Device.short_id("R5CW3089HVB")
+      iex> DalaDev.Device.short_id("R5CW3089HVB")
       "HVBA"
 
-      iex> MobDev.Device.short_id("78354490-EF38-44D7-A437-DD941C20524D")
+      iex> DalaDev.Device.short_id("78354490-EF38-44D7-A437-DD941C20524D")
       "524D"
   """
   @spec short_id(String.t()) :: String.t()
@@ -82,14 +82,14 @@ defmodule MobDev.Device do
     a suffix to avoid collisions when multiple phones run the same app.
 
   - **iOS simulator**: `<app>_ios_<8-char-udid>@127.0.0.1`
-    Unique per simulator, matches the name mob_beam.m builds using SIMULATOR_UDID.
+    Unique per simulator, matches the name dala_beam.m builds using SIMULATOR_UDID.
 
   - **iOS physical**: `<app>_ios@<device-ip>`
-    mob_beam.m finds the device IP using priority: USB > WiFi/LAN > Tailscale.
+    dala_beam.m finds the device IP using priority: USB > WiFi/LAN > Tailscale.
   """
   @spec node_name(t()) :: atom()
   def node_name(%__MODULE__{platform: :android, serial: serial}) when is_binary(serial) do
-    suffix = MobDev.Discovery.Android.node_suffix_for(serial)
+    suffix = DalaDev.Discovery.Android.node_suffix_for(serial)
     :"#{app_name()}_android_#{suffix}@127.0.0.1"
   end
 
@@ -103,7 +103,7 @@ defmodule MobDev.Device do
 
   def node_name(%__MODULE__{platform: :ios, type: :simulator, serial: serial}) do
     # SIMULATOR_UDID has the same value as the UDID we discover from simctl.
-    # mob_beam.m takes the first 8 hex chars (lowercase) for the unique suffix.
+    # dala_beam.m takes the first 8 hex chars (lowercase) for the unique suffix.
     short = serial |> String.replace("-", "") |> String.slice(0, 8) |> String.downcase()
     :"#{app_name()}_ios_#{short}@127.0.0.1"
   end
@@ -115,7 +115,7 @@ defmodule MobDev.Device do
   defp app_name, do: Mix.Project.config()[:app]
 
   @doc """
-  Returns the short ID shown in `mix mob.devices` and accepted by `--device`.
+  Returns the short ID shown in `mix dala.devices` and accepted by `--device`.
 
   - Android: the serial as-is (`emulator-5554`, `R5CW3089HVB`)
   - iOS simulator: first 8 hex chars of the UDID, lowercased (`78354490`) —
@@ -135,16 +135,16 @@ defmodule MobDev.Device do
   Returns true if `input` identifies this device.
 
   Matches against either `display_id/1` or the full serial, both case-insensitively.
-  This is used by `mix mob.deploy --device <id>` to target a specific device
+  This is used by `mix dala.deploy --device <id>` to target a specific device
   by its short ID or full serial number.
 
   ## Examples
 
-      iex> device = %MobDev.Device{platform: :android, serial: "R5CW3089HVB"}
-      iex> MobDev.Device.match_id?(device, "HVBA")
+      iex> device = %DalaDev.Device{platform: :android, serial: "R5CW3089HVB"}
+      iex> DalaDev.Device.match_id?(device, "HVBA")
       true
 
-      iex> MobDev.Device.match_id?(device, "R5CW3089HVB")
+      iex> DalaDev.Device.match_id?(device, "R5CW3089HVB")
       true
   """
   @spec match_id?(t(), String.t()) :: boolean()

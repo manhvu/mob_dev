@@ -1,13 +1,13 @@
-defmodule MobDev.MixProject do
+defmodule DalaDev.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :mob_dev,
-      version: "0.3.28",
+      app: :dala_dev,
+      version: "0.0.1",
       elixir: "~> 1.19",
-      description: "Development tooling for the Mob mobile framework",
-      source_url: "https://github.com/genericjam/mob_dev",
+      description: "Development tooling for the Dala mobile framework",
+      source_url: "https://github.com/manhvu/dala_dev",
       deps: deps(),
       package: package(),
       docs: docs()
@@ -38,10 +38,10 @@ defmodule MobDev.MixProject do
   defp docs do
     [
       main: "readme",
-      source_url: "https://github.com/genericjam/mob_dev",
-      source_url_pattern: "https://github.com/genericjam/mob_dev/blob/main/%{path}#L%{line}",
+      source_url: "https://github.com/manhvu/dala_dev",
+      source_url_pattern: "https://github.com/manhvu/dala_dev/blob/main/%{path}#L%{line}",
       extras: [
-        "README.md": [title: "mob_dev"],
+        "README.md": [title: "dala_dev"],
         "guides/publishing_to_testflight.md": [title: "Publishing to TestFlight (iOS)"]
       ],
       groups_for_extras: [
@@ -49,8 +49,8 @@ defmodule MobDev.MixProject do
       ],
       groups_for_modules: [
         "Mix Tasks": ~r/Mix\.Tasks\./,
-        Server: ~r/MobDev\.Server/,
-        Internals: ~r/MobDev/
+        Server: ~r/DalaDev\.Server/,
+        Internals: ~r/DalaDev/
       ]
     ]
   end
@@ -58,7 +58,7 @@ defmodule MobDev.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/genericjam/mob_dev"}
+      links: %{"GitHub" => "https://github.com/manhvu/dala_dev"}
     ]
   end
 end

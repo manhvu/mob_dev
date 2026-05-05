@@ -1,9 +1,9 @@
-defmodule MobDev.ABTesting do
+defmodule DalaDev.ABTesting do
   @moduledoc """
   A/B testing framework for running experiments across mobile device clusters.
 
   Allows you to run experiments, collect metrics,
-  and perform statistical analysis on mobile Elixir nodes.
+  and perform statistical analysis on dala Elixir nodes.
 
   ## Examples:
 
@@ -16,16 +16,16 @@ defmodule MobDev.ABTesting do
       }
 
       # Run the experiment;
-      {:ok, results} = MobDev.ABTesting.run(experiment, nodes)
+      {:ok, results} = DalaDev.ABTesting.run(experiment, nodes)
 
       # Analyze results;
-      {:ok, analysis} = MobDev.ABTesting.analyze(results)
+      {:ok, analysis} = DalaDev.ABTesting.analyze(results)
 
       # Generate report;
-      MobDev.ABTesting.generate_report(results, "ab_report.html")
+      DalaDev.ABTesting.generate_report(results, "ab_report.html")
   """
 
-  alias MobDev.{Benchmark, Device}
+  alias DalaDev.{Benchmark, Device}
 
   @type experiment :: %{
           name: String.t(),

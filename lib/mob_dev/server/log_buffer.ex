@@ -1,4 +1,4 @@
-defmodule MobDev.Server.LogBuffer do
+defmodule DalaDev.Server.LogBuffer do
   @moduledoc """
   Holds the last N log lines in memory so the LiveView can restore them on
   reconnect without losing context from before a crash or page refresh.

@@ -1,26 +1,26 @@
-defmodule MobDev.Profiling do
+defmodule DalaDev.Profiling do
   @moduledoc """
-  Performance profiling for mobile Elixir nodes using :eprof and :fprof.
+  Performance profiling for dala Elixir nodes using :eprof and :fprof.
 
   Provides CPU profiling, flame graphs, and performance analysis
-  for mobile Elixir cluster nodes.
+  for dala Elixir cluster nodes.
 
   ## Examples:
 
       # Profile a function on a node
-      {:ok, profile} = MobDev.Profiling.profile(
-        :"mob_qa@192.168.1.5",
+      {:ok, profile} = DalaDev.Profiling.profile(
+        :"dala_qa@192.168.1.5",
         fn -> MyApp.heavy_computation() end
       )
 
       # Analyze profile
-      {:ok, analysis} = MobDev.Profiling.analyze(profile)
+      {:ok, analysis} = DalaDev.Profiling.analyze(profile)
 
       # Generate flame graph (HTML)
-      MobDev.Profiling.flame_graph(profile, "flame.html")
+      DalaDev.Profiling.flame_graph(profile, "flame.html")
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type node_ref :: node() | Device.t() | String.t()
   @type profile_data :: term()

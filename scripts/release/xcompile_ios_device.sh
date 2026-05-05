@@ -51,7 +51,7 @@ apply_patch() {
 }
 
 apply_patch "$PATCHES_DIR/0001-ios-device-skip-forker-fork.patch" \
-            "mob_dev iOS device patch" \
+            "dala_dev iOS device patch" \
             erts/emulator/sys/unix/sys_drivers.c
 
 apply_patch "$PATCHES_DIR/0002-ios-device-epmd-no-daemon.patch" \

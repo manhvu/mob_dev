@@ -1,4 +1,4 @@
-defmodule MobDev.Server.LogFilter do
+defmodule DalaDev.Server.LogFilter do
   @moduledoc """
   Pure filter functions for the log stream. Extracted here so they can be
   unit-tested without mounting a LiveView.
@@ -31,12 +31,12 @@ defmodule MobDev.Server.LogFilter do
 
   @spec by_device([line()], filter()) :: [line()]
   def by_device(lines, :all), do: lines
-  def by_device(lines, :app), do: Enum.filter(lines, & &1.mob)
+  def by_device(lines, :app), do: Enum.filter(lines, & &1.dala)
   def by_device(lines, serial), do: Enum.filter(lines, &(&1.serial == serial))
 
   @spec by_device?(line(), filter()) :: boolean()
   def by_device?(_, :all), do: true
-  def by_device?(line, :app), do: line.mob
+  def by_device?(line, :app), do: line.dala
   def by_device?(line, serial), do: line.serial == serial
 
   # ── Text filter ───────────────────────────────────────────────────────────────

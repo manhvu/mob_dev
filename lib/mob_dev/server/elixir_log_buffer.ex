@@ -1,7 +1,7 @@
-defmodule MobDev.Server.ElixirLogBuffer do
+defmodule DalaDev.Server.ElixirLogBuffer do
   @moduledoc """
   Holds the last N server-side Elixir log lines in memory so the dashboard
-  can restore them on reconnect. Fed by `MobDev.Server.ElixirLogger`.
+  can restore them on reconnect. Fed by `DalaDev.Server.ElixirLogger`.
   """
   use GenServer
 

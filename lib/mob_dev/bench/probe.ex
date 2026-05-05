@@ -1,4 +1,4 @@
-defmodule MobDev.Bench.Probe do
+defmodule DalaDev.Bench.Probe do
   @moduledoc """
   Multi-source state probe for the battery bench.
 
@@ -191,7 +191,7 @@ defmodule MobDev.Bench.Probe do
   # ── Battery via RPC ──────────────────────────────────────────────────────
 
   defp probe_rpc_battery(:alive_rpc, node, timeout_ms) do
-    case :rpc.call(node, :mob_nif, :battery_level, [], timeout_ms) do
+    case :rpc.call(node, :dala_nif, :battery_level, [], timeout_ms) do
       n when is_integer(n) and n >= 0 and n <= 100 ->
         {n, nil}
 
@@ -334,7 +334,7 @@ defmodule MobDev.Bench.Probe do
   end
 
   # Android: `adb shell pidof <pkg>` returns the pid (or empty if not running).
-  # `pidof` is available on Android 6+ which is well below any device Mob
+  # `pidof` is available on Android 6+ which is well below any app Dala
   # currently targets.
   defp probe_app_process_android(nil, _bundle), do: :app_unknown
   defp probe_app_process_android(_serial, nil), do: :app_unknown
@@ -374,7 +374,7 @@ defmodule MobDev.Bench.Probe do
   #   - If RPC works during a screen-off bench, the BEAM is awake even though
   #     the screen is locked — so screen state is independent of RPC state
   #
-  # We honor the caller's expectation. Future: subscribe to Mob.Device's
+  # We honor the caller's expectation. Future: subscribe to Dala.Device's
   # protected_data_will_become_unavailable / available events via RPC for
   # ground-truth screen state.
 
@@ -396,11 +396,11 @@ defmodule MobDev.Bench.Probe do
   @doc """
   Format the probe result as a one-line trace fragment.
 
-      iex> probe = %MobDev.Bench.Probe{
+      iex> probe = %DalaDev.Bench.Probe{
       ...>   ts_ms: 0, reachability: :alive_rpc, app_process: :app_running,
       ...>   usb: :no_usb, screen: :off, battery_pct: 87, reason: nil
       ...> }
-      iex> MobDev.Bench.Probe.format(probe)
+      iex> DalaDev.Bench.Probe.format(probe)
       "screen:off app:running rpc:ok battery:87%"
   """
   @spec format(t()) :: String.t()

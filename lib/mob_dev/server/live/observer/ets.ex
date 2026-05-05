@@ -1,7 +1,7 @@
-defmodule MobDev.Server.ObserverLive.ETS do
+defmodule DalaDev.Server.ObserverLive.ETS do
   @moduledoc "LiveView for ETS tables browser."
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
-  alias MobDev.Observer
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
+  alias DalaDev.Observer
 
   @refresh_interval 5_000
   @page_size 100

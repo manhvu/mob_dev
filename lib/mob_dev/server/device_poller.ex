@@ -1,10 +1,10 @@
-defmodule MobDev.Server.DevicePoller do
+defmodule DalaDev.Server.DevicePoller do
   @moduledoc """
   Polls adb and simctl every 2 seconds, broadcasting device state changes via PubSub.
   """
   use GenServer
 
-  alias MobDev.Discovery.{Android, IOS}
+  alias DalaDev.Discovery.{Android, IOS}
 
   @poll_ms 2_000
 
@@ -42,7 +42,7 @@ defmodule MobDev.Server.DevicePoller do
     devices = poll_devices()
 
     if devices != state.devices do
-      Phoenix.PubSub.broadcast(MobDev.PubSub, "devices", {:devices_updated, devices})
+      Phoenix.PubSub.broadcast(DalaDev.PubSub, "devices", {:devices_updated, devices})
     end
 
     {:noreply, %{state | devices: devices}}

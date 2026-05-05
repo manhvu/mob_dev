@@ -1,14 +1,14 @@
-defmodule MobDev.IconGenerator do
+defmodule DalaDev.IconGenerator do
   # Image and Avatarz are optional deps — only needed for custom/random icon generation.
-  # When they're absent we fall back to the bundled pre-built mob_logo PNGs.
+  # When they're absent we fall back to the bundled pre-built dala_logo PNGs.
   @compile {:no_warn_undefined, [Image, Avatarz, Avatarz.Sets.Robot]}
 
   @moduledoc """
   Generates app icons for Android and iOS from either a random robot avatar
   (using Avatarz) or a provided source image (using Image).
 
-  When the `image` dep is not available, falls back to the bundled Mob logo
-  (pre-built PNGs shipped with mob_dev, no system tools required).
+  When the `image` dep is not available, falls back to the bundled Dala logo
+  (pre-built PNGs shipped with dala_dev, no system tools required).
 
   ## Android sizes (mipmap buckets)
 
@@ -44,7 +44,7 @@ defmodule MobDev.IconGenerator do
     | App Store                 |1024  |
   """
 
-  @mob_logo_dir :code.priv_dir(:mob_dev) |> Path.join("mob_logo")
+  @dala_logo_dir :code.priv_dir(:dala_dev) |> Path.join("dala_logo")
 
   @android_sizes %{
     "mipmap-mdpi" => 48,
@@ -94,24 +94,24 @@ defmodule MobDev.IconGenerator do
     else
       Mix.shell().info("""
       \nNote: the `image` dependency is not available so a random icon could not
-      be generated. Using the Mob logo as a placeholder instead.
-      Run `mix mob.icon` after adding `{:image, "~> 0.54"}` to your deps to
+      be generated. Using the Dala logo as a placeholder instead.
+      Run `mix dala.icon` after adding `{:image, "~> 0.54"}` to your deps to
       replace it with a custom or generated icon.\n
       """)
 
-      use_mob_logo(output_dir)
+      use_dala_logo(output_dir)
     end
   end
 
   @doc """
-  Copies the bundled Mob logo (pre-built PNGs) to all platform icon directories
-  in `output_dir`. Used as the default placeholder icon by `mix mob.install`.
+  Copies the bundled Dala logo (pre-built PNGs) to all platform icon directories
+  in `output_dir`. Used as the default placeholder icon by `mix dala.install`.
   No extra dependencies or system tools required.
 
   Returns `:ok`.
   """
-  @spec use_mob_logo(output_dir :: String.t()) :: :ok
-  def use_mob_logo(output_dir) do
+  @spec use_dala_logo(output_dir :: String.t()) :: :ok
+  def use_dala_logo(output_dir) do
     write_android_icons_from_priv(output_dir)
     write_ios_icons_from_priv(output_dir)
     :ok
@@ -289,7 +289,7 @@ defmodule MobDev.IconGenerator do
     Enum.each(@android_sizes, fn {bucket, px} ->
       dest_dir = Path.join([output_dir, "android", "app", "src", "main", "res", bucket])
       File.mkdir_p!(dest_dir)
-      File.cp!(Path.join(@mob_logo_dir, "#{px}.png"), Path.join(dest_dir, "ic_launcher.png"))
+      File.cp!(Path.join(@dala_logo_dir, "#{px}.png"), Path.join(dest_dir, "ic_launcher.png"))
     end)
   end
 
@@ -310,7 +310,7 @@ defmodule MobDev.IconGenerator do
     File.mkdir_p!(dest_dir)
 
     Enum.each(@ios_sizes, fn px ->
-      File.cp!(Path.join(@mob_logo_dir, "#{px}.png"), Path.join(dest_dir, "icon_#{px}.png"))
+      File.cp!(Path.join(@dala_logo_dir, "#{px}.png"), Path.join(dest_dir, "icon_#{px}.png"))
     end)
 
     write_ios_contents_json(dest_dir)
@@ -386,7 +386,7 @@ defmodule MobDev.IconGenerator do
         }
       end)
 
-    contents = %{"images" => images, "info" => %{"author" => "mob", "version" => 1}}
+    contents = %{"images" => images, "info" => %{"author" => "dala", "version" => 1}}
     json_path = Path.join(dest_dir, "Contents.json")
     File.write!(json_path, Jason.encode!(contents, pretty: true))
   end

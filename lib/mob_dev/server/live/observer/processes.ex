@@ -1,10 +1,10 @@
-defmodule MobDev.Server.ObserverLive.Processes do
+defmodule DalaDev.Server.ObserverLive.Processes do
   @moduledoc """
   LiveView for process list display with sorting and filtering.
   """
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.Observer
+  alias DalaDev.Observer
 
   @refresh_interval 5_000
   @page_size 100

@@ -1,6 +1,6 @@
-defmodule MobDev.ClusterViz do
+defmodule DalaDev.ClusterViz do
   @moduledoc """
-  Cluster visualization for mobile Elixir nodes.
+  Cluster visualization for dala Elixir nodes.
 
   Provides web-based dashboard with D3.js graphs for:
   - Cluster topology visualization
@@ -9,10 +9,10 @@ defmodule MobDev.ClusterViz do
   - LiveView message flow diagram
   - Real-time metrics (memory, reductions, message queue)
 
-  Integrates with `mob.server` to serve the dashboard.
+  Integrates with `dala.server` to serve the dashboard.
   """
 
-  alias MobDev.{Device, Benchmark, Debugger, NetworkDiag}
+  alias DalaDev.{Device, Benchmark, Debugger, NetworkDiag}
 
   @type node_info :: %{
           node: node(),
@@ -210,7 +210,7 @@ defmodule MobDev.ClusterViz do
 
   defp dispatch_rules(refresh) do
     [
-      {:_, [], MobDev.Server.ClusterVizHandler, %{refresh_interval: refresh}}
+      {:_, [], DalaDev.Server.ClusterVizHandler, %{refresh_interval: refresh}}
     ]
   end
 end

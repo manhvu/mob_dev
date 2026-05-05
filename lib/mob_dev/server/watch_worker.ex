@@ -1,10 +1,10 @@
-defmodule MobDev.Server.WatchWorker do
+defmodule DalaDev.Server.WatchWorker do
   @moduledoc """
-  GenServer that runs the mob.watch loop inside the mob.server process.
+  GenServer that runs the dala.watch loop inside the dala.server process.
 
   Polls `lib/**/*.ex` for changes every 500ms. When files change it
   debounces, recompiles, and hot-pushes changed modules to all connected
-  device nodes via Erlang dist — same logic as `mix mob.watch` but driven
+  device nodes via Erlang dist — same logic as `mix dala.watch` but driven
   from the dashboard UI instead of a terminal.
 
   Events broadcast to the `"watch"` PubSub topic:
@@ -15,11 +15,11 @@ defmodule MobDev.Server.WatchWorker do
   use GenServer
   require Logger
 
-  alias MobDev.HotPush
+  alias DalaDev.HotPush
 
-  @pubsub MobDev.PubSub
+  @pubsub DalaDev.PubSub
   @topic "watch"
-  @cookie :mob_secret
+  @cookie :dala_secret
   # ms between source polls
   @interval 500
   # ms to wait after first change before compiling

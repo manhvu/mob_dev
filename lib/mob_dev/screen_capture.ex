@@ -1,4 +1,4 @@
-defmodule MobDev.ScreenCapture do
+defmodule DalaDev.ScreenCapture do
   @moduledoc """
   Capture screenshots and record screen video from mobile devices.
 
@@ -6,22 +6,22 @@ defmodule MobDev.ScreenCapture do
   - Android devices (via adb screencap / screenrecord)
   - iOS simulators (via xcrun simctl io)
   - iOS physical devices (via idevicescreenshot / idevicerecord)
-  - Live screen preview via WebSocket to mob.server
+  - Live screen preview via WebSocket to dala.server
 
   ## Examples
 
       # Take a screenshot
-      {:ok, png_data} = MobDev.ScreenCapture.capture(:"mob_qa@192.168.1.5")
-      {:ok, path} = MobDev.ScreenCapture.capture(device, save_as: "screenshot.png")
+      {:ok, png_data} = DalaDev.ScreenCapture.capture(:"dala_qa@192.168.1.5")
+      {:ok, path} = DalaDev.ScreenCapture.capture(device, save_as: "screenshot.png")
 
       # Record video (Android: max 3 min, iOS sim: no limit)
-      {:ok, path} = MobDev.ScreenCapture.record(device, duration: 30)
+      {:ok, path} = DalaDev.ScreenCapture.record(device, duration: 30)
 
       # Live preview in browser
-      MobDev.ScreenCapture.live_preview(device, port: 5050)
+      DalaDev.ScreenCapture.live_preview(device, port: 5050)
   """
 
-  alias MobDev.{Device, Utils}
+  alias DalaDev.{Device, Utils}
 
   @type device_ref :: Device.t() | node() | String.t()
   @type capture_opts :: keyword()
@@ -154,7 +154,7 @@ defmodule MobDev.ScreenCapture do
       bitrate,
       "--time-limit",
       to_string(duration),
-      "/sdcard/mob_screenrecord.mp4"
+      "/sdcard/dala_screenrecord.mp4"
     ]
 
     IO.puts("Recording for #{duration}s... (Ctrl+C to stop early)")
@@ -162,12 +162,12 @@ defmodule MobDev.ScreenCapture do
     case System.cmd("adb", args, stderr_to_stdout: true, into: IO.stream(:stdio, 1)) do
       {_, 0} ->
         # Pull the recording from device
-        pull_args = ["-s", serial, "pull", "/sdcard/mob_screenrecord.mp4", save_as]
+        pull_args = ["-s", serial, "pull", "/sdcard/dala_screenrecord.mp4", save_as]
 
         case System.cmd("adb", pull_args, stderr_to_stdout: true) do
           {_, 0} ->
             # Clean up device
-            Utils.run_adb_for_device(serial, ["shell", "rm", "/sdcard/mob_screenrecord.mp4"])
+            Utils.run_adb_for_device(serial, ["shell", "rm", "/sdcard/dala_screenrecord.mp4"])
             {:ok, save_as}
 
           {err, _} ->

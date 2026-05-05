@@ -1,22 +1,22 @@
-# Refactoring Summary - mob_dev Repository
+# Refactoring Summary - dala_dev Repository
 
 ## Overview
-This document summarizes the refactoring and improvements made to the `mob_dev` repository,
+This document summarizes the refactoring and improvements made to the `dala_dev` repository,
 a tool for developing and deploying Elixir applications to mobile devices.
 
 ## Completed Improvements
 
 ### 1. Enhanced Type Specifications ✅
 **Files modified:**
-- `lib/mob_dev/device.ex`
+- `lib/dala_dev/device.ex`
   - Added comprehensive typespecs for all struct fields
   - Defined types: `platform()`, `device_type()`, `status()`, `t()`
   - Improved @doc with examples for key functions
   - Added typespecs for `short_id/1`, `node_name/1`, `match_id?/2`
 
 ### 2. Centralized Utilities Module ✅
-**New file:** `lib/mob_dev/utils.ex`
-- Created `MobDev.Utils` module for common operations
+**New file:** `lib/dala_dev/utils.ex`
+- Created `DalaDev.Utils` module for common operations
 - Functions added:
   - `compile_regex/2` - Centralizes regex compilation (replaces `Regex.compile!`)
   - `run_adb_with_timeout/2` - Safe ADB command execution with timeout
@@ -29,49 +29,49 @@ a tool for developing and deploying Elixir applications to mobile devices.
 
 ### 3. Improved Documentation ✅
 **Files modified:**
-- `lib/mob_dev/tunnel.ex`
+- `lib/dala_dev/tunnel.ex`
   - Better organized moduledoc with clear sections for Android, iOS physical, and iOS simulator
   - Added typespecs: `result()`, `teardown_result()`
   - Improved @doc for `setup/2`, `dist_port/1`, `teardown/1`
 
-- `lib/mob_dev/otp_downloader.ex`
+- `lib/dala_dev/otp_downloader.ex`
   - Enhanced moduledoc with cache validation details
   - Improved @doc for `ensure_android/1`, `ensure_ios_sim/0`, `ensure_ios_device/0`
   - Added parameter documentation
   - Added timeout to download function (300s)
-  - Uses `MobDev.Error` for consistent error handling
+  - Uses `DalaDev.Error` for consistent error handling
 
-- `lib/mob_dev/config.ex`
-  - Updated to reference centralized `MobDev.Utils.compile_regex/2`
+- `lib/dala_dev/config.ex`
+  - Updated to reference centralized `DalaDev.Utils.compile_regex/2`
   - Removed local `compile_regex/2` in favor of centralized version
 
 ### 4. Reduced Code Duplication ✅
 **Files modified:**
-- `lib/mob_dev/native_build.ex`
-  - Replaced local `parse_adb_serials/1` with `MobDev.Utils.parse_adb_devices_output/1`
-  - Replaced `adb_available?/0` with `MobDev.Utils.adb_available?/0`
+- `lib/dala_dev/native_build.ex`
+  - Replaced local `parse_adb_serials/1` with `DalaDev.Utils.parse_adb_devices_output/1`
+  - Replaced `adb_available?/0` with `DalaDev.Utils.adb_available?/0`
 
-- `lib/mob_dev/discovery/android.ex`
-  - Replaced local `run_adb/1` with `MobDev.Utils.run_adb_with_timeout/2`
+- `lib/dala_dev/discovery/android.ex`
+  - Replaced local `run_adb/1` with `DalaDev.Utils.run_adb_with_timeout/2`
 
-- `lib/mob_dev/tunnel.ex`
-  - Replaced local `run_adb/1` with `MobDev.Utils.run_adb_with_timeout/2`
+- `lib/dala_dev/tunnel.ex`
+  - Replaced local `run_adb/1` with `DalaDev.Utils.run_adb_with_timeout/2`
 
 ### 5. Standardized Error Handling ✅
-**New file:** `lib/mob_dev/error.ex`
-- Created `MobDev.Error` module for consistent error handling
+**New file:** `lib/dala_dev/error.ex`
+- Created `DalaDev.Error` module for consistent error handling
 - Functions:
   - `new/1`, `new/2` - Create standardized error tuples
   - `format/1` - Format errors for display
   - `wrap/2` - Wrap function calls with error handling
 
 **Files updated:**
-- `lib/mob_dev/otp_downloader.ex` - Uses `MobDev.Error.new/2` for error formatting
+- `lib/dala_dev/otp_downloader.ex` - Uses `DalaDev.Error.new/2` for error formatting
 
 ### 6. Testing Improvements ✅
 **New test files:**
-- `test/mob_dev/utils_test.exs` - 16 tests for MobDev.Utils functions
-- `test/mob_dev/error_test.exs` - 12 tests for MobDev.Error functions
+- `test/dala_dev/utils_test.exs` - 16 tests for DalaDev.Utils functions
+- `test/dala_dev/error_test.exs` - 12 tests for DalaDev.Error functions
 
 **Results:**
 - Test count increased from 464 to **484 tests** (20 new tests)
@@ -96,19 +96,19 @@ a tool for developing and deploying Elixir applications to mobile devices.
 
 ### 1. Large Module Refactoring (High Impact)
 **Target files:**
-- `lib/mob_dev/deployer.ex` (1253 lines)
-- `lib/mob_dev/native_build.ex` (1582 lines)
+- `lib/dala_dev/deployer.ex` (1253 lines)
+- `lib/dala_dev/native_build.ex` (1582 lines)
 
 **Suggested approach:**
-- Extract Android-specific deployment logic into `lib/mob_dev/deployer/android.ex`
-- Extract iOS-specific deployment logic into `lib/mob_dev/deployer/ios.ex`
-- Extract shared device communication patterns into `lib/mob_dev/deployer/shared.ex`
+- Extract Android-specific deployment logic into `lib/dala_dev/deployer/android.ex`
+- Extract iOS-specific deployment logic into `lib/dala_dev/deployer/ios.ex`
+- Extract shared device communication patterns into `lib/dala_dev/deployer/shared.ex`
 - Similar structure for `native_build.ex`
 
 ### 2. Complete Error Handling Standardization (Medium Impact)
-**Current state:** `MobDev.Error` created but not yet widely adopted
+**Current state:** `DalaDev.Error` created but not yet widely adopted
 **Next steps:**
-- Update `deployer.ex` to use `MobDev.Error` for error returns
+- Update `deployer.ex` to use `DalaDev.Error` for error returns
 - Update `native_build.ex` to use standardized errors
 - Update `otp_downloader.ex` for consistent error formatting
 - Consider whether to use `{:error, reason}` vs `{:error, module, reason}` consistently

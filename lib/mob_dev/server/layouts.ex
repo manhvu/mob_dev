@@ -1,4 +1,4 @@
-defmodule MobDev.Server.Layouts do
+defmodule DalaDev.Server.Layouts do
   use Phoenix.Component
 
   @spec root(map()) :: Phoenix.LiveView.Rendered.t()
@@ -10,7 +10,7 @@ defmodule MobDev.Server.Layouts do
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()}/>
-        <title>Mob Dev</title>
+        <title>Dala Dev</title>
         <link rel="icon" href="data:,"/>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="/assets/phoenix/phoenix.min.js"></script>
@@ -83,7 +83,7 @@ defmodule MobDev.Server.Layouts do
           .log-W { color: #fbbf24; }
           .log-I { color: #86efac; }
           .log-D { color: #94a3b8; }
-          .log-mob { color: #a78bfa; font-weight: 600; }
+          .log-dala { color: #a78bfa; font-weight: 600; }
           #log-container { scroll-behavior: smooth; }
         </style>
       </head>

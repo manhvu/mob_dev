@@ -1,7 +1,7 @@
-defmodule MobDev.Server.DashboardLive do
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+defmodule DalaDev.Server.DashboardLive do
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.Server.{LogFilter, WatchWorker}
+  alias DalaDev.Server.{LogFilter, WatchWorker}
 
   @log_limit 500
   @elixir_limit 200
@@ -14,17 +14,17 @@ defmodule MobDev.Server.DashboardLive do
   @spec mount(map(), map(), Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(MobDev.PubSub, @device_topic)
-      Phoenix.PubSub.subscribe(MobDev.PubSub, @log_topic)
-      Phoenix.PubSub.subscribe(MobDev.PubSub, @elixir_topic)
-      Phoenix.PubSub.subscribe(MobDev.PubSub, @watch_topic)
+      Phoenix.PubSub.subscribe(DalaDev.PubSub, @device_topic)
+      Phoenix.PubSub.subscribe(DalaDev.PubSub, @log_topic)
+      Phoenix.PubSub.subscribe(DalaDev.PubSub, @elixir_topic)
+      Phoenix.PubSub.subscribe(DalaDev.PubSub, @watch_topic)
     end
 
-    devices = MobDev.Server.DevicePoller.get_devices()
+    devices = DalaDev.Server.DevicePoller.get_devices()
     # newest-first list
-    all_lines = MobDev.Server.LogBuffer.get()
-    elixir_lines = MobDev.Server.ElixirLogBuffer.get()
-    lan_url = Application.get_env(:mob_dev, :dashboard_lan_url)
+    all_lines = DalaDev.Server.LogBuffer.get()
+    elixir_lines = DalaDev.Server.ElixirLogBuffer.get()
+    lan_url = Application.get_env(:dala_dev, :dashboard_lan_url)
 
     {qr_small, qr_large} =
       if lan_url do
@@ -200,7 +200,7 @@ defmodule MobDev.Server.DashboardLive do
   end
 
   def handle_event("clear_logs", _, socket) do
-    MobDev.Server.LogBuffer.clear()
+    DalaDev.Server.LogBuffer.clear()
 
     socket =
       socket
@@ -231,7 +231,7 @@ defmodule MobDev.Server.DashboardLive do
   end
 
   def handle_event("clear_elixir_logs", _, socket) do
-    MobDev.Server.ElixirLogBuffer.clear()
+    DalaDev.Server.ElixirLogBuffer.clear()
 
     socket =
       socket
@@ -249,8 +249,8 @@ defmodule MobDev.Server.DashboardLive do
 
     args =
       case mode do
-        :first_deploy -> ["mob.deploy", "--native", platform_flag]
-        :update -> ["mob.deploy", platform_flag]
+        :first_deploy -> ["dala.deploy", "--native", platform_flag]
+        :update -> ["dala.deploy", platform_flag]
       end
 
     _ = serial
@@ -331,8 +331,8 @@ defmodule MobDev.Server.DashboardLive do
     <%!-- Header --%>
     <header class="flex items-center justify-between px-6 py-3 border-b border-zinc-800 bg-zinc-900 shrink-0">
       <div class="flex items-center gap-3">
-        <span class="text-lg font-bold tracking-tight text-white">Mob Dev</span>
-        <span class="text-xs text-zinc-500">mob_dev v0.2.2</span>
+        <span class="text-lg font-bold tracking-tight text-white">Dala Dev</span>
+        <span class="text-xs text-zinc-500">dala_dev v0.2.2</span>
       </div>
       <div class="flex items-center gap-4">
         <span class="text-xs text-zinc-500"><%= length(@devices) %> device(s) connected</span>
@@ -432,8 +432,8 @@ defmodule MobDev.Server.DashboardLive do
           </div>
           <%!-- Terminal equivalents --%>
           <div class="text-zinc-600 text-xs font-mono space-y-0.5">
-            <div>update: <span class="text-zinc-500">mix mob.deploy <%= platform_flag %></span></div>
-            <div>first deploy: <span class="text-zinc-500">mix mob.deploy --native <%= platform_flag %></span></div>
+            <div>update: <span class="text-zinc-500">mix dala.deploy <%= platform_flag %></span></div>
+            <div>first deploy: <span class="text-zinc-500">mix dala.deploy --native <%= platform_flag %></span></div>
           </div>
 
           <%!-- Deploy output (shown while deploying) --%>
@@ -502,7 +502,7 @@ defmodule MobDev.Server.DashboardLive do
                   <div class="flex-1 h-px bg-amber-900"></div>
                 </div>
               <% else %>
-                <div class={"log-line " <> level_class(line.level) <> if(line.mob, do: " log-mob", else: "")}>
+                <div class={"log-line " <> level_class(line.level) <> if(line.dala, do: " log-dala", else: "")}>
                   <span class="text-zinc-600 select-none"><%= line.ts %> </span>
                   <span :if={line.tag} class="text-zinc-500">[<%= line.tag %>] </span>
                   <%= line.message %>

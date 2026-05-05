@@ -1,4 +1,4 @@
-defmodule MobDev.Bench.Logger do
+defmodule DalaDev.Bench.Logger do
   @moduledoc """
   Append-only CSV log of bench probe snapshots.
 
@@ -17,7 +17,7 @@ defmodule MobDev.Bench.Logger do
   reconnect count, etc.
   """
 
-  alias MobDev.Bench.Probe
+  alias DalaDev.Bench.Probe
 
   defstruct [:path, :file, :start_ts_ms, :rows]
 

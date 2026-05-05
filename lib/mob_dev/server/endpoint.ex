@@ -1,9 +1,9 @@
-defmodule MobDev.Server.Endpoint do
-  use Phoenix.Endpoint, otp_app: :mob_dev
+defmodule DalaDev.Server.Endpoint do
+  use Phoenix.Endpoint, otp_app: :dala_dev
 
   socket("/live", Phoenix.LiveView.Socket,
     websocket: [
-      connect_info: [session: [store: :cookie, key: "_mob_dev_session", signing_salt: "mob_dev"]]
+      connect_info: [session: [store: :cookie, key: "_dala_dev_session", signing_salt: "dala_dev"]]
     ]
   )
 
@@ -23,7 +23,7 @@ defmodule MobDev.Server.Endpoint do
 
   plug(Plug.Static,
     at: "/",
-    from: {:mob_dev, "priv/static"},
+    from: {:dala_dev, "priv/static"},
     gzip: false
   )
 
@@ -31,9 +31,9 @@ defmodule MobDev.Server.Endpoint do
 
   plug(Plug.Session,
     store: :cookie,
-    key: "_mob_dev_session",
-    signing_salt: "mob_dev"
+    key: "_dala_dev_session",
+    signing_salt: "dala_dev"
   )
 
-  plug(MobDev.Server.Router)
+  plug(DalaDev.Server.Router)
 end

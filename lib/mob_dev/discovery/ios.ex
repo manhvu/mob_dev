@@ -1,4 +1,4 @@
-defmodule MobDev.Discovery.IOS do
+defmodule DalaDev.Discovery.IOS do
   @moduledoc """
   Discovers iOS simulators via xcrun simctl.
 
@@ -6,7 +6,7 @@ defmodule MobDev.Discovery.IOS do
   Best-effort: works if tools are installed, degrades gracefully if not.
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @doc "Returns booted iOS simulators."
   @spec list_simulators() :: [Device.t()]
@@ -22,7 +22,7 @@ defmodule MobDev.Discovery.IOS do
 
   Always runs both USB discovery (`ideviceinfo`) and a LAN EPMD scan in
   parallel. The LAN scan finds the device's actual node IP (which is
-  WiFi-first since mob_beam.m prefers a stable LAN address). The USB scan
+  WiFi-first since dala_beam.m prefers a stable LAN address). The USB scan
   provides the UDID and device name. Results are merged: one device with the
   correct WiFi IP and full USB metadata.
 
@@ -58,7 +58,7 @@ defmodule MobDev.Discovery.IOS do
         lan
 
       # USB found devices, LAN didn't — try devicectl-driven enrichment so the
-      # IP shows up in `mix mob.devices` and the bench can short-circuit to
+      # IP shows up in `mix dala.devices` and the bench can short-circuit to
       # `--wifi-ip <ip>` next time.
       {[], [_ | _]} ->
         enrich_with_devicectl(usb)
@@ -113,7 +113,7 @@ defmodule MobDev.Discovery.IOS do
       tmp =
         Path.join(
           System.tmp_dir!(),
-          "mob_devs_ipv4_#{System.unique_integer([:positive])}.json"
+          "dala_devs_ipv4_#{System.unique_integer([:positive])}.json"
         )
 
       try do
@@ -331,7 +331,7 @@ defmodule MobDev.Discovery.IOS do
 
   # Scan the local ARP table for any host running an iOS EPMD node (*_ios).
   # Builds a Device using the node name and IP directly from the EPMD response,
-  # so the app name in the Mix project running mob_dev is irrelevant.
+  # so the app name in the Mix project running dala_dev is irrelevant.
   defp scan_lan_for_physical do
     own_ips = local_ipv4_addresses()
 
@@ -387,7 +387,7 @@ defmodule MobDev.Discovery.IOS do
 
   # Query EPMD at ip:4369 for any *_ios node.
   # Returns {:ok, short_name, dist_port} using the actual name from EPMD,
-  # so the result is independent of which Mix project is running mob_dev.
+  # so the result is independent of which Mix project is running dala_dev.
   #
   # Validates the dist port to avoid a phantom hit: an Android phone with
   # `adb reverse tcp:4369 tcp:4369` configured will forward LAN connections
@@ -469,21 +469,21 @@ defmodule MobDev.Discovery.IOS do
   Passes two env vars through to the simulator app via `simctl`'s
   `SIMCTL_CHILD_*` mechanism (the prefix is stripped before delivery):
 
-    * `MOB_DIST_PORT`        — Erlang dist listen port
-    * `MOB_SIM_RUNTIME_DIR`  — directory the OTP runtime was written to,
-      so `mob_beam.m` reads from the same place `ios/build.sh` wrote.
-      Resolved by `MobDev.Paths.sim_runtime_dir/1`.
+    * `DALA_DIST_PORT`        — Erlang dist listen port
+    * `DALA_SIM_RUNTIME_DIR`  — directory the OTP runtime was written to,
+      so `dala_beam.m` reads from the same place `ios/build.sh` wrote.
+      Resolved by `DalaDev.Paths.sim_runtime_dir/1`.
   """
   @spec launch_app(String.t(), String.t(), keyword()) :: {String.t(), non_neg_integer()}
   def launch_app(udid, bundle_id, opts \\ []) do
     dist_port = Keyword.get(opts, :dist_port, 9100)
-    runtime_dir = MobDev.Paths.sim_runtime_dir()
+    runtime_dir = DalaDev.Paths.sim_runtime_dir()
 
     System.cmd("xcrun", ["simctl", "launch", udid, bundle_id],
       stderr_to_stdout: true,
       env: [
-        {"SIMCTL_CHILD_MOB_DIST_PORT", to_string(dist_port)},
-        {"SIMCTL_CHILD_MOB_SIM_RUNTIME_DIR", runtime_dir}
+        {"SIMCTL_CHILD_DALA_DIST_PORT", to_string(dist_port)},
+        {"SIMCTL_CHILD_DALA_SIM_RUNTIME_DIR", runtime_dir}
       ]
     )
   end
@@ -521,7 +521,7 @@ defmodule MobDev.Discovery.IOS do
 
   # Kill any user-installed app that is not `except_bundle`.
   # User apps run from /private/var/containers/Bundle/Application/.
-  # All physical-device Mob apps share in-process EPMD on port 4369, so only
+  # All physical-app Dala apps share in-process EPMD on port 4369, so only
   # one can run at a time. We kill the others before launching to avoid the
   # EADDRINUSE crash that would otherwise prevent BEAM from starting.
   defp kill_other_user_apps_physical(udid, except_bundle) do

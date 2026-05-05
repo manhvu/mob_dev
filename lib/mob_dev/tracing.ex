@@ -1,29 +1,29 @@
-defmodule MobDev.Tracing do
+defmodule DalaDev.Tracing do
   @moduledoc """
-  Distributed tracing for mobile Elixir cluster nodes.
+  Distributed tracing for dala Elixir cluster nodes.
 
-  Provides tracing capabilities across connected mobile nodes to debug
+  Provides tracing capabilities across connected dala nodes to debug
   message flows, function calls, and GenServer lifecycle events.
 
   ## Examples
 
       # Start tracing on all connected nodes
-      {:ok, trace_id} = MobDev.Tracing.start_trace(:all_nodes, modules: [MyApp, Mob.Screen])
+      {:ok, trace_id} = DalaDev.Tracing.start_trace(:all_nodes, modules: [MyApp, Dala.Screen])
 
       # Trace specific node
-      {:ok, trace_id} = MobDev.Tracing.start_trace(:"mob_qa@192.168.1.5")
+      {:ok, trace_id} = DalaDev.Tracing.start_trace(:"dala_qa@192.168.1.5")
 
       # Get trace events
-      events = MobDev.Tracing.get_events(trace_id)
+      events = DalaDev.Tracing.get_events(trace_id)
 
       # Export to Chrome Tracing format
-      MobDev.Tracing.export_chrome_trace(trace_id, "trace.json")
+      DalaDev.Tracing.export_chrome_trace(trace_id, "trace.json")
 
       # Stop tracing
-      :ok = MobDev.Tracing.stop_trace(trace_id)
+      :ok = DalaDev.Tracing.stop_trace(trace_id)
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type trace_id :: reference()
   @type trace_opts :: keyword()

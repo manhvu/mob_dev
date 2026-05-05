@@ -1,7 +1,7 @@
-defmodule MobDev.Discovery.Android do
+defmodule DalaDev.Discovery.Android do
   @moduledoc "Discovers Android devices and emulators via adb."
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @doc "Returns a list of %Device{} for all adb-visible Android devices."
   @spec list_devices() :: [Device.t()]
@@ -206,16 +206,16 @@ defmodule MobDev.Discovery.Android do
       "-n",
       "#{package}/#{activity}",
       "--ei",
-      "mob_dist_port",
+      "dala_dist_port",
       to_string(dist_port),
       "--es",
-      "mob_node_suffix",
+      "dala_node_suffix",
       node_suffix
     ])
   end
 
   @doc """
-  Sanitizes a string into a Mob node-name suffix. Pure — no adb calls.
+  Sanitizes a string into a Dala node-name suffix. Pure — no adb calls.
 
       node_suffix_for("ZY22CRLMWK")        → "zy22crlmwk"
       node_suffix_for("10.0.0.82:5555")    → "10_0_0_82"
@@ -238,7 +238,7 @@ defmodule MobDev.Discovery.Android do
   end
 
   @doc """
-  Returns the Mob node-name suffix for the device reachable via the given
+  Returns the Dala node-name suffix for the device reachable via the given
   adb identifier. The suffix is derived from the device's hardware serial
   (`ro.serialno`), which is stable across USB and WiFi-adb identifiers for
   the same physical phone — so a deploy that targets `ZY22K6BSJM` (USB)
@@ -271,6 +271,6 @@ defmodule MobDev.Discovery.Android do
   end
 
   defp run_adb(args) do
-    MobDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
+    DalaDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
   end
 end

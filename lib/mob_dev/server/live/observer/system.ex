@@ -1,7 +1,7 @@
-defmodule MobDev.Server.ObserverLive.System do
+defmodule DalaDev.Server.ObserverLive.System do
   @moduledoc "LiveView for system information display."
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
-  alias MobDev.Observer
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
+  alias DalaDev.Observer
 
   @refresh_interval 5_000
 

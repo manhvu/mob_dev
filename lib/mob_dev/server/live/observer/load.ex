@@ -1,9 +1,9 @@
-defmodule MobDev.Server.ObserverLive.Load do
+defmodule DalaDev.Server.ObserverLive.Load do
   @moduledoc "LiveView for system load display (scheduler usage, I/O stats)."
 
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.Observer
+  alias DalaDev.Observer
 
   @refresh_interval 5_000
 

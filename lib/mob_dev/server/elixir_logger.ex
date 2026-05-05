@@ -1,9 +1,9 @@
-defmodule MobDev.Server.ElixirLogger do
+defmodule DalaDev.Server.ElixirLogger do
   @moduledoc """
   OTP logger handler that captures Elixir `Logger` output and forwards it
-  to the Mob dev server dashboard.
+  to the Dala dev server dashboard.
 
-  Attached by `mix mob.server` after the supervision tree starts, so
+  Attached by `mix dala.server` after the supervision tree starts, so
   `ElixirLogBuffer` and PubSub are guaranteed to be running.
 
   Only captures events with `domain: [:elixir]` — the domain Elixir's Logger
@@ -11,7 +11,7 @@ defmodule MobDev.Server.ElixirLogger do
   and OTP system messages are excluded.
   """
 
-  @handler_id :mob_dev_elixir_logger
+  @handler_id :dala_dev_elixir_logger
   @topic "elixir_logs"
 
   @doc "Attach the handler to OTP's logger. Call after the server supervisor starts."
@@ -47,12 +47,12 @@ defmodule MobDev.Server.ElixirLogger do
       }
 
       # Guard: if the buffer GenServer isn't up, skip silently
-      if Process.whereis(MobDev.Server.ElixirLogBuffer) do
-        MobDev.Server.ElixirLogBuffer.push(line)
+      if Process.whereis(DalaDev.Server.ElixirLogBuffer) do
+        DalaDev.Server.ElixirLogBuffer.push(line)
       end
 
-      if Process.whereis(MobDev.PubSub) do
-        Phoenix.PubSub.broadcast(MobDev.PubSub, @topic, {:elixir_log_line, line})
+      if Process.whereis(DalaDev.PubSub) do
+        Phoenix.PubSub.broadcast(DalaDev.PubSub, @topic, {:elixir_log_line, line})
       end
     end
 

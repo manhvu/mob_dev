@@ -1,4 +1,4 @@
-defmodule MobDev.Bench.Reconnector do
+defmodule DalaDev.Bench.Reconnector do
   @moduledoc """
   Auto-reconnect logic for the bench's BEAM dist connection.
 
@@ -24,7 +24,7 @@ defmodule MobDev.Bench.Reconnector do
   Reset to immediate on a successful reconnect.
   """
 
-  alias MobDev.Bench.Probe
+  alias DalaDev.Bench.Probe
 
   defstruct [
     :node,
@@ -105,12 +105,12 @@ defmodule MobDev.Bench.Reconnector do
   @doc """
   Returns the backoff (in ms) that applies to the *next* attempt.
 
-      iex> r = MobDev.Bench.Reconnector.new(:node@host, :secret)
-      iex> MobDev.Bench.Reconnector.current_backoff_ms(r)
+      iex> r = DalaDev.Bench.Reconnector.new(:node@host, :secret)
+      iex> DalaDev.Bench.Reconnector.current_backoff_ms(r)
       0
 
-      iex> r = %{MobDev.Bench.Reconnector.new(:node@host, :secret) | attempts: 3}
-      iex> MobDev.Bench.Reconnector.current_backoff_ms(r)
+      iex> r = %{DalaDev.Bench.Reconnector.new(:node@host, :secret) | attempts: 3}
+      iex> DalaDev.Bench.Reconnector.current_backoff_ms(r)
       8000
   """
   @spec current_backoff_ms(t()) :: non_neg_integer()

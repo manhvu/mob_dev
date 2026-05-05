@@ -1,18 +1,18 @@
-defmodule MobDev.HotPush do
+defmodule DalaDev.HotPush do
   @moduledoc """
   Connects to already-running device nodes and hot-pushes BEAM modules via RPC.
 
-  Unlike `MobDev.Deployer`, this does NOT restart apps — modules are loaded
+  Unlike `DalaDev.Deployer`, this does NOT restart apps — modules are loaded
   into the running BEAM in place, just like `nl/1` in IEx.
 
-  Requires apps to already be running (start with `mix mob.connect` or
-  `mix mob.deploy` first).
+  Requires apps to already be running (start with `mix dala.connect` or
+  `mix dala.deploy` first).
   """
 
-  alias MobDev.{Tunnel}
-  alias MobDev.Discovery.{Android, IOS}
+  alias DalaDev.{Tunnel}
+  alias DalaDev.Discovery.{Android, IOS}
 
-  @cookie :mob_secret
+  @cookie :dala_secret
 
   @doc """
   Sets up adb tunnels (idempotent) and connects to all running device nodes.
@@ -21,7 +21,7 @@ defmodule MobDev.HotPush do
 
   ## Options
 
-  - `:cookie` - Erlang cookie (default: `:mob_secret`)
+  - `:cookie` - Erlang cookie (default: `:dala_secret`)
   - `:device` - Target specific device by ID (optional)
   """
   @spec connect(keyword()) :: [node()]
@@ -55,7 +55,7 @@ defmodule MobDev.HotPush do
   defp filter_by_device_id(devices, nil), do: devices
 
   defp filter_by_device_id(devices, device_id) do
-    Enum.filter(devices, &MobDev.Device.match_id?(&1, device_id))
+    Enum.filter(devices, &DalaDev.Device.match_id?(&1, device_id))
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule MobDev.HotPush do
 
   Only pushes BEAMs for runtime dependencies — deps marked `only: :dev` or
   `runtime: false` in `mix.exs` (and their transitive deps) are excluded.
-  This prevents dev tooling (mob_dev, Bandit, Phoenix, etc.) from being pushed
+  This prevents dev tooling (dala_dev, Bandit, Phoenix, etc.) from being pushed
   to the device when using `path:` deps during local framework development.
 
   Returns `{pushed_count, failed_list}`.
@@ -256,8 +256,8 @@ defmodule MobDev.HotPush do
           {:module, ^module} -> []
           # NIF modules already loaded — safe to ignore
           {:error, :on_load_failure} -> []
-          {:badrpc, reason} -> [{node, MobDev.Error.format({:error, reason})}]
-          {:error, reason} -> [{node, MobDev.Error.format({:error, reason})}]
+          {:badrpc, reason} -> [{node, DalaDev.Error.format({:error, reason})}]
+          {:error, reason} -> [{node, DalaDev.Error.format({:error, reason})}]
         end
       end)
 
@@ -270,7 +270,7 @@ defmodule MobDev.HotPush do
 
   defp ensure_local_dist(cookie) do
     unless Node.alive?() do
-      Node.start(:"mob_dev@127.0.0.1", :longnames)
+      Node.start(:"dala_dev@127.0.0.1", :longnames)
       Node.set_cookie(cookie)
     end
   end

@@ -1,4 +1,4 @@
-defmodule MobDev.Observer do
+defmodule DalaDev.Observer do
   @moduledoc """
   Remote node observer inspired by `:observer.start()`.
 
@@ -14,11 +14,11 @@ defmodule MobDev.Observer do
   - Node connectivity status
 
   All data is collected via RPC calls to remote nodes, making it suitable
-  for monitoring mobile Elixir nodes that don't have direct access to
+  for monitoring dala Elixir nodes that don't have direct access to
   `:observer`.
   """
 
-  alias MobDev.Network
+  alias DalaDev.Network
 
   @type process_info :: %{
           pid: String.t(),

@@ -1,4 +1,4 @@
-defmodule MobDev.Server.Router do
+defmodule DalaDev.Server.Router do
   use Phoenix.Router, helpers: false
   import Phoenix.LiveView.Router
 
@@ -8,36 +8,36 @@ defmodule MobDev.Server.Router do
     plug(:fetch_live_flash)
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
-    plug(:put_root_layout, html: {MobDev.Server.Layouts, :root})
+    plug(:put_root_layout, html: {DalaDev.Server.Layouts, :root})
   end
 
   scope "/" do
     pipe_through(:browser)
-    live("/", MobDev.Server.DashboardLive)
-    live("/web", MobDev.Server.WebLive)
-    live("/web/:feature", MobDev.Server.WebLive)
-    live("/cluster", MobDev.Server.ClusterVizLive)
-    live("/observer", MobDev.Server.ObserverLive)
-    live("/observer/:node", MobDev.Server.ObserverLive)
-    live("/observer/:node/system", MobDev.Server.ObserverLive.System)
-    live("/observer/:node/processes", MobDev.Server.ObserverLive.Processes)
-    live("/observer/:node/ets", MobDev.Server.ObserverLive.ETS)
-    live("/observer/:node/applications", MobDev.Server.ObserverLive.Applications)
-    live("/observer/:node/modules", MobDev.Server.ObserverLive.Modules)
-    live("/observer/:node/ports", MobDev.Server.ObserverLive.Ports)
-    live("/observer/:node/load", MobDev.Server.ObserverLive.Load)
-    live("/observer/:node/tracing", MobDev.Server.ObserverLive.Tracing)
+    live("/", DalaDev.Server.DashboardLive)
+    live("/web", DalaDev.Server.WebLive)
+    live("/web/:feature", DalaDev.Server.WebLive)
+    live("/cluster", DalaDev.Server.ClusterVizLive)
+    live("/observer", DalaDev.Server.ObserverLive)
+    live("/observer/:node", DalaDev.Server.ObserverLive)
+    live("/observer/:node/system", DalaDev.Server.ObserverLive.System)
+    live("/observer/:node/processes", DalaDev.Server.ObserverLive.Processes)
+    live("/observer/:node/ets", DalaDev.Server.ObserverLive.ETS)
+    live("/observer/:node/applications", DalaDev.Server.ObserverLive.Applications)
+    live("/observer/:node/modules", DalaDev.Server.ObserverLive.Modules)
+    live("/observer/:node/ports", DalaDev.Server.ObserverLive.Ports)
+    live("/observer/:node/load", DalaDev.Server.ObserverLive.Load)
+    live("/observer/:node/tracing", DalaDev.Server.ObserverLive.Tracing)
 
     # Feature-specific routes for direct access
-    live("/dashboard", MobDev.Server.DashboardLive)
-    live("/devices", MobDev.Server.WebLive)
-    live("/deploy", MobDev.Server.WebLive)
-    live("/emulators", MobDev.Server.WebLive)
-    live("/provision", MobDev.Server.WebLive)
-    live("/release", MobDev.Server.WebLive)
-    live("/profiling", MobDev.Server.WebLive)
-    live("/ci", MobDev.Server.WebLive)
-    live("/logs", MobDev.Server.WebLive)
-    live("/settings", MobDev.Server.WebLive)
+    live("/dashboard", DalaDev.Server.DashboardLive)
+    live("/devices", DalaDev.Server.WebLive)
+    live("/deploy", DalaDev.Server.WebLive)
+    live("/emulators", DalaDev.Server.WebLive)
+    live("/provision", DalaDev.Server.WebLive)
+    live("/release", DalaDev.Server.WebLive)
+    live("/profiling", DalaDev.Server.WebLive)
+    live("/ci", DalaDev.Server.WebLive)
+    live("/logs", DalaDev.Server.WebLive)
+    live("/settings", DalaDev.Server.WebLive)
   end
 end

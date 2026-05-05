@@ -1,8 +1,8 @@
-defmodule MobDev.Emulators do
+defmodule DalaDev.Emulators do
   @moduledoc """
   List, start, and stop Android emulators (AVDs) and iOS simulators.
 
-  Backs `mix mob.emulators`. Pure-ish — each function shells out to `emulator`,
+  Backs `mix dala.emulators`. Pure-ish — each function shells out to `emulator`,
   `adb`, or `xcrun simctl` exactly once and returns a parsed result. UI-shape
   decisions (formatting, colors, exit codes) live in the Mix task.
 
@@ -170,7 +170,7 @@ defmodule MobDev.Emulators do
   #
   # Resolution order, picking the first that exists:
   #   1. `<project>/android/local.properties` `sdk.dir` + /emulator/emulator
-  #      (matches what mix mob.doctor / mix mob.deploy already use)
+  #      (matches what mix dala.doctor / mix dala.deploy already use)
   #   2. `$ANDROID_HOME` env var
   #   3. `$ANDROID_SDK_ROOT` env var (older form)
   #   4. `~/Library/Android/sdk` (Android Studio default on macOS)
@@ -209,7 +209,7 @@ defmodule MobDev.Emulators do
   end
 
   defp sdk_dir_from_project(dir) do
-    case MobDev.NativeBuild.read_sdk_dir(dir) do
+    case DalaDev.NativeBuild.read_sdk_dir(dir) do
       {:ok, sdk} -> sdk
       _ -> nil
     end

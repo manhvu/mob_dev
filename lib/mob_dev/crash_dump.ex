@@ -1,21 +1,21 @@
-defmodule MobDev.CrashDump do
+defmodule DalaDev.CrashDump do
   @moduledoc """
   Parse BEAM crash dumps from devices.
 
   BEAM crash dumps are text files generated when an Erlang VM crashes.
   This module parses them to extract useful information for debugging
-  mobile Elixir nodes.
+  dala Elixir nodes.
 
   ## Examples
 
       # Parse a crash dump file
-      {:ok, info} = MobDev.CrashDump.parse_file("erl_crash.dump")
+      {:ok, info} = DalaDev.CrashDump.parse_file("erl_crash.dump")
 
       # Parse from a device
-      {:ok, info} = MobDev.CrashDump.fetch_from_device(node, "/path/to/crash.dump")
+      {:ok, info} = DalaDev.CrashDump.fetch_from_device(node, "/path/to/crash.dump")
 
       # Generate a summary report
-      report = MobDev.CrashDump.summary(info)
+      report = DalaDev.CrashDump.summary(info)
   """
 
   @type crash_info :: %{

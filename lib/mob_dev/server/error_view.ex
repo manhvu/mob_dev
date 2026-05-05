@@ -1,4 +1,4 @@
-defmodule MobDev.ErrorView do
+defmodule DalaDev.ErrorView do
   use Phoenix.Component
 
   @spec render(String.t(), map()) :: Phoenix.LiveView.Rendered.t() | String.t()

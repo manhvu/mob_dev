@@ -1,6 +1,6 @@
-defmodule MobDev.NetworkDiag do
+defmodule DalaDev.NetworkDiag do
   @moduledoc """
-  Network diagnostics for mobile Elixir clusters.
+  Network diagnostics for dala Elixir clusters.
 
   Provides tools to diagnose connectivity issues, measure latency,
   and verify EPMD health across cluster nodes.
@@ -8,19 +8,19 @@ defmodule MobDev.NetworkDiag do
   ## Examples
 
       # Ping a node
-      {:ok, latency_ms} = MobDev.NetworkDiag.ping_node(:"mob_qa@192.168.1.5")
+      {:ok, latency_ms} = DalaDev.NetworkDiag.ping_node(:"dala_qa@192.168.1.5")
 
       # Measure latency with multiple samples
-      {:ok, stats} = MobDev.NetworkDiag.measure_latency(node, samples: 100)
+      {:ok, stats} = DalaDev.NetworkDiag.measure_latency(node, samples: 100)
 
       # Check EPMD health
-      :ok = MobDev.NetworkDiag.check_epmd_health(node)
+      :ok = DalaDev.NetworkDiag.check_epmd_health(node)
 
       # Trace distribution path
-      {:ok, path} = MobDev.NetworkDiag.trace_distribution(node)
+      {:ok, path} = DalaDev.NetworkDiag.trace_distribution(node)
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type node_ref :: node() | Device.t() | String.t()
   @type latency_stats :: %{

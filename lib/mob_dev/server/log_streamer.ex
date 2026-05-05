@@ -1,4 +1,4 @@
-defmodule MobDev.Server.LogStreamer do
+defmodule DalaDev.Server.LogStreamer do
   @moduledoc """
   Streams logcat from connected Android devices and iOS simulator console,
   broadcasting parsed lines via PubSub.
@@ -23,8 +23,8 @@ defmodule MobDev.Server.LogStreamer do
   @impl GenServer
   @spec init(term()) :: {:ok, %__MODULE__{}}
   def init(_opts) do
-    Phoenix.PubSub.subscribe(MobDev.PubSub, "devices")
-    devices = MobDev.Server.DevicePoller.get_devices()
+    Phoenix.PubSub.subscribe(DalaDev.PubSub, "devices")
+    devices = DalaDev.Server.DevicePoller.get_devices()
     # If there are already-connected devices, this is a streamer restart — mark it.
     Enum.each(devices, fn d -> broadcast_restart(d.serial) end)
     ports = Enum.reduce(devices, %{}, &open_port_for/2)
@@ -84,7 +84,7 @@ defmodule MobDev.Server.LogStreamer do
     if Map.has_key?(state.ports, serial) do
       {:noreply, state}
     else
-      devices = MobDev.Server.DevicePoller.get_devices()
+      devices = DalaDev.Server.DevicePoller.get_devices()
 
       case Enum.find(devices, &(&1.serial == serial)) do
         nil ->
@@ -105,8 +105,8 @@ defmodule MobDev.Server.LogStreamer do
 
     if serial do
       parsed = parse_line(line, serial)
-      MobDev.Server.LogBuffer.push(parsed)
-      Phoenix.PubSub.broadcast(MobDev.PubSub, @topic, {:log_line, serial, parsed})
+      DalaDev.Server.LogBuffer.push(parsed)
+      Phoenix.PubSub.broadcast(DalaDev.PubSub, @topic, {:log_line, serial, parsed})
     end
   end
 
@@ -123,8 +123,8 @@ defmodule MobDev.Server.LogStreamer do
       ts: time_string()
     }
 
-    MobDev.Server.LogBuffer.push(line)
-    Phoenix.PubSub.broadcast(MobDev.PubSub, @topic, {:log_line, serial, line})
+    DalaDev.Server.LogBuffer.push(line)
+    Phoenix.PubSub.broadcast(DalaDev.PubSub, @topic, {:log_line, serial, line})
   end
 
   # ── Port management ──────────────────────────────────────────────────────────
@@ -136,8 +136,8 @@ defmodule MobDev.Server.LogStreamer do
   end
 
   defp open_port_for(%{platform: :ios, serial: udid}, ports) do
-    # Stream iOS simulator log, filter to mob-relevant output.
-    # Process name is the binary name ("MobDemo"), not the bundle ID.
+    # Stream iOS simulator log, filter to dala-relevant output.
+    # Process name is the binary name ("DalaDemo"), not the bundle ID.
     args = [
       "simctl",
       "spawn",
@@ -145,7 +145,7 @@ defmodule MobDev.Server.LogStreamer do
       "log",
       "stream",
       "--predicate",
-      "process == 'MobDemo'",
+      "process == 'DalaDemo'",
       "--style",
       "syslog"
     ]
@@ -174,7 +174,7 @@ defmodule MobDev.Server.LogStreamer do
   """
   @spec parse_line(String.t(), String.t()) :: map()
   def parse_line(raw, serial) do
-    # Android logcat brief: "I/MobBeam( 1234): message text"
+    # Android logcat brief: "I/DalaBeam( 1234): message text"
     case Regex.run(
            Regex.compile!("^([EWIDVF])/([^\\(]+)\\(\\s*\\d+\\):\\s*(.*)$"),
            String.trim(raw)
@@ -187,7 +187,7 @@ defmodule MobDev.Server.LogStreamer do
           tag: String.trim(tag),
           message: message,
           raw: raw,
-          mob: mob_tag?(tag),
+          mob: dala_tag?(tag),
           ts: time_string()
         }
 
@@ -200,26 +200,26 @@ defmodule MobDev.Server.LogStreamer do
           tag: nil,
           message: String.trim(raw),
           raw: raw,
-          mob: mob_line?(raw),
+          mob: dala_line?(raw),
           ts: time_string()
         }
     end
   end
 
-  defp mob_tag?(tag) do
+  defp dala_tag?(tag) do
     tag = String.trim(tag)
 
-    tag in ["MobBeam", "MobNif", "MobDist", "MobBridge", "Elixir"] or
-      String.starts_with?(tag, "Mob")
+    tag in ["DalaBeam", "DalaNif", "DalaDist", "DalaBridge", "Elixir"] or
+      String.starts_with?(tag, "Dala")
   end
 
-  defp mob_line?(line) do
+  defp dala_line?(line) do
     app = Mix.Project.config()[:app] |> to_string()
     app_camel = app |> Macro.camelize()
 
-    String.contains?(line, "MobBeam") or
-      String.contains?(line, "MobNIF") or
-      String.contains?(line, "MobBridge") or
+    String.contains?(line, "DalaBeam") or
+      String.contains?(line, "DalaNIF") or
+      String.contains?(line, "DalaBridge") or
       String.contains?(line, app) or
       String.contains?(line, app_camel)
   end

@@ -1,32 +1,32 @@
-defmodule MobDev.Debugger do
+defmodule DalaDev.Debugger do
   @moduledoc """
   Advanced debugging tools for remote Elixir nodes.
 
   Provides process inspection, state introspection, remote code evaluation,
-  and memory analysis for mobile Elixir cluster debugging.
+  and memory analysis for dala Elixir cluster debugging.
 
   ## Examples
 
       # Inspect a process on a remote node
-      {:ok, info} = MobDev.Debugger.inspect_process(
-        :"mob_qa@192.168.1.5",
+      {:ok, info} = DalaDev.Debugger.inspect_process(
+        :"dala_qa@192.168.1.5",
         MyApp.Worker
       )
 
       # Get supervision tree
-      {:ok, tree} = MobDev.Debugger.get_supervision_tree(node)
+      {:ok, tree} = DalaDev.Debugger.get_supervision_tree(node)
 
       # Evaluate code on remote node
-      {:ok, result} = MobDev.Debugger.eval_remote(
+      {:ok, result} = DalaDev.Debugger.eval_remote(
         node,
         "MyApp.Config.get(:api_key)"
       )
 
       # Get memory report
-      {:ok, report} = MobDev.Debugger.memory_report(node)
+      {:ok, report} = DalaDev.Debugger.memory_report(node)
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type node_ref :: node() | Device.t() | String.t()
   @type process_ref :: pid() | atom() | {atom(), atom()} | module()

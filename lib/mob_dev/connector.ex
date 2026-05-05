@@ -1,14 +1,14 @@
-defmodule MobDev.Connector do
+defmodule DalaDev.Connector do
   @moduledoc """
   Orchestrates device discovery, tunnel setup, app restart, and node connection.
   """
 
-  alias MobDev.{Device, Tunnel}
-  alias MobDev.Discovery.{Android, IOS}
+  alias DalaDev.{Device, Tunnel}
+  alias DalaDev.Discovery.{Android, IOS}
 
   @android_activity ".MainActivity"
 
-  defp bundle_id, do: MobDev.Config.bundle_id()
+  defp bundle_id, do: DalaDev.Config.bundle_id()
   defp android_package, do: bundle_id()
   defp ios_bundle_id, do: bundle_id()
   # ms to wait for node to appear
@@ -24,7 +24,7 @@ defmodule MobDev.Connector do
   """
   @spec connect_all(keyword()) :: {[Device.t()], [Device.t()]}
   def connect_all(opts \\ []) do
-    cookie = Keyword.get(opts, :cookie, :mob_secret)
+    cookie = Keyword.get(opts, :cookie, :dala_secret)
 
     IO.puts("\n#{color(:cyan)}Scanning for devices...#{color(:reset)}\n")
 
@@ -147,7 +147,7 @@ defmodule MobDev.Connector do
 
   defp restart_app(%Device{platform: :ios, type: :physical, serial: udid}) do
     IO.write("  Restarting app on #{udid}...")
-    # mob_beam.m discovers the USB link-local IP via getifaddrs() — no env vars needed.
+    # dala_beam.m discovers the USB link-local IP via getifaddrs() — no env vars needed.
     IOS.restart_app_physical(udid, ios_bundle_id())
     IO.puts(" done")
   end
@@ -165,7 +165,7 @@ defmodule MobDev.Connector do
       # On Nix and some Linux setups, EPMD is not started automatically.
       # Try to start it before Node.start so distribution can register.
       start_epmd()
-      handle_dist_start(Node.start(:"mob_dev@127.0.0.1", :longnames), cookie)
+      handle_dist_start(Node.start(:"dala_dev@127.0.0.1", :longnames), cookie)
     end
   end
 
@@ -200,8 +200,8 @@ defmodule MobDev.Connector do
 
         epmd -daemon
 
-    Then retry: mix mob.connect
-    Run `mix mob.doctor` for a full environment diagnosis.
+    Then retry: mix dala.connect
+    Run `mix dala.doctor` for a full environment diagnosis.
     """)
   end
 
@@ -286,7 +286,7 @@ defmodule MobDev.Connector do
   defp print_fix_hint(%Device{platform: :android, error: error})
        when is_binary(error) do
     if String.contains?(error, "timed out") do
-      IO.puts("    → Is the app installed? Run: mix mob.deploy")
+      IO.puts("    → Is the app installed? Run: mix dala.deploy")
       IO.puts("    → Android distribution starts 3s after app launch")
     end
   end

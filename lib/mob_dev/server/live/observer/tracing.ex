@@ -1,10 +1,10 @@
-defmodule MobDev.Server.ObserverLive.Tracing do
+defmodule DalaDev.Server.ObserverLive.Tracing do
   @moduledoc """
   LiveView for process tracing and message flow analysis.
   """
-  use Phoenix.LiveView, layout: {MobDev.Server.Layouts, :app}
+  use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias MobDev.{Observer, Tracing}
+  alias DalaDev.{Observer, Tracing}
 
   @refresh_interval 5_000
 

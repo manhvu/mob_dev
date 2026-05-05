@@ -1,6 +1,6 @@
-# mob_dev — Agent Instructions
+# dala_dev — Agent Instructions
 
-**Read [`AGENTS.md`](AGENTS.md) first**, then [`~/code/mob/AGENTS.md`](../mob/AGENTS.md) for the system-wide view. This file provides Claude Code-specific workflow guidance that complements the general AGENTS.md documentation.
+**Read [`AGENTS.md`](AGENTS.md) first**, then [`~/code/dala/AGENTS.md`](../dala/AGENTS.md) for the system-wide view. This file provides Claude Code-specific workflow guidance that complements the general AGENTS.md documentation.
 
 > **Important**: Keep AGENTS.md up to date when you add a public API seam, change a convention, or discover a new gotcha. Update it in the **same commit** as your change — not a follow-up.
 
@@ -54,29 +54,29 @@ mix credo --strict
 These functions can and should be tested without any external dependencies:
 
 **Device utilities**:
-- `MobDev.Device` — `short_id/1`, `node_name/1`, `summary/1`
+- `DalaDev.Device` — `short_id/1`, `node_name/1`, `summary/1`
 
 **Tunnel management**:
-- `MobDev.Tunnel` — `dist_port/1`
+- `DalaDev.Tunnel` — `dist_port/1`
 
 **Discovery and parsing**:
-- `MobDev.Discovery.Android.parse_devices_output/1` — Parses `adb devices -l` output
-- `MobDev.Discovery.IOS.parse_simctl_json/1` — Parses `xcrun simctl list -j` JSON
-- `MobDev.Discovery.IOS.parse_simctl_text/1` — Parses text output from simctl
-- `MobDev.Discovery.IOS.parse_runtime_version/1` — Extracts iOS runtime version
+- `DalaDev.Discovery.Android.parse_devices_output/1` — Parses `adb devices -l` output
+- `DalaDev.Discovery.IOS.parse_simctl_json/1` — Parses `xcrun simctl list -j` JSON
+- `DalaDev.Discovery.IOS.parse_simctl_text/1` — Parses text output from simctl
+- `DalaDev.Discovery.IOS.parse_runtime_version/1` — Extracts iOS runtime version
 
 **Hot-push deployment**:
-- `MobDev.HotPush.snapshot_beams/0` — Snapshots current BEAM files
-- `MobDev.HotPush.push_changed/2` — Pushes only changed BEAM files
+- `DalaDev.HotPush.snapshot_beams/0` — Snapshots current BEAM files
+- `DalaDev.HotPush.push_changed/2` — Pushes only changed BEAM files
 
 **Project generation**:
-- `MobDev.ProjectGenerator.assigns/1` — Generates template assignments
-- `MobDev.ProjectGenerator.generate/2` — Generates project from templates
+- `DalaDev.ProjectGenerator.assigns/1` — Generates template assignments
+- `DalaDev.ProjectGenerator.generate/2` — Generates project from templates
 
 **Icon generation**:
-- `MobDev.IconGenerator.android_sizes/0` — Returns Android icon sizes
-- `MobDev.IconGenerator.ios_sizes/0` — Returns iOS icon sizes
-- `MobDev.IconGenerator.generate_from_source/2` — Generates icons from source image
+- `DalaDev.IconGenerator.android_sizes/0` — Returns Android icon sizes
+- `DalaDev.IconGenerator.ios_sizes/0` — Returns iOS icon sizes
+- `DalaDev.IconGenerator.generate_from_source/2` — Generates icons from source image
 
 ### Hardware-Dependent (Skip Gracefully When Devices Absent)
 
@@ -117,7 +117,7 @@ The following parsing functions are **intentionally public** to enable thorough 
 
 ## Releasing a New OTP Runtime
 
-When upgrading OTP, you need to rebuild the pre-built tarballs that `MobDev.OtpDownloader` downloads. This ensures mobile platforms have the correct OTP runtime.
+When upgrading OTP, you need to rebuild the pre-built tarballs that `DalaDev.OtpDownloader` downloads. This ensures mobile platforms have the correct OTP runtime.
 
 ### Release Process
 
@@ -141,38 +141,38 @@ When upgrading OTP, you need to rebuild the pre-built tarballs that `MobDev.OtpD
 ### Core Modules
 
 **Device management**:
-- `lib/mob_dev/device.ex` — Device struct definition + `node_name/1`, `short_id/1`, `summary/1`
-- `lib/mob_dev/tunnel.ex` — ADB tunnel setup for device communication, `dist_port/1`
-- `lib/mob_dev/connector.ex` — Discovery → tunnel → restart → wait → connect workflow
+- `lib/dala_dev/device.ex` — Device struct definition + `node_name/1`, `short_id/1`, `summary/1`
+- `lib/dala_dev/tunnel.ex` — ADB tunnel setup for device communication, `dist_port/1`
+- `lib/dala_dev/connector.ex` — Discovery → tunnel → restart → wait → connect workflow
 
 **Deployment**:
-- `lib/mob_dev/deployer.ex` — Full BEAM push + app restart pipeline
-- `lib/mob_dev/hot_push.ex` — BEAM snapshot + RPC push for hot code reloading
+- `lib/dala_dev/deployer.ex` — Full BEAM push + app restart pipeline
+- `lib/dala_dev/hot_push.ex` — BEAM snapshot + RPC push for hot code reloading
 
 **Discovery**:
-- `lib/mob_dev/discovery/android.ex` — ADB device discovery and parsing
-- `lib/mob_dev/discovery/ios.ex` — xcrun simctl discovery and parsing
+- `lib/dala_dev/discovery/android.ex` — ADB device discovery and parsing
+- `lib/dala_dev/discovery/ios.ex` — xcrun simctl discovery and parsing
 
 ### Mix Tasks (User-Facing Commands)
 
 **Deployment and connection**:
-- `lib/mix/tasks/mob.deploy.ex` — `mix mob.deploy` for deploying builds
-- `lib/mix/tasks/mob.push.ex` — `mix mob.push` for hot-pushing code
-- `lib/mix/tasks/mob.connect.ex` — `mix mob.connect` for connecting to devices
-- `lib/mix/tasks/mob.watch.ex` — `mix mob.watch` for watch-mode development
+- `lib/mix/tasks/dala.deploy.ex` — `mix dala.deploy` for deploying builds
+- `lib/mix/tasks/dala.push.ex` — `mix dala.push` for hot-pushing code
+- `lib/mix/tasks/dala.connect.ex` — `mix dala.connect` for connecting to devices
+- `lib/mix/tasks/dala.watch.ex` — `mix dala.watch` for watch-mode development
 
 **Device management**:
-- `lib/mix/tasks/mob.devices.ex` — `mix mob.devices` for listing devices
+- `lib/mix/tasks/dala.devices.ex` — `mix dala.devices` for listing devices
 
 **Project generation**:
-- `lib/mix/tasks/mob.new.ex` — `mix mob.new APP_NAME` for creating new projects
-- `lib/mob_dev/project_generator.ex` — EEx template rendering for project generation
-- `priv/templates/mob.new/` — EEx templates for generated project files
+- `lib/mix/tasks/dala.new.ex` — `mix dala.new APP_NAME` for creating new projects
+- `lib/dala_dev/project_generator.ex` — EEx template rendering for project generation
+- `priv/templates/dala.new/` — EEx templates for generated project files
 
 **Icon generation**:
-- `lib/mob_dev/icon_generator.ex` — Robot avatar generation + platform icon resizing
-- `lib/mix/tasks/mob.icon.ex` — `mix mob.icon [--source PATH]` for generating icons
+- `lib/dala_dev/icon_generator.ex` — Robot avatar generation + platform icon resizing
+- `lib/mix/tasks/dala.icon.ex` — `mix dala.icon [--source PATH]` for generating icons
 
 ### Development Server
 
-- `lib/mix/tasks/mob.server.ex` — `mix mob.server` for local development dashboard
+- `lib/mix/tasks/dala.server.ex` — `mix dala.server` for local development dashboard

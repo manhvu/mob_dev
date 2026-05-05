@@ -1,6 +1,6 @@
-defmodule MobDev.Utils do
+defmodule DalaDev.Utils do
   @moduledoc """
-  Shared utility functions used across the mob_dev codebase.
+  Shared utility functions used across the dala_dev codebase.
 
   This module centralizes common operations to reduce duplication
   and ensure consistent behavior across modules.
@@ -14,7 +14,7 @@ defmodule MobDev.Utils do
 
   ## Examples
 
-      iex> MobDev.Utils.compile_regex("hello\\s+world")
+      iex> DalaDev.Utils.compile_regex("hello\\s+world")
       ~r/hello\\s+world/
 
   """

@@ -1,23 +1,23 @@
-defmodule MobDev.CITesting do
+defmodule DalaDev.CITesting do
   @moduledoc """
   CI/CD integration for mobile cluster testing.
 
-  Provides automated testing capabilities for mobile Elixir clusters,
+  Provides automated testing capabilities for dala Elixir clusters,
   including test orchestration, result collection, and reporting.
 
   ## Examples
 
       # Run a test suite on a cluster
-      {:ok, results} = MobDev.CITesting.run_suite(my_suite, nodes: nodes)
+      {:ok, results} = DalaDev.CITesting.run_suite(my_suite, nodes: nodes)
 
       # Generate a CI report
-      MobDev.CITesting.generate_ci_report(results, format: :junit)
+      DalaDev.CITesting.generate_ci_report(results, format: :junit)
 
       # Run tests with automatic device provisioning
-      {:ok, results} = MobDev.CITesting.run_with_provisioning(test_config)
+      {:ok, results} = DalaDev.CITesting.run_with_provisioning(test_config)
   """
 
-  alias MobDev.{Device, NetworkDiag, Benchmark, Deployer}
+  alias DalaDev.{Device, NetworkDiag, Benchmark, Deployer}
 
   @type test_case :: %{
           name: String.t(),

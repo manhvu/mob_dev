@@ -5,8 +5,8 @@
 ### ✅ iOS - Fully Implemented
 
 #### Build & Release
-- **`mix mob.release`** - Builds signed `.ipa` for App Store/TestFlight
-- **`mix mob.publish`** - Uploads `.ipa` to App Store Connect via `xcrun altool`
+- **`mix dala.release`** - Builds signed `.ipa` for App Store/TestFlight
+- **`mix dala.publish`** - Uploads `.ipa` to App Store Connect via `xcrun altool`
 - Distribution signing identity and provisioning profile resolution
 - App Store Connect API key authentication (key_id, issuer_id, key_path)
 
@@ -20,8 +20,8 @@
 ### ✅ Android - Debug Build (Previously Implemented)
 
 #### Build & Deploy
-- **`mix mob.deploy --android`** - Builds debug APK (`assembleDebug`)
-- **`mix mob.deploy --native --android`** - Full native build + deploy
+- **`mix dala.deploy --android`** - Builds debug APK (`assembleDebug`)
+- **`mix dala.deploy --native --android`** - Full native build + deploy
 - ADB install and OTP push to devices
 - OTP runtimes for Android arm64/arm32
 
@@ -37,24 +37,24 @@
 
 #### 1. Android Release Build
 **Files Modified:**
-- `lib/mob_dev/native_build.ex` - Added `build_android_release/1`, `gradle_bundle_release/0`, `apply_release_signing_config/0`
+- `lib/dala_dev/native_build.ex` - Added `build_android_release/1`, `gradle_bundle_release/0`, `apply_release_signing_config/0`
 
 **New Mix Tasks:**
-- **`mix mob.release.android`** (`lib/mix/tasks/mob.release.android.ex`)
+- **`mix dala.release.android`** (`lib/mix/tasks/dala.release.android.ex`)
   - Builds signed Android App Bundle (.aab)
-  - Applies release signing from `mob.exs` config
+  - Applies release signing from `dala.exs` config
   - Runs `gradle bundleRelease`
   - Outputs to `android/app/build/outputs/bundle/release/app-release.aab`
 
 #### 2. Google Play Publishing (Infrastructure)
 **New Mix Tasks:**
-- **`mix mob.publish.android`** (`lib/mix/tasks/mob.publish.android.ex`)
+- **`mix dala.publish.android`** (`lib/mix/tasks/dala.publish.android.ex`)
   - Uploads .aab to Google Play Console
   - Supports tracks: `internal`, `alpha`, `beta`, `production`
   - Validates service account JSON
-  - Configuration via `mob.exs`:
+  - Configuration via `dala.exs`:
     ```elixir
-    config :mob_dev,
+    config :dala_dev,
       google_play: [
         service_account_json: "~/.google-play/service-account.json",
         package_name: "com.example.myapp",
@@ -63,9 +63,9 @@
     ```
 
 #### 3. Android Signing Configuration
-**Configuration in `mob.exs`:**
+**Configuration in `dala.exs`:**
 ```elixir
-config :mob_dev,
+config :dala_dev,
   android_signing: [
     store_file: "~/.android/keystore.jks",
     store_password: "your_password",
@@ -86,25 +86,25 @@ config :mob_dev,
 ### iOS Workflow (Existing)
 ```bash
 # Build release IPA
-mix mob.release
+mix dala.release
 
 # Upload to TestFlight
-mix mob.publish
+mix dala.publish
 ```
 
 ### Android New Workflow
 ```bash
-# Configure signing in mob.exs (one-time setup)
-# Edit mob.exs and add android_signing config
+# Configure signing in dala.exs (one-time setup)
+# Edit dala.exs and add android_signing config
 
 # Build release AAB
-mix mob.release.android
+mix dala.release.android
 
 # Upload to Google Play (internal track)
-mix mob.publish.android
+mix dala.publish.android
 
 # Or specify track explicitly
-mix mob.publish.android --track alpha
+mix dala.publish.android --track alpha
 ```
 
 ---
@@ -112,7 +112,7 @@ mix mob.publish.android --track alpha
 ## Test Coverage
 
 ### New Tests Added
-- `test/mix/tasks/mob_release_android_test.exs`
+- `test/mix/tasks/dala_release_android_test.exs`
   - Tests for `format_size/1` function
   - 3 tests, 0 failures
 
@@ -124,12 +124,12 @@ mix mob.publish.android --track alpha
 
 ## Configuration Examples
 
-### Complete `mob.exs` for Both Platforms
+### Complete `dala.exs` for Both Platforms
 ```elixir
 use Mix.Config
 
-config :mob_dev,
-  mob_dir: "/path/to/mob",
+config :dala_dev,
+  dala_dir: "/path/to/dala",
   bundle_id: "com.example.myapp",
   elixir_lib: "/path/to/elixir/lib",
   beam_flags: "-S 1:1 -A 8",
@@ -167,7 +167,7 @@ config :mob_dev,
 ## Notes & Limitations
 
 ### Google Play Upload
-The current `mix mob.publish.android` implementation provides:
+The current `mix dala.publish.android` implementation provides:
 1. Configuration validation
 2. Service account JSON validation
 3. AAB file resolution
@@ -188,13 +188,13 @@ The current `mix mob.publish.android` implementation provides:
 ## Files Changed
 
 ### Modified
-- `lib/mob_dev/native_build.ex` - Added release build support
+- `lib/dala_dev/native_build.ex` - Added release build support
 - `AGENTS.md` - Documented new public functions
 
 ### Created
-- `lib/mix/tasks/mob.release.android.ex` - Android release build task
-- `lib/mix/tasks/mob.publish.android.ex` - Google Play publishing task
-- `test/mix/tasks/mob_release_android_test.exs` - Tests for new functionality
+- `lib/mix/tasks/dala.release.android.ex` - Android release build task
+- `lib/mix/tasks/dala.publish.android.ex` - Google Play publishing task
+- `test/mix/tasks/dala_release_android_test.exs` - Tests for new functionality
 
 ---
 
@@ -205,10 +205,10 @@ The current `mix mob.publish.android` implementation provides:
 mix test --exclude integration
 
 # Test Android release build (requires signing config)
-mix mob.release.android
+mix dala.release.android
 
 # Test Google Play publish (requires service account)
-mix mob.publish.android --help
+mix dala.publish.android --help
 ```
 
 ---

@@ -1,4 +1,4 @@
-defmodule MobDev.Bench.Preflight do
+defmodule DalaDev.Bench.Preflight do
   @moduledoc """
   Pre-run checklist for the iOS battery bench.
 
@@ -20,16 +20,16 @@ defmodule MobDev.Bench.Preflight do
   3. **BEAM reachable** — Node.connect succeeds.
   4. **RPC responsive** — `rpc.call(node, :erlang, :node, [])` returns within
      2 seconds. Distinguishes "BEAM up but suspended" from "fully alive".
-  5. **NIF version** — `mob_nif:battery_level/0` is exported. (Indicates the
+  5. **NIF version** — `dala_nif:battery_level/0` is exported. (Indicates the
      installed app build is recent enough.)
-  6. **Background NIF** — `mob_nif:background_keep_alive/0` is exported.
+  6. **Background NIF** — `dala_nif:background_keep_alive/0` is exported.
      Required for screen-off bench mode.
 
   Each check is independent — failure in (3) doesn't skip (5); we run them
   all and report a complete picture.
   """
 
-  alias MobDev.Bench.Probe
+  alias DalaDev.Bench.Probe
 
   @typedoc "Result for a single check."
   @type check_result :: {:ok, String.t()} | {:error, String.t()}
@@ -255,7 +255,7 @@ defmodule MobDev.Bench.Preflight do
 
           String.contains?(out, "ContainerLookupError") or
               String.contains?(out, "not installed") ->
-            {:error, "#{bundle} not installed — run `mix mob.deploy --native`"}
+            {:error, "#{bundle} not installed — run `mix dala.deploy --native`"}
 
           true ->
             # Couldn't verify via devicectl — but the other checks (BEAM
@@ -290,7 +290,7 @@ defmodule MobDev.Bench.Preflight do
             if String.contains?(out, "package:#{bundle}") do
               {:ok, "#{bundle} installed on device"}
             else
-              {:error, "#{bundle} not installed — run `mix mob.deploy --native`"}
+              {:error, "#{bundle} not installed — run `mix dala.deploy --native`"}
             end
 
           {out, _} ->
@@ -365,13 +365,13 @@ defmodule MobDev.Bench.Preflight do
   defp check_nif_export(opts, fun_name, label) do
     node = opts[:node]
 
-    case :rpc.call(node, :mob_nif, :module_info, [:exports], 2_000) do
+    case :rpc.call(node, :dala_nif, :module_info, [:exports], 2_000) do
       list when is_list(list) ->
         if Enum.any?(list, fn {f, _arity} -> f == fun_name end) do
           {:ok, "#{label} exported"}
         else
           {:error,
-           "#{label} not exported on device — installed app is older than mob_dev expects"}
+           "#{label} not exported on device — installed app is older than dala_dev expects"}
         end
 
       {:badrpc, reason} ->

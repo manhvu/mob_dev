@@ -1,6 +1,6 @@
-defmodule MobDev.Error do
+defmodule DalaDev.Error do
   @moduledoc """
-  Standardized error handling for the mob_dev codebase.
+  Standardized error handling for the dala_dev codebase.
 
   Provides consistent error types and helper functions to ensure
   uniform error reporting across all modules.

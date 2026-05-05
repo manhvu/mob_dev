@@ -1,4 +1,4 @@
-defmodule MobDev.Tunnel do
+defmodule DalaDev.Tunnel do
   @moduledoc """
   Manages port tunnels for Android and physical iOS devices.
 
@@ -7,8 +7,8 @@ defmodule MobDev.Tunnel do
     - `adb forward tcp:<dist> tcp:9100` — Mac reaches device's dist port
 
   ## Physical iOS (direct networking — USB preferred, WiFi/LAN fallback)
-    - mob_beam.m finds the device's own IP via getifaddrs() and starts the BEAM
-      as mob_qa_ios@<device-ip>
+    - dala_beam.m finds the device's own IP via getifaddrs() and starts the BEAM
+      as dala_qa_ios@<device-ip>
     - The in-process EPMD binds 0.0.0.0:4369 so Mac can query it at <device-ip>:4369
     - The dist port is directly reachable
 
@@ -16,7 +16,7 @@ defmodule MobDev.Tunnel do
     - Shares Mac network stack — no tunnels needed
   """
 
-  alias MobDev.Device
+  alias DalaDev.Device
 
   @type result :: {:ok, Device.t()} | {:error, String.t()}
   @type teardown_result :: :ok
@@ -200,6 +200,6 @@ defmodule MobDev.Tunnel do
   end
 
   defp run_adb(args) do
-    MobDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
+    DalaDev.Utils.run_adb_with_timeout(args, stderr_to_stdout: true)
   end
 end

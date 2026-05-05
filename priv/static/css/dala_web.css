@@ -1,0 +1,283 @@
+/* Dala Web UI Styles */
+
+/* Container */
+web-container {
+    display: flex;
+    height: 100vh;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+        sans-serif;
+    background: #f5f5f5;
+}
+
+/* Sidebar */
+.dala-sidebar {
+    width: 250px;
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.dala-sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dala-logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    color: #4cc9f0;
+}
+
+.dala-version {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.dala-nav {
+    flex: 1;
+    padding: 20px 0;
+    overflow-y: auto;
+}
+
+.dala-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.2s;
+    gap: 12px;
+}
+
+.dala-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.dala-nav-item.active {
+    background: rgba(76, 201, 240, 0.2);
+    color: #4cc9f0;
+    border-left: 3px solid #4cc9f0;
+}
+
+.dala-nav-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dala-nav-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.dala-sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dala-connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #666;
+}
+
+.status-dot.connected {
+    background: #4caf50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
+.status-dot.disconnected {
+    background: #f44336;
+}
+
+/* Main Content */
+.dala-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dala-content-header {
+    padding: 20px 30px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dala-content-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #333;
+}
+
+.dala-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.dala-content-body {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+}
+
+/* Buttons */
+.dala-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dala-btn-primary {
+    background: #4cc9f0;
+    color: #fff;
+}
+
+.dala-btn-primary:hover {
+    background: #3db8e0;
+}
+
+.dala-btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.dala-btn-secondary:hover {
+    background: #d0d0d0;
+}
+
+/* Dashboard */
+.dala-dashboard {
+    max-width: 1200px;
+}
+
+.dala-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.dala-stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dala-stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dala-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.dala-stat-text {
+    font-size: 18px;
+    color: #4caf50;
+    margin: 0;
+}
+
+.dala-recent-activity {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dala-recent-activity h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+/* Feature Views */
+.dala-devices-view,
+.dala-deploy-view,
+.dala-emulators-view,
+.dala-observer-view,
+.dala-provision-view,
+.dala-release-view,
+.dala-profiling-view,
+.dala-ci-view,
+.dala-logs-view,
+.dala-settings-view {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dala-not-found {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dala-web-container {
+        flex-direction: column;
+    }
+
+    .dala-sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+    }
+
+    .dala-nav {
+        display: flex;
+        overflow-x: auto;
+        padding: 10px;
+    }
+
+    .dala-nav-item {
+        flex-direction: column;
+        padding: 10px;
+        min-width: 80px;
+        text-align: center;
+    }
+
+    .dala-sidebar-footer {
+        display: none;
+    }
+}

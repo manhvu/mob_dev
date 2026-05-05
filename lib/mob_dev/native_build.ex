@@ -1,17 +1,17 @@
-defmodule MobDev.NativeBuild do
+defmodule DalaDev.NativeBuild do
   @moduledoc """
   Builds native binaries (APK for Android, .app bundle for iOS simulator)
-  for the current Mob project.
+  for the current Dala project.
 
-  Reads paths from `mob.exs` in the project root. If `mob.exs` is missing
+  Reads paths from `dala.exs` in the project root. If `dala.exs` is missing
   or paths haven't been configured, prints instructions and exits.
 
   OTP runtimes for Android and iOS are downloaded automatically from GitHub
-  and cached at `~/.mob/cache/` by `MobDev.OtpDownloader`.
+  and cached at `~/.dala/cache/` by `DalaDev.OtpDownloader`.
 
-  ## mob.exs keys
+  ## dala.exs keys
 
-    * `:mob_dir`           — mob library repo (native C/ObjC/Swift source)
+    * `:dala_dir`           — dala library repo (native C/ObjC/Swift source)
     * `:elixir_lib`        — Elixir stdlib lib dir
   """
 
@@ -33,7 +33,7 @@ defmodule MobDev.NativeBuild do
 
     # Skip Android when its toolchain isn't installed instead of failing the
     # build half an hour into a partial-setup user's first deploy. Default
-    # `mix mob.deploy` (no platform flag) targets every platform with a
+    # `mix dala.deploy` (no platform flag) targets every platform with a
     # `<dir>/` scaffold, but users who only set up iOS hit a Gradle error
     # half a build later — annoying, and fixable by checking up front.
     results =
@@ -111,11 +111,11 @@ defmodule MobDev.NativeBuild do
 
   defp build_android(cfg, device_id) do
     IO.puts("  Building Android APK (debug)...")
-    bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
+    bundle_id = cfg[:bundle_id] || DalaDev.Config.bundle_id()
     apk = "android/app/build/outputs/apk/debug/app-debug.apk"
 
-    with {:ok, otp_arm64} <- MobDev.OtpDownloader.ensure_android("arm64-v8a"),
-         {:ok, otp_arm32} <- MobDev.OtpDownloader.ensure_android("armeabi-v7a"),
+    with {:ok, otp_arm64} <- DalaDev.OtpDownloader.ensure_android("arm64-v8a"),
+         {:ok, otp_arm32} <- DalaDev.OtpDownloader.ensure_android("armeabi-v7a"),
          :ok <- ensure_jni_libs(otp_arm64, "arm64-v8a"),
          :ok <- ensure_jni_libs(otp_arm32, "armeabi-v7a"),
          :ok <- gradle_assemble(),
@@ -136,11 +136,11 @@ defmodule MobDev.NativeBuild do
 
   defp build_android_release(cfg) do
     IO.puts("  Building Android App Bundle (release)...")
-    bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
+    bundle_id = cfg[:bundle_id] || DalaDev.Config.bundle_id()
     aab = "android/app/build/outputs/bundle/release/app-release.aab"
 
-    with {:ok, otp_arm64} <- MobDev.OtpDownloader.ensure_android("arm64-v8a"),
-         {:ok, otp_arm32} <- MobDev.OtpDownloader.ensure_android("armeabi-v7a"),
+    with {:ok, otp_arm64} <- DalaDev.OtpDownloader.ensure_android("arm64-v8a"),
+         {:ok, otp_arm32} <- DalaDev.OtpDownloader.ensure_android("armeabi-v7a"),
          :ok <- ensure_jni_libs(otp_arm64, "arm64-v8a"),
          :ok <- ensure_jni_libs(otp_arm32, "armeabi-v7a"),
          :ok <- gradle_bundle_release() do
@@ -272,7 +272,7 @@ defmodule MobDev.NativeBuild do
       props = File.exists?(props_path) |> if(do: File.read!(props_path), else: "")
 
       signing_block = """
-      # Android release signing (added by mob)
+      # Android release signing (added by dala)
       android.injected.signing.store.file=#{store_file}
       android.injected.signing.store.password=#{store_password}
       android.injected.signing.key.alias=#{key_alias}
@@ -289,12 +289,12 @@ defmodule MobDev.NativeBuild do
       File.write!(props_path, props <> signing_block)
     else
       IO.puts(
-        "#{IO.ANSI.yellow()}Warning: No android_signing config in mob.exs. Release build will use debug signing.#{IO.ANSI.reset()}"
+        "#{IO.ANSI.yellow()}Warning: No android_signing config in dala.exs. Release build will use debug signing.#{IO.ANSI.reset()}"
       )
 
-      IO.puts("  Add to mob.exs:")
+      IO.puts("  Add to dala.exs:")
       IO.puts("")
-      IO.puts("    config :mob_dev,")
+      IO.puts("    config :dala_dev,")
       IO.puts("      android_signing: [")
       IO.puts("        store_file: \"~/.android/keystore.jks\",")
       IO.puts("        store_password: \"your_password\",")
@@ -522,11 +522,11 @@ defmodule MobDev.NativeBuild do
   end
 
   defp push_otp_runas(serial, bundle_id, app_data, otp_dir, elixir_lib) do
-    stage_local = Path.join(System.tmp_dir!(), "mob_otp_#{serial}.tar")
-    stage_device = "/data/local/tmp/mob_otp.tar"
+    stage_local = Path.join(System.tmp_dir!(), "dala_otp_#{serial}.tar")
+    stage_device = "/data/local/tmp/dala_otp.tar"
 
     try do
-      tmp = Path.join(System.tmp_dir!(), "mob_otp_stage_#{serial}")
+      tmp = Path.join(System.tmp_dir!(), "dala_otp_stage_#{serial}")
       File.rm_rf!(tmp)
       otp_tmp = Path.join(tmp, "otp")
       File.mkdir_p!(otp_tmp)
@@ -587,12 +587,12 @@ defmodule MobDev.NativeBuild do
       {:error, reason} -> {:error, reason}
     after
       File.rm(stage_local)
-      File.rm_rf(Path.join(System.tmp_dir!(), "mob_otp_stage_#{serial}"))
+      File.rm_rf(Path.join(System.tmp_dir!(), "dala_otp_stage_#{serial}"))
     end
   end
 
   defp parse_adb_serials(output) do
-    MobDev.Utils.parse_adb_devices_output(output)
+    DalaDev.Utils.parse_adb_devices_output(output)
   end
 
   # Filters a list of adb serials by `--device <id>`. The id is matched against
@@ -628,15 +628,15 @@ defmodule MobDev.NativeBuild do
   # ── iOS ──────────────────────────────────────────────────────────────────────
 
   defp build_ios(cfg) do
-    with :ok <- check_path(cfg[:mob_dir], "mob_dir"),
+    with :ok <- check_path(cfg[:dala_dir], "dala_dir"),
          :ok <- check_path(cfg[:elixir_lib], "elixir_lib"),
-         {:ok, otp_root} <- MobDev.OtpDownloader.ensure_ios_sim() do
+         {:ok, otp_root} <- DalaDev.OtpDownloader.ensure_ios_sim() do
       IO.puts("  Building iOS simulator app...")
 
       env = [
-        {"MOB_DIR", Path.expand(cfg[:mob_dir])},
-        {"MOB_ELIXIR_LIB", Path.expand(cfg[:elixir_lib])},
-        {"MOB_IOS_OTP_ROOT", otp_root}
+        {"DALA_DIR", Path.expand(cfg[:dala_dir])},
+        {"DALA_ELIXIR_LIB", Path.expand(cfg[:elixir_lib])},
+        {"DALA_IOS_OTP_ROOT", otp_root}
       ]
 
       case System.cmd("bash", ["ios/build.sh"],
@@ -653,14 +653,14 @@ defmodule MobDev.NativeBuild do
   end
 
   # Physical iOS: compile for device SDK, bundle OTP, sign, install via devicectl.
-  # Mirrors the mob_qa build_device.sh approach but driven from mob.exs config.
+  # Mirrors the dala_qa build_device.sh approach but driven from dala.exs config.
   #
-  # Required mob.exs keys:
+  # Required dala.exs keys:
   #   ios_team_id        — Apple Developer Team ID (10-char alphanumeric)
   #   ios_sign_identity  — codesign identity string (from `security find-identity -v -p codesigning`)
   #   ios_profile_uuid   — provisioning profile UUID (filename without .mobileprovision)
   #
-  # Optional mob.exs key:
+  # Optional dala.exs key:
   #   ios_epmd_build_src — path to an OTP tree that exposes EPMD source under
   #                        erts/epmd/src/ and iOS headers under erts/include/.
   #                        Defaults to the iOS-device OTP cache, which ships
@@ -669,7 +669,7 @@ defmodule MobDev.NativeBuild do
     IO.puts("  Building iOS app for physical device #{udid}...")
 
     with {:ok, cfg} <- check_device_signing_config(cfg),
-         {:ok, otp_root} <- MobDev.OtpDownloader.ensure_ios_device() do
+         {:ok, otp_root} <- DalaDev.OtpDownloader.ensure_ios_device() do
       script = generate_build_device_sh(cfg, otp_root)
       script_path = "ios/build_device.sh"
       File.write!(script_path, script)
@@ -691,7 +691,7 @@ defmodule MobDev.NativeBuild do
   end
 
   # Returns {:ok, cfg_with_signing} or {:error, reason}.
-  # Values already in mob.exs are kept; missing ones are auto-detected from the
+  # Values already in dala.exs are kept; missing ones are auto-detected from the
   # keychain and provisioning profile directories. Fails with a clear message only
   # when auto-detection itself finds multiple candidates and can't pick one.
   defp check_device_signing_config(cfg) do
@@ -733,7 +733,7 @@ defmodule MobDev.NativeBuild do
              2. Select your team → click "Download Manual Profiles"
              3. Close Xcode
 
-             This installs a development certificate into your Keychain so mob
+             This installs a development certificate into your Keychain so dala
              can sign device builds without Xcode.
              """}
 
@@ -749,9 +749,9 @@ defmodule MobDev.NativeBuild do
 
             {:error,
              """
-             Multiple signing identities found — add ios_sign_identity to mob.exs:
+             Multiple signing identities found — add ios_sign_identity to dala.exs:
 
-                 config :mob_dev,
+                 config :dala_dev,
                    ios_sign_identity: "Apple Development: you@example.com (XXXXXXXXXX)"
 
              Available identities:
@@ -815,7 +815,7 @@ defmodule MobDev.NativeBuild do
          3. Select your team → click "Download Manual Profiles"
          4. Close Xcode — you won't need to open it again
 
-         After that, `mix mob.deploy --native` will find the profile automatically.
+         After that, `mix dala.deploy --native` will find the profile automatically.
 
          If the bundle ID is not yet registered in your developer account:
              open https://developer.apple.com/account/resources/identifiers/list
@@ -830,7 +830,7 @@ defmodule MobDev.NativeBuild do
 
         if String.ends_with?(app_id, ".*") do
           IO.puts(
-            "  #{IO.ANSI.cyan()}  (using wildcard profile — run `mix mob.provision` to create a dedicated profile for #{bundle_id})#{IO.ANSI.reset()}"
+            "  #{IO.ANSI.cyan()}  (using wildcard profile — run `mix dala.provision` to create a dedicated profile for #{bundle_id})#{IO.ANSI.reset()}"
           )
         end
 
@@ -841,9 +841,9 @@ defmodule MobDev.NativeBuild do
 
         {:error,
          """
-         Multiple provisioning profiles match '#{bundle_id}' — add ios_profile_uuid to mob.exs:
+         Multiple provisioning profiles match '#{bundle_id}' — add ios_profile_uuid to dala.exs:
 
-             config :mob_dev, ios_profile_uuid: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+             config :dala_dev, ios_profile_uuid: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
          Matching profiles:
          #{choices}
@@ -886,61 +886,61 @@ defmodule MobDev.NativeBuild do
     app_name = app_atom |> to_string() |> Macro.camelize()
     app_module = to_string(app_atom)
     elixir_lib = resolve_elixir_lib(cfg[:elixir_lib])
-    # The iOS device OTP cache (under ~/.mob/cache/otp-ios-device-<hash>/) ships
+    # The iOS device OTP cache (under ~/.dala/cache/otp-ios-device-<hash>/) ships
     # the EPMD source files needed for static EPMD compilation, so the cache dir
     # itself is the EPMD build root. The `ios_epmd_build_src` config remains as
     # an escape hatch for advanced users pointing at a custom OTP tree.
     epmd_src = cfg[:ios_epmd_build_src] || otp_root
 
     [
-      {"MOB_DIR", Path.expand(cfg[:mob_dir])},
-      {"MOB_ELIXIR_LIB", Path.expand(elixir_lib)},
-      {"MOB_IOS_DEVICE_OTP_ROOT", otp_root},
-      {"MOB_IOS_EPMD_BUILD_SRC", epmd_src},
-      {"MOB_IOS_BUNDLE_ID", cfg[:bundle_id]},
-      {"MOB_IOS_TEAM_ID", cfg[:ios_team_id]},
-      {"MOB_IOS_SIGN_IDENTITY", cfg[:ios_sign_identity]},
-      {"MOB_IOS_PROFILE_UUID", cfg[:ios_profile_uuid]},
-      {"MOB_APP_NAME", app_name},
-      {"MOB_APP_MODULE", app_module}
+      {"DALA_DIR", Path.expand(cfg[:dala_dir])},
+      {"DALA_ELIXIR_LIB", Path.expand(elixir_lib)},
+      {"DALA_IOS_DEVICE_OTP_ROOT", otp_root},
+      {"DALA_IOS_EPMD_BUILD_SRC", epmd_src},
+      {"DALA_IOS_BUNDLE_ID", cfg[:bundle_id]},
+      {"DALA_IOS_TEAM_ID", cfg[:ios_team_id]},
+      {"DALA_IOS_SIGN_IDENTITY", cfg[:ios_sign_identity]},
+      {"DALA_IOS_PROFILE_UUID", cfg[:ios_profile_uuid]},
+      {"DALA_APP_NAME", app_name},
+      {"DALA_APP_MODULE", app_module}
     ]
   end
 
   defp generate_build_device_sh(_cfg, _otp_root) do
     ~S"""
     #!/bin/bash
-    # ios/build_device.sh — Physical iOS device build (generated by mix mob.deploy --native).
+    # ios/build_device.sh — Physical iOS device build (generated by mix dala.deploy --native).
     # All config comes from environment variables set by NativeBuild. Do not hardcode values here.
     set -e
     cd "$(dirname "$0")/.."
 
-    # ── Config from mob.exs (set by mix mob.deploy --native) ─────────────────────
-    MOB_DIR="${MOB_DIR:?MOB_DIR not set}"
+    # ── Config from dala.exs (set by mix dala.deploy --native) ─────────────────────
+    DALA_DIR="${DALA_DIR:?DALA_DIR not set}"
     # Always use the Elixir lib dir that matches the running `elixir` binary so
     # the bundled Elixir stdlib matches the version that compiled the BEAMs.
     ELIXIR_LIB=$(elixir -e "IO.puts(Path.dirname(to_string(:code.lib_dir(:elixir))))" 2>/dev/null)
     if [ -z "$ELIXIR_LIB" ] || [ ! -d "$ELIXIR_LIB/elixir/ebin" ]; then
-        ELIXIR_LIB="${MOB_ELIXIR_LIB:?MOB_ELIXIR_LIB not set}"
+        ELIXIR_LIB="${DALA_ELIXIR_LIB:?DALA_ELIXIR_LIB not set}"
     fi
-    OTP_ROOT="${MOB_IOS_DEVICE_OTP_ROOT:?MOB_IOS_DEVICE_OTP_ROOT not set}"
-    # MOB_IOS_EPMD_BUILD_SRC is exported by `mix mob.deploy --native` (defaults
-    # to the iOS-device OTP cache at ~/.mob/cache/otp-ios-device-<hash>/, which
+    OTP_ROOT="${DALA_IOS_DEVICE_OTP_ROOT:?DALA_IOS_DEVICE_OTP_ROOT not set}"
+    # DALA_IOS_EPMD_BUILD_SRC is exported by `mix dala.deploy --native` (defaults
+    # to the iOS-device OTP cache at ~/.dala/cache/otp-ios-device-<hash>/, which
     # ships the EPMD source files). The fallback below covers the rare case of
-    # running this script directly without going through `mix mob.deploy`.
-    EPMD_BUILD_SRC="${MOB_IOS_EPMD_BUILD_SRC:-$OTP_ROOT}"
-    BUNDLE_ID="${MOB_IOS_BUNDLE_ID:?bundle_id not set in mob.exs}"
-    TEAM_ID="${MOB_IOS_TEAM_ID:?ios_team_id not set in mob.exs}"
-    SIGN_IDENTITY="${MOB_IOS_SIGN_IDENTITY:?ios_sign_identity not set in mob.exs}"
-    PROFILE_UUID="${MOB_IOS_PROFILE_UUID:?ios_profile_uuid not set in mob.exs}"
-    APP_NAME="${MOB_APP_NAME:?MOB_APP_NAME not set}"   # CamelCase binary name, e.g. MobDemo
-    APP_MODULE="${MOB_APP_MODULE:?MOB_APP_MODULE not set}" # snake_case, e.g. mob_demo
+    # running this script directly without going through `mix dala.deploy`.
+    EPMD_BUILD_SRC="${DALA_IOS_EPMD_BUILD_SRC:-$OTP_ROOT}"
+    BUNDLE_ID="${DALA_IOS_BUNDLE_ID:?bundle_id not set in dala.exs}"
+    TEAM_ID="${DALA_IOS_TEAM_ID:?ios_team_id not set in dala.exs}"
+    SIGN_IDENTITY="${DALA_IOS_SIGN_IDENTITY:?ios_sign_identity not set in dala.exs}"
+    PROFILE_UUID="${DALA_IOS_PROFILE_UUID:?ios_profile_uuid not set in dala.exs}"
+    APP_NAME="${DALA_APP_NAME:?DALA_APP_NAME not set}"   # CamelCase binary name, e.g. DalaDemo
+    APP_MODULE="${DALA_APP_MODULE:?DALA_APP_MODULE not set}" # snake_case, e.g. dala_demo
     DEVICE_UDID="${1:?Usage: build_device.sh <device-udid>}"
 
     ERTS_VSN=$(ls "$OTP_ROOT" | grep '^erts-' | sort -V | tail -1)
     [ -z "$ERTS_VSN" ] && echo "ERROR: No erts-* in $OTP_ROOT" && exit 1
 
     # Auto-detect OTP release number (e.g. "27", "28", "29") from the tarball
-    # so mob_beam.m's hard-coded `-boot $ROOTDIR/releases/<N>/start_clean`
+    # so dala_beam.m's hard-coded `-boot $ROOTDIR/releases/<N>/start_clean`
     # matches what was actually shipped. Crash mode if mismatched:
     #   "Runtime terminating during boot ({'cannot get bootfile', ...})"
     OTP_RELEASE=$(ls "$OTP_ROOT/releases" 2>/dev/null | grep -E '^[0-9]+$' | sort -V | tail -1)
@@ -954,7 +954,7 @@ defmodule MobDev.NativeBuild do
 
     IFLAGS="-I$OTP_ROOT/$ERTS_VSN/include \
             -I$OTP_ROOT/$ERTS_VSN/include/internal \
-            -I$MOB_DIR/ios"
+            -I$DALA_DIR/ios"
 
     # Same lib set as the iOS sim build. `libmicro_openssl.a` was historically
     # listed here to provide MD5Init/MD5Update/MD5Final, but `--without-ssl`
@@ -1142,7 +1142,7 @@ defmodule MobDev.NativeBuild do
     cp "$ELIXIR_LIB/eex/ebin/eex.app" "$BEAMS_DIR/"
 
     # Phoenix and its deps require several OTP standard libraries beyond what the
-    # Mob iOS OTP tarball bundles. Copy them from the host OTP installation.
+    # Dala iOS OTP tarball bundles. Copy them from the host OTP installation.
     # - runtime_tools: listed in Phoenix apps' extra_applications
     # - asn1: required by public_key (asn1rt_nif is already statically linked)
     # - public_key: required by Phoenix for cookie/cert infrastructure
@@ -1204,37 +1204,37 @@ defmodule MobDev.NativeBuild do
     fi
 
     echo "=== Copying logos ==="
-    cp "$MOB_DIR/assets/logo/logo_dark.png"  "$OTP_ROOT/mob_logo_dark.png"  2>/dev/null || true
-    cp "$MOB_DIR/assets/logo/logo_light.png" "$OTP_ROOT/mob_logo_light.png" 2>/dev/null || true
+    cp "$DALA_DIR/assets/logo/logo_dark.png"  "$OTP_ROOT/dala_logo_dark.png"  2>/dev/null || true
+    cp "$DALA_DIR/assets/logo/logo_light.png" "$OTP_ROOT/dala_logo_light.png" 2>/dev/null || true
 
     # ── Compile native sources ────────────────────────────────────────────────────
     echo "=== Compiling native sources ==="
     BUILD_DIR=$(mktemp -d)
-    SWIFT_BRIDGING="$MOB_DIR/ios/MobDemo-Bridging-Header.h"
+    SWIFT_BRIDGING="$DALA_DIR/ios/DalaDemo-Bridging-Header.h"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
-        -c "$MOB_DIR/ios/MobNode.m" -o "$BUILD_DIR/MobNode.o"
+        -c "$DALA_DIR/ios/DalaNode.m" -o "$BUILD_DIR/DalaNode.o"
 
     xcrun -sdk iphoneos swiftc \
         -target arm64-apple-ios17.0 \
         -module-name "$APP_NAME" \
-        -emit-objc-header -emit-objc-header-path "$BUILD_DIR/MobApp-Swift.h" \
+        -emit-objc-header -emit-objc-header-path "$BUILD_DIR/DalaApp-Swift.h" \
         -import-objc-header "$SWIFT_BRIDGING" \
-        -I "$MOB_DIR/ios" \
+        -I "$DALA_DIR/ios" \
         -parse-as-library -wmo \
-        "$MOB_DIR/ios/MobViewModel.swift" \
-        "$MOB_DIR/ios/MobRootView.swift" \
-        -c -o "$BUILD_DIR/swift_mob.o"
+        "$DALA_DIR/ios/DalaViewModel.swift" \
+        "$DALA_DIR/ios/DalaRootView.swift" \
+        -c -o "$BUILD_DIR/swift_dala.o"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
         -I "$BUILD_DIR" -DSTATIC_ERLANG_NIF \
-        -c "$MOB_DIR/ios/mob_nif.m" -o "$BUILD_DIR/mob_nif.o"
+        -c "$DALA_DIR/ios/dala_nif.m" -o "$BUILD_DIR/dala_nif.o"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
-        -DMOB_BUNDLE_OTP \
+        -DDALA_BUNDLE_OTP \
         -DERTS_VSN=\"$ERTS_VSN\" \
         -DOTP_RELEASE=\"$OTP_RELEASE\" \
-        -c "$MOB_DIR/ios/mob_beam.m" -o "$BUILD_DIR/mob_beam.o"
+        -c "$DALA_DIR/ios/dala_beam.m" -o "$BUILD_DIR/dala_beam.o"
 
     echo "=== Compiling in-process EPMD ==="
     # `-DNO_DAEMON` strips EPMD's `run_daemon()` (which calls fork()) from the
@@ -1253,7 +1253,7 @@ defmodule MobDev.NativeBuild do
     # "Undefined symbols: _run_daemon". Idempotent inline patch wraps the
     # call in `#ifndef NO_DAEMON` so both halves go away together. Future
     # iOS-device tarballs ship with the patch already applied (see
-    # mob_dev/scripts/release/patches/0002-ios-device-epmd-no-daemon.patch).
+    # dala_dev/scripts/release/patches/0002-ios-device-epmd-no-daemon.patch).
     if ! grep -q "ifndef NO_DAEMON" "$EPMD_SRC/epmd.c"; then
         echo "  patching $EPMD_SRC/epmd.c (NO_DAEMON guard around run_daemon call)"
         python3 -c "
@@ -1286,9 +1286,9 @@ defmodule MobDev.NativeBuild do
         $EPMD_FLAGS -c "$EPMD_SRC/epmd_cli.c" -o "$BUILD_DIR/epmd_cli.o"
 
     SQLITE_FLAG=""
-    [ -n "$SQLITE_STATIC_LIB" ] && SQLITE_FLAG="-DMOB_STATIC_SQLITE_NIF"
+    [ -n "$SQLITE_STATIC_LIB" ] && SQLITE_FLAG="-DDALA_STATIC_SQLITE_NIF"
     $CC $IFLAGS $SQLITE_FLAG \
-        -c "$MOB_DIR/ios/driver_tab_ios.c" -o "$BUILD_DIR/driver_tab_ios.o"
+        -c "$DALA_DIR/ios/driver_tab_ios.c" -o "$BUILD_DIR/driver_tab_ios.o"
 
     $CC -fobjc-arc -fmodules $IFLAGS \
         -I "$BUILD_DIR" \
@@ -1302,10 +1302,10 @@ defmodule MobDev.NativeBuild do
     xcrun -sdk iphoneos swiftc \
         -target arm64-apple-ios17.0 \
         "$BUILD_DIR/driver_tab_ios.o" \
-        "$BUILD_DIR/MobNode.o" \
-        "$BUILD_DIR/swift_mob.o" \
-        "$BUILD_DIR/mob_nif.o" \
-        "$BUILD_DIR/mob_beam.o" \
+        "$BUILD_DIR/DalaNode.o" \
+        "$BUILD_DIR/swift_dala.o" \
+        "$BUILD_DIR/dala_nif.o" \
+        "$BUILD_DIR/dala_beam.o" \
         "$BUILD_DIR/epmd_main.o" \
         "$BUILD_DIR/epmd_srv.o" \
         "$BUILD_DIR/epmd_cli.o" \
@@ -1375,7 +1375,7 @@ defmodule MobDev.NativeBuild do
     # Use project entitlements if present; otherwise generate minimal ones.
     ENTITLEMENTS_FILE=$(ls ios/*.entitlements 2>/dev/null | head -1 || true)
     if [ -z "$ENTITLEMENTS_FILE" ]; then
-        ENTITLEMENTS_FILE="$BUILD_DIR/mob_device.entitlements"
+        ENTITLEMENTS_FILE="$BUILD_DIR/dala_device.entitlements"
         cat > "$ENTITLEMENTS_FILE" << ENTEOF
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1416,7 +1416,7 @@ defmodule MobDev.NativeBuild do
   defp auto_detect_physical_ios do
     if System.find_executable("xcrun") do
       physical =
-        MobDev.Discovery.IOS.list_devices()
+        DalaDev.Discovery.IOS.list_devices()
         |> Enum.filter(&(&1.type == :physical and &1.status in [:connected, :discovered]))
 
       case physical do
@@ -1450,8 +1450,8 @@ defmodule MobDev.NativeBuild do
   the device lives on. Drops Android when the id resolves to an iOS
   device (sim or physical), drops iOS otherwise.
 
-  Public so `mix mob.deploy` can apply the same narrowing before calling
-  `MobDev.Deployer.deploy_all/1` — otherwise the deployer's per-platform
+  Public so `mix dala.deploy` can apply the same narrowing before calling
+  `DalaDev.Deployer.deploy_all/1` — otherwise the deployer's per-platform
   `filter_by_device_id` complains "No device matched" against the
   irrelevant platform even though the build itself was correctly
   targeted.
@@ -1462,7 +1462,7 @@ defmodule MobDev.NativeBuild do
   def narrow_platforms_for_device(platforms, nil), do: platforms
 
   def narrow_platforms_for_device(platforms, device_id) when is_binary(device_id) do
-    narrow_platforms_for_device(platforms, device_id, &MobDev.Discovery.IOS.list_devices/0)
+    narrow_platforms_for_device(platforms, device_id, &DalaDev.Discovery.IOS.list_devices/0)
   end
 
   @doc """
@@ -1473,7 +1473,7 @@ defmodule MobDev.NativeBuild do
   The lister is called at most once per invocation; both `ios_device?`
   and the physical-UDID format fallback consume the same result.
   """
-  @spec narrow_platforms_for_device([atom()], String.t() | nil, (-> [MobDev.Device.t()])) ::
+  @spec narrow_platforms_for_device([atom()], String.t() | nil, (-> [DalaDev.Device.t()])) ::
           [atom()]
   def narrow_platforms_for_device(platforms, nil, _lister), do: platforms
 
@@ -1498,11 +1498,11 @@ defmodule MobDev.NativeBuild do
   # given `devices` list, OR matches an offline physical-UDID format.
   # Used to decide whether `--device <id>` narrows `platforms` to iOS or
   # Android. Accepts the full serial, the human-friendly `display_id`
-  # (e.g. the first 8 chars of a sim UUID which `mix mob.devices`
+  # (e.g. the first 8 chars of a sim UUID which `mix dala.devices`
   # prints), or — for offline devices that discovery doesn't return —
   # the format-based fallback below.
   defp ios_device?(id, devices) do
-    Enum.any?(devices, fn d -> MobDev.Device.match_id?(d, id) end) or
+    Enum.any?(devices, fn d -> DalaDev.Device.match_id?(d, id) end) or
       ios_physical_udid?(id, devices)
   end
 
@@ -1511,7 +1511,7 @@ defmodule MobDev.NativeBuild do
   # 2-arg form below (or call narrow_platforms_for_device/3) to avoid
   # the network-bound LAN scan.
   defp ios_physical_udid?(id) do
-    ios_physical_udid?(id, MobDev.Discovery.IOS.list_devices())
+    ios_physical_udid?(id, DalaDev.Discovery.IOS.list_devices())
   end
 
   # True when `id` is recognised as a connected physical iOS device.
@@ -1525,10 +1525,10 @@ defmodule MobDev.NativeBuild do
   # physical-only).
   defp ios_physical_udid?(id, devices) do
     case Enum.find(devices, &(&1.serial == id)) do
-      %MobDev.Device{type: :physical} ->
+      %DalaDev.Device{type: :physical} ->
         true
 
-      %MobDev.Device{type: :simulator} ->
+      %DalaDev.Device{type: :simulator} ->
         false
 
       nil ->
@@ -1585,7 +1585,7 @@ defmodule MobDev.NativeBuild do
   # backslash-colons on Windows; on Unix it round-trips fine. Just trim.
   defp expand_sdk_dir(raw), do: String.trim(raw) |> Path.expand()
 
-  defp adb_available?, do: MobDev.Utils.adb_available?()
+  defp adb_available?, do: DalaDev.Utils.adb_available?()
 
   defp macos?, do: match?({:unix, :darwin}, :os.type())
 
@@ -1600,12 +1600,12 @@ defmodule MobDev.NativeBuild do
         IO.puts("     adb) or platform-tools, then re-run.")
 
       not File.exists?(Path.join(["android", "local.properties"])) ->
-        IO.puts("     android/local.properties is missing. Run `mix mob.install`")
+        IO.puts("     android/local.properties is missing. Run `mix dala.install`")
         IO.puts("     to generate it (auto-detects ANDROID_HOME / Android Studio).")
 
       true ->
         IO.puts("     android/local.properties has no `sdk.dir` set. Either:")
-        IO.puts("       export ANDROID_HOME=/path/to/android/sdk && mix mob.install")
+        IO.puts("       export ANDROID_HOME=/path/to/android/sdk && mix dala.install")
         IO.puts("     or edit android/local.properties and add a sdk.dir= line.")
     end
   end
@@ -1631,28 +1631,28 @@ defmodule MobDev.NativeBuild do
   def __resolve_elixir_lib__(configured), do: resolve_elixir_lib(configured)
 
   defp load_config do
-    config_file = Path.join(File.cwd!(), "mob.exs")
+    config_file = Path.join(File.cwd!(), "dala.exs")
 
     unless File.exists?(config_file) do
       Mix.raise("""
-      mob.exs not found in #{File.cwd!()}.
+      dala.exs not found in #{File.cwd!()}.
 
-      Run `mix mob.install` to configure your project, or
-      `mix mob.doctor` to diagnose your environment.
+      Run `mix dala.install` to configure your project, or
+      `mix dala.doctor` to diagnose your environment.
       """)
     end
 
-    cfg = Config.Reader.read!(config_file) |> Keyword.get(:mob_dev, [])
+    cfg = Config.Reader.read!(config_file) |> Keyword.get(:dala_dev, [])
 
     elixir_lib = resolve_elixir_lib(cfg[:elixir_lib])
-    bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
+    bundle_id = cfg[:bundle_id] || DalaDev.Config.bundle_id()
 
     cfg
     |> Keyword.put(:elixir_lib, elixir_lib)
     |> Keyword.put_new(:bundle_id, bundle_id)
   end
 
-  # Use the mob.exs value if it exists on disk; otherwise detect from the running BEAM.
+  # Use the dala.exs value if it exists on disk; otherwise detect from the running BEAM.
   defp resolve_elixir_lib(configured) when is_binary(configured) do
     expanded = Path.expand(configured)
     if File.exists?(expanded), do: configured, else: detect_elixir_lib()
@@ -1671,10 +1671,10 @@ defmodule MobDev.NativeBuild do
 
     cond do
       is_nil(path) or path =~ "/path/to/" ->
-        {:error, "#{key} not configured in mob.exs — run `mix mob.doctor` for setup help"}
+        {:error, "#{key} not configured in dala.exs — run `mix dala.doctor` for setup help"}
 
       not File.exists?(expanded) ->
-        {:error, "#{key} path not found: #{path} — run `mix mob.doctor` to diagnose"}
+        {:error, "#{key} path not found: #{path} — run `mix dala.doctor` to diagnose"}
 
       true ->
         :ok
