@@ -188,26 +188,25 @@ defmodule Mix.Tasks.Dala.Enable do
   end
 
   defp dala_screen_template(module_name) do
-    """
-    defmodule #{module_name}.DalaScreen do
-      @moduledoc \"\"\"
+    moduledoc = """
       Dala.Screen that wraps the Phoenix LiveView app in a native WebView.
 
       Add this to your supervision tree or call from Dala.App.on_start/0:
 
           Dala.Screen.start_root(#{module_name}.DalaScreen)
-      \"\"\"
+    """
+
+    """
+    defmodule #{module_name}.DalaScreen do
+      @moduledoc #{inspect(moduledoc)}
       use Dala.Screen
 
-      def mount(_params, _session, socket) do
-        {:ok, socket}
+      screen "dala" do
+        webview url: Dala.LiveView.local_url("/"), show_url: false
       end
 
-      def render(_assigns) do
-        Dala.UI.webview(
-          url: Dala.LiveView.local_url("/"),
-          show_url: false
-        )
+      def handle_event(event, _params, socket) do
+        {:noreply, socket}
       end
     end
     """

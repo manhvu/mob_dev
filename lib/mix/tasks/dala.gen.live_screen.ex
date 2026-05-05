@@ -57,15 +57,12 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
       defmodule MyApp.DashboardScreen do
         use Dala.Screen
 
-        def mount(_params, _session, socket) do
-          {:ok, socket}
+        screen "dashboard" do
+          webview url: Dala.LiveView.local_url("/dashboard"), show_url: false
         end
 
-        def render(_assigns) do
-          Dala.UI.webview(
-            url: Dala.LiveView.local_url("/dashboard"),
-            show_url: false
-          )
+        def handle_event(event, _params, socket) do
+          {:noreply, socket}
         end
       end
 
@@ -193,15 +190,12 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
     defmodule #{screen_module} do
       use Dala.Screen
 
-      def mount(_params, _session, socket) do
-        {:ok, socket}
+      screen "#{String.replace(url_path, "/", "")}" do
+        webview url: Dala.LiveView.local_url("#{url_path}"), show_url: false
       end
 
-      def render(_assigns) do
-        Dala.UI.webview(
-          url: Dala.LiveView.local_url("#{url_path}"),
-          show_url: false
-        )
+      def handle_event(event, _params, socket) do
+        {:noreply, socket}
       end
     end
     """
