@@ -4,7 +4,7 @@ defmodule DalaDev.MixProject do
   def project do
     [
       app: :dala_dev,
-      version: "0.0.1",
+      version: "0.0.2",
       elixir: "~> 1.19",
       description: "Development tooling for the Dala mobile framework",
       source_url: "https://github.com/manhvu/dala_dev",
