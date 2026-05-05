@@ -12,54 +12,107 @@ mob_dev/
 │   ├── mob_dev/
 │   │   ├── discovery/          # Device discovery modules
 │   │   │   ├── android.ex      # Android device discovery via adb
-│   │   │   └── ios.ex          # iOS simulator/device discovery
+│   │   │   └── ios.ex          # iOS simulator/device discovery via xcrun simctl
 │   │   ├── bench/              # Battery benchmarking modules
-│   │   │   ├── probe.ex        # Multi-source state probing
-│   │   │   ├── logger.ex       # CSV logging
-│   │   │   ├── summary.ex      # Post-run analysis
-│   │   │   ├── preflight.ex    # Pre-run checklist
-│   │   │   ├── reconnector.ex  # Auto-reconnect logic
-│   │   │   └── device_observer.ex  # Device event subscription
-│   │   ├── deployer.ex         # Main deployment logic (BEAM + native)
-│   │   ├── hot_push.ex         # Hot-push changed modules via RPC
-│   │   ├── connector.ex        # Discovery → tunnel → connect orchestration
+│   │   │   ├── probe.ex        # Multi-source state probing (battery, app state)
+│   │   │   ├── logger.ex       # CSV logging for benchmark runs
+│   │   │   ├── summary.ex      # Post-run analysis and statistics
+│   │   │   ├── preflight.ex    # Pre-run checklist (device ready, app installed)
+│   │   │   ├── reconnector.ex  # Auto-reconnect logic for flapping connections
+│   │   │   └── device_observer.ex  # Device event subscription (app state changes)
+│   │   ├── deployer.ex         # Main deployment logic (BEAM + native apps)
+│   │   ├── hot_push.ex         # Hot-push changed modules via RPC (no restart)
+│   │   ├── connector.ex        # Discovery → tunnel → restart → connect orchestration
 │   │   ├── tunnel.ex           # Port tunneling (adb forward/reverse, iproxy)
-│   │   ├── native_build.ex     # APK/.app bundle building
-│   │   ├── otp_downloader.ex    # Pre-built OTP runtime downloads
-│   │   ├── device.ex           # Unified device struct
-│   │   ├── config.ex           # Configuration handling
-│   │   ├── utils.ex            # Centralized utilities
-│   │   ├── error.ex            # Standardized error handling
+│   │   ├── native_build.ex     # APK/.app bundle building and signing
+│   │   ├── otp_downloader.ex    # Pre-built OTP runtime downloads and caching
+│   │   ├── device.ex           # Unified device struct with common interface
+│   │   ├── config.ex           # Configuration handling (mob.exs)
+│   │   ├── utils.ex            # Centralized utility functions
+│   │   ├── error.ex            # Standardized error handling and formatting
 │   │   └── ...
-│   └── mix/tasks/              # Mix task implementations
-│       ├── mob.deploy.ex
-│       ├── mob.connect.ex
-│       ├── mob.devices.ex
-│       ├── mob.server.ex       # Dev dashboard server
+│   └── mix/tasks/              # Mix task implementations (mix mob.*)
+│       ├── mob.deploy.ex       # Deploy builds to devices
+│       ├── mob.connect.ex      # Connect to running device nodes
+│       ├── mob.devices.ex      # List connected devices
+│       ├── mob.server.ex       # Dev dashboard server (Phoenix)
 │       └── ...
-├── test/                       # Test files
+├── test/                       # Test files (mirrors lib/ structure)
+│   ├── mob_dev/               # Unit tests for lib/mob_dev/*
+│   └── mix/tasks/             # Tests for Mix tasks
 ├── scripts/
 │   └── release/                # OTP cross-compilation scripts
-│       ├── xcompile_android.sh
-│       ├── xcompile_ios_device.sh
-│       ├── xcompile_ios_sim.sh
-│       └── patches/            # OTP patches for iOS device
+│       ├── xcompile_android.sh         # Android arm64/arm32 cross-compile
+│       ├── xcompile_ios_device.sh      # iOS device (arm64) cross-compile
+│       ├── xcompile_ios_sim.sh         # iOS simulator (x86_64/arm64) cross-compile
+│       └── patches/            # OTP patches for iOS device compatibility
+│           ├── forker_start    # Skip forker_start (fork issues on iOS)
+│           └── epmd_no_daemon  # EPMD NO_DAEMON guard (prevents daemonization)
 ├── priv/
-│   └── templates/              # EEx templates for project generation
+│   └── templates/              # EEx templates for project generation (mix mob.new)
 └── guides/                     # Additional documentation
+    └── ...
 ```
+
+For more details on the codebase architecture and development practices, see [AGENTS.md](AGENTS.md).
 
 ## Architecture Overview
 
 mob_dev follows a modular architecture with clear separation of concerns:
 
-- **Discovery Layer** (`MobDev.Discovery.*`): Discovers connected devices using platform-specific tools (adb, xcrun simctl, libimobiledevice)
-- **Tunnel Layer** (`MobDev.Tunnel`): Establishes network tunnels for Erlang distribution between dev machine and devices
-- **Deployment Layer** (`MobDev.Deployer`, `MobDev.HotPush`): Handles both full deployment (native + BEAM) and hot-pushing changed modules
-- **Build Layer** (`MobDev.NativeBuild`): Compiles native Android/iOS apps and downloads pre-built OTP runtimes
-- **Dashboard Layer** (`MobDev.Server`): Provides web-based development dashboard with live logs and device controls
+### Discovery Layer (`MobDev.Discovery.*`)
+Discovers connected devices using platform-specific tools:
+- **Android**: Uses `adb devices -l` to list connected Android devices and emulators
+- **iOS**: Uses `xcrun simctl list -j` for simulators and `devicectl` for physical devices
+- **Output**: Returns normalized `MobDev.Device` structs with platform, ID, status, and metadata
+
+### Tunnel Layer (`MobDev.Tunnel`)
+Establishes network tunnels for Erlang distribution between dev machine and devices:
+- **Android**: Uses `adb forward` and `adb reverse` to tunnel EPMD and distribution ports
+- **iOS**: Uses `iproxy` (from libimobiledevice) to forward ports to the device
+- **Purpose**: Enables `Node.connect/1` and RPC calls to device nodes
+
+### Deployment Layer (`MobDev.Deployer`, `MobDev.HotPush`)
+Handles both full deployment and hot-pushing:
+- **Full deployment** (`MobDev.Deployer`): Builds native app → installs → pushes BEAM files → restarts
+- **Hot-push** (`MobDev.HotPush`): Pushes only changed BEAM files via RPC → no restart needed
+- **Fallback**: If dist isn't reachable, falls back to `adb push` + app restart
+
+### Build Layer (`MobDev.NativeBuild`)
+Compiles native Android/iOS apps and manages OTP runtimes:
+- **Native builds**: Compiles APK (Android) or .app (iOS) using platform tools
+- **OTP downloads**: Downloads pre-built OTP tarballs via `MobDev.OtpDownloader`
+- **Cross-compilation**: Scripts in `scripts/release/` for building OTP from source
+
+### Dashboard Layer (`MobDev.Server`)
+Provides web-based development dashboard with live feedback:
+- **Phoenix server**: Runs at `localhost:4040` with real-time updates
+- **Device cards**: Live status, deploy buttons, log streaming
+- **Watch mode**: Auto-push changed BEAMs on file save
+- **PubSub**: Uses Phoenix PubSub for live updates via WebSocket
 
 ## Installation
+
+### Prerequisites
+
+Before installing mob_dev, ensure you have:
+
+**For Android development**:
+- Android SDK installed with `adb` in PATH
+- At least one Android emulator or connected device
+- Android API level 26+ (Android 8.0+)
+
+**For iOS development**:
+- macOS with Xcode 15+ installed
+- `xcrun` command-line tools available
+- For physical devices: `brew install libimobiledevice` for device management
+- iOS 14+ for physical devices, iOS 15+ for simulators
+
+**For all platforms**:
+- Elixir 1.18+ and Erlang/OTP 26+
+- Node.js (optional, for MCP tools)
+
+### Adding to Your Project
 
 Add to your project's `mix.exs` (dev only):
 
@@ -71,24 +124,44 @@ Add to your project's `mix.exs` (dev only):
   end
 ```
 
-## Mix tasks
+Then run:
 
-| Task | Description |
-|------|-------------|
-| `mix mob.new APP_NAME` | Generate a new Mob project (see `mob_new` archive) |
-| `mix mob.install` | First-run setup: download OTP runtime, generate icons, write `mob.exs` |
-| `mix mob.deploy` | Compile and push BEAMs to all connected devices |
-| `mix mob.deploy --native` | Also build and install the native APK/iOS app |
-| `mix mob.connect` | Tunnel + restart + open IEx connected to device nodes (`--name` for multiple sessions) |
-| `mix mob.watch` | Auto-push BEAMs on file save |
-| `mix mob.watch_stop` | Stop a running `mix mob.watch` |
-| `mix mob.devices` | List connected devices and their status |
-| `mix mob.push` | Hot-push only changed modules (no restart) |
-| `mix mob.server` | Start the dev dashboard at `localhost:4040` |
-| `mix mob.icon` | Regenerate app icons |
-| `mix mob.routes` | Validate navigation destinations across the codebase |
-| `mix mob.battery_bench_android` | Measure BEAM idle power draw on an Android device |
-| `mix mob.battery_bench_ios` | Measure BEAM idle power draw on a physical iOS device |
+```bash
+mix deps.get
+mix mob.install   # First-run setup: download OTP runtime, generate icons, write mob.exs
+```
+
+The `mix mob.install` command will:
+1. Download pre-built OTP runtime for your target platforms
+2. Generate app icons for Android and iOS
+3. Create `mob.exs` configuration file in your project root
+
+## Mix Tasks
+
+All tasks are run via `mix mob.<task>`. Here's a complete reference:
+
+| Task | Description | Example Usage |
+|------|-------------|---------------|
+| `mix mob.new APP_NAME` | Generate a new Mob project (see `mob_new` archive) | `mix mob.new MyApp` |
+| `mix mob.install` | First-run setup: download OTP runtime, generate icons, write `mob.exs` | `mix mob.install` |
+| `mix mob.deploy` | Compile and push BEAMs to all connected devices | `mix mob.deploy` |
+| `mix mob.deploy --native` | Also build and install the native APK/iOS app | `mix mob.deploy --native --ios` |
+| `mix mob.connect` | Tunnel + restart + open IEx connected to device nodes | `mix mob.connect` |
+| `mix mob.connect --name my_node` | Connect with a named node (for multiple sessions) | `mix mob.connect --name dev@127.0.0.1` |
+| `mix mob.watch` | Auto-push BEAMs on file save | `mix mob.watch` |
+| `mix mob.watch_stop` | Stop a running `mix mob.watch` | `mix mob.watch_stop` |
+| `mix mob.devices` | List connected devices and their status | `mix mob.devices` |
+| `mix mob.push` | Hot-push only changed modules (no restart) | `mix mob.push --all` |
+| `mix mob.server` | Start the dev dashboard at `localhost:4040` | `mix mob.server` |
+| `mix mob.icon` | Regenerate app icons from a source image | `mix mob.icon --source assets/logo.png` |
+| `mix mob.routes` | Validate navigation destinations across the codebase | `mix mob.routes --strict` |
+| `mix mob.battery_bench_android` | Measure BEAM idle power draw on an Android device | `mix mob.battery_bench_android --duration 1800` |
+| `mix mob.battery_bench_ios` | Measure BEAM idle power draw on a physical iOS device | `mix mob.battery_bench_ios --wifi-ip 10.0.0.120` |
+| `mix mob.provision` | Handle iOS provisioning profiles and certificates | `mix mob.provision` |
+| `mix mob.doctor` | Diagnose common setup and configuration issues | `mix mob.doctor` |
+| `mix mob.emulators` | Manage and launch emulators/simulators | `mix mob.emulators` |
+
+For detailed help on any task, run `mix help mob.<task>`.
 
 ## Dev dashboard (`mix mob.server`)
 

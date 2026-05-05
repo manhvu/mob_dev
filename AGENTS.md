@@ -1,79 +1,288 @@
 # AGENTS.md — mob_dev
 
-You're in **mob_dev**, the build/deploy/devices toolkit. Read
-[`~/code/mob/AGENTS.md`](../mob/AGENTS.md) first for the system view, the
-three-repo topology, and the cross-cutting pre-empt-failure rules. The notes
-below are mob_dev-specific.
+You're in **mob_dev**, the build/deploy/devices toolkit for the mob ecosystem. This repository contains Mix tasks and supporting modules that handle:
+- Building and deploying Elixir/OTP applications to mobile devices
+- Discovering and managing connected Android and iOS devices
+- Running emulators and simulators
+- Provisioning development certificates and profiles
+- Cross-compiling OTP releases for mobile platforms
+
+**Important**: Read [`~/code/mob/AGENTS.md`](../mob/AGENTS.md) first for the system-wide view, the three-repo topology (mob, mob_dev, mob_deploy), and the cross-cutting pre-empt-failure rules that apply across all repositories. The notes below are mob_dev-specific conventions and gotchas.
 
 ## What this repo is
 
-Mix tasks (`mob.deploy`, `mob.connect`, `mob.devices`, `mob.emulators`,
-`mob.provision`, `mob.doctor`, `mob.battery_bench_*`) plus their backing
-modules (`MobDev.Discovery.{Android,IOS}`, `MobDev.NativeBuild`,
-`MobDev.OtpDownloader`, `MobDev.Deployer`, `MobDev.Emulators`).
+This repository provides the command-line tooling and library code for mobile development workflows with Elixir/OTP.
 
-The **release tooling** lives at `scripts/release/` — shell scripts for
-cross-compiling OTP for Android arm64/arm32, iOS sim, and iOS device, then
-staging the tarballs and uploading to GitHub Releases. Patches we apply to
-OTP source for iOS-device compatibility live at
-`scripts/release/patches/` (`forker_start` skip, EPMD `NO_DAEMON` guard).
-See `build_release.md` for the full release walkthrough.
+### Mix Tasks (User-facing commands)
 
-## TDD is the practice here
+These are the commands users run via `mix mob.<task>`:
 
-Write tests before or alongside new code. Every new function should have
-corresponding tests before the task is considered done. The test suite must
-stay green at all times.
+- **`mix mob.deploy`** — Deploy builds to connected devices or emulators
+- **`mix mob.connect`** — Connect to a running device/emulator session
+- **`mix mob.devices`** — List discovered Android and iOS devices
+- **`mix mob.emulators`** — Manage and launch emulators/simulators
+- **`mix mob.provision`** — Handle iOS provisioning profiles and certificates
+- **`mix mob.doctor`** — Diagnose common setup and configuration issues
+- **`mix mob.battery_bench_*`** — Battery benchmarking utilities
+
+### Core Modules (Library code)
+
+- **`MobDev.Discovery.Android`** — Discovers Android devices via `adb`, parses device listings
+- **`MobDev.Discovery.IOS`** — Discovers iOS simulators and devices via `xcrun simctl` and `devicectl`
+- **`MobDev.NativeBuild`** — Cross-compilation logic for Android (arm64/arm32) and iOS (simulator/device)
+- **`MobDev.OtpDownloader`** — Downloads and caches pre-built OTP tarballs for mobile platforms
+- **`MobDev.Deployer`** — Handles the deployment pipeline: build → package → install → launch
+- **`MobDev.Emulators`** — Manages emulator lifecycle and configuration
+
+### Release Engineering (`scripts/release/`)
+
+The **release tooling** directory contains shell scripts that:
+1. Cross-compile OTP for target platforms:
+   - Android arm64 and arm32 (using NDK toolchain)
+   - iOS simulator (x86_64 and arm64)
+   - iOS device (arm64)
+2. Stage compiled tarballs with metadata
+3. Upload releases to GitHub Releases
+
+**Patches for OTP**: iOS device builds require source patches in `scripts/release/patches/`:
+- `forker_start` skip — Avoids fork issues on iOS
+- EPMD `NO_DAEMON` guard — Prevents EPMD daemonization on iOS
+
+See `build_release.md` for the complete release walkthrough with step-by-step instructions.
+
+## Test-Driven Development (TDD)
+
+TDD is the standard practice in this repository. This ensures reliability across platforms and makes refactoring safer.
+
+### Testing Strategy
+
+- **Write tests first**: Before implementing a new function or fixing a bug, write a test that captures the expected behavior
+- **Test alongside code**: For simple changes, write tests in the same working session
+- **Every function needs tests**: Public API functions, parsing logic, and platform-specific code paths all need coverage
+- **Keep the suite green**: All tests must pass before merging. A failing test is a blocker.
+
+### Running Tests
 
 ```bash
-mix test                       # all tests
-mix test --exclude integration # skip the device-dependent ones
+# Run the full test suite
+mix test
+
+# Run only unit tests (skip integration tests that need devices)
+mix test --exclude integration
+
+# Run a specific test file
+mix test test/path/to/test_file.exs
+
+# Run tests matching a pattern
+mix test --only describe:"feature name"
 ```
 
-## Things that bite specifically in mob_dev
+### Integration Tests
 
-- **Compile-time regex literals are unsafe** on Elixir 1.19 / OTP 28.0. Use
-  `Regex.compile!("...", "flags")` for runtime compilation. Already swept in
-  0.3.17 — don't reintroduce.
-- **`mix mob.deploy --device <id>`** resolves the id via discovery before
-  deciding which platform to build. The narrowing logic is in
-  `narrow_platforms_for_device/2` and is the single source of truth for both
-  build and deploy. Bypass it and you'll get either spurious "No device
-  matched" warnings (deploy) or builds for the wrong platform (build).
-- **`xcodebuild` errors get rewritten** to actionable hints by
-  `diagnose_xcodebuild_failure/1` in `mob.provision`. Apple's verbatim text is
-  preserved alongside our hint so the snippet stays google-able. Add new
-  pattern matches there when you encounter a new Apple error string.
-- **OTP tarball schema changes need bumping `valid_otp_dir?/2`** in
-  `otp_downloader.ex` so existing caches auto-redownload. Don't bump the OTP
-  hash — the schema check is the right knob.
-- **The release scripts assume `~/code/otp` exists** with the right cross-compile
-  output. The patches in `scripts/release/patches/` are applied automatically
-  by `xcompile_ios_device.sh`, idempotently — re-running is safe.
+Integration tests (tagged with `@tag :integration`) require connected devices or running emulators. These are excluded by default in CI and during development unless explicitly enabled.
 
-## Public-but-undocumented seams
+## Gotchas and Common Pitfalls
 
-A few helpers are public specifically to enable testing (the parsing and
-narrowing functions). Don't make them private:
+These are issues that have caused problems in the past. Learn from our mistakes to avoid wasting time debugging them again.
 
-- `Discovery.Android.parse_devices_output/1`
-- `Discovery.IOS.parse_simctl_json/1`, `parse_simctl_text/1`, `parse_runtime_version/1`
-- `OtpDownloader.valid_otp_dir?/2`, `ios_device_extras_present?/1`
-- `NativeBuild.narrow_platforms_for_device/2`, `ios_toolchain_available?/0`, `read_sdk_dir/1`
-- `Emulators.parse_simctl_json/1`, `find_emulator_binary/1`
-- `Provision.diagnose_xcodebuild_failure/1`
-- `CrashDump.parse/1`, `parse_file/1`, `summary/1`, `html_report/1`
-- `ClusterViz.topology/0`, `health_dashboard/0`, `process_distribution/0`, `liveview_flow/0`
-- `Observer.observe/2`, `system_info/2`, `process_list/2`, `ets_tables/2`  # New: Remote node observer
-- `Profiling.profile/3`, `analyze/1`, `flame_graph/2`, `profile_locally/3`
-- `CITesting.run_suite/2`, `run_with_provisioning/2`, `generate_ci_report/2`
-- `ABTesting.run/2`, `analyze/1`, `generate_report/2`
-- `Mix.Tasks.Mob.Release.Android.format_size/1`  # New: Android release build
+### 1. Compile-time Regex Literals (Elixir 1.19 / OTP 28.0+)
 
-If you make any of these private, every downstream test breaks loudly — but
-you'll lose the ability to evolve the parsers safely.
+**Problem**: Regex literals in module attributes or function heads are compiled at compile time, which can cause issues with certain OTP versions.
 
-## Keep this file up to date
+**Solution**: Always use runtime compilation with `Regex.compile!("...", "flags")` for dynamic or potentially problematic patterns.
 
-When you change repo conventions, add a public seam, or hit a new gotcha —
-update this file in the same commit. Stale guidance is worse than none.
+**Status**: Already fixed in 0.3.17, but easy to reintroduce. Don't use `~r{...}` syntax for patterns that might be problematic.
+
+```elixir
+# ❌ DON'T — compile-time regex
+@pattern ~r/foo.*bar/
+
+# ✅ DO — runtime compilation
+@pattern Regex.compile!("foo.*bar", "")
+```
+
+### 2. Device ID Resolution in `mix mob.deploy`
+
+**Problem**: When deploying with `--device <id>`, the system must resolve the device ID through discovery before deciding which platform to build for.
+
+**Key function**: `MobDev.NativeBuild.narrow_platforms_for_device/2`
+
+**Why it matters**: This function is the **single source of truth** for both:
+- Determining build targets (which platforms to compile for)
+- Validating deployment targets (which devices are valid)
+
+**Consequence of bypassing**: If you skip this function:
+- Deploy: You'll get spurious "No device matched" warnings
+- Build: You'll build for the wrong platform (e.g., building iOS when you need Android)
+
+**Rule**: Always call `narrow_platforms_for_device/2` when resolving device IDs.
+
+### 3. Xcodebuild Error Diagnostics
+
+**Problem**: `xcodebuild` produces cryptic error messages that are hard to interpret.
+
+**Solution**: `MobDev.Provision.diagnose_xcodebuild_failure/1` rewrites Apple's errors into actionable hints.
+
+**How it works**:
+- Takes raw `xcodebuild` output
+- Pattern matches against known error strings
+- Returns a structured hint with:
+  - Apple's original error text (preserved for Google-ability)
+  - Our human-friendly explanation
+  - Suggested fix actions
+
+**When to update**: Whenever you encounter a new Apple error string that isn't handled, add a new pattern match in `diagnose_xcodebuild_failure/1`.
+
+### 4. OTP Tarball Schema Versioning
+
+**Problem**: When we change the structure of OTP tarballs (e.g., adding new files, changing directory layout), cached downloads become invalid.
+
+**Solution**: Bump the schema version in `MobDev.OtpDownloader.valid_otp_dir?/2`.
+
+**Important**: 
+- **DO NOT** bump the OTP hash — that's for checksum verification
+- **DO** bump the schema version — that's the knob for invalidating caches
+
+**How it works**: `valid_otp_dir?/2` checks if a cached tarball matches the expected schema version. If the schema changes, the cache is invalidated and the tarball is re-downloaded.
+
+### 5. Release Script Assumptions
+
+**Problem**: The release scripts in `scripts/release/` assume a specific directory structure.
+
+**Key assumption**: `~/code/otp` must exist with the correct cross-compile output.
+
+**Patch application**: The patches in `scripts/release/patches/` are applied automatically by `xcompile_ios_device.sh`.
+
+**Idempotency**: The patch application is idempotent — re-running the script is safe and won't cause issues.
+
+**Setup**: If you're setting up a release build environment:
+```bash
+mkdir -p ~/code/otp
+# Follow instructions in build_release.md for populating this directory
+```
+
+## Public API Seams (Testing Interfaces)
+
+These functions are intentionally public to enable thorough testing. They serve as "seams" where we can inject test data and verify behavior in isolation.
+
+**⚠️ Warning**: Do **NOT** make these functions private. They are public by design to support our testing strategy.
+
+### Why These Are Public
+
+Many of these functions contain parsing logic or platform-specific narrowing logic that needs to be tested independently of the full deployment pipeline. By keeping them public:
+- We can test parsers with known input/output pairs
+- We can test platform narrowing without needing actual devices
+- We can verify error handling without triggering real deployments
+
+### Discovery and Parsing
+
+**Android device discovery**:
+- `MobDev.Discovery.Android.parse_devices_output/1` — Parses `adb devices -l` output
+
+**iOS device/simulator discovery**:
+- `MobDev.Discovery.IOS.parse_simctl_json/1` — Parses `xcrun simctl list -j` JSON output
+- `MobDev.Discovery.IOS.parse_simctl_text/1` — Parses text output from simctl
+- `MobDev.Discovery.IOS.parse_runtime_version/1` — Extracts iOS runtime version info
+
+### Build and Platform Logic
+
+**Native build utilities**:
+- `MobDev.NativeBuild.narrow_platforms_for_device/2` — Determines which platforms to build for based on device
+- `MobDev.NativeBuild.ios_toolchain_available?/0` — Checks if iOS cross-compile toolchain is installed
+- `MobDev.NativeBuild.read_sdk_dir/1` — Reads SDK directory paths from configuration
+
+### OTP Management
+
+**OTP downloader**:
+- `MobDev.OtpDownloader.valid_otp_dir?/2` — Validates cached OTP tarballs against schema version
+- `MobDev.OtpDownloader.ios_device_extras_present?/1` — Checks for required iOS device extras in OTP
+
+### Emulator Management
+
+**Emulator utilities**:
+- `MobDev.Emulators.parse_simctl_json/1` — Parses simulator list JSON
+- `MobDev.Emulators.find_emulator_binary/1` — Locates emulator executables
+
+### Provisioning and Diagnostics
+
+**Error diagnosis**:
+- `MobDev.Provision.diagnose_xcodebuild_failure/1` — Translates xcodebuild errors into actionable hints
+
+### Crash Analysis
+
+**Crash dump utilities**:
+- `MobDev.CrashDump.parse/1` — Parses crash dump strings
+- `MobDev.CrashDump.parse_file/1` — Parses crash dump files
+- `MobDev.CrashDump.summary/1` — Generates crash dump summaries
+- `MobDev.CrashDump.html_report/1` — Generates HTML reports from crash dumps
+
+### Monitoring and Observability (New)
+
+**Cluster visualization**:
+- `MobDev.ClusterViz.topology/0` — Returns cluster topology
+- `MobDev.ClusterViz.health_dashboard/0` — Returns health dashboard data
+- `MobDev.ClusterViz.process_distribution/0` — Shows process distribution across nodes
+- `MobDev.ClusterViz.liveview_flow/0` — Traces LiveView message flows
+
+**Remote node observer**:
+- `MobDev.Observer.observe/2` — Observes a remote node
+- `MobDev.Observer.system_info/2` — Gets system info from remote node
+- `MobDev.Observer.process_list/2` — Lists processes on remote node
+- `MobDev.Observer.ets_tables/2` — Lists ETS tables on remote node
+
+### Performance Profiling
+
+**Profiling utilities**:
+- `MobDev.Profiling.profile/3` — Runs a profiling session
+- `MobDev.Profiling.analyze/1` — Analyzes profiling results
+- `MobDev.Profiling.flame_graph/2` — Generates flame graphs
+- `MobDev.Profiling.profile_locally/3` — Profiles code locally
+
+### CI and Testing
+
+**CI testing utilities**:
+- `MobDev.CITesting.run_suite/2` — Runs a CI test suite
+- `MobDev.CITesting.run_with_provisioning/2` — Runs tests with device provisioning
+- `MobDev.CITesting.generate_ci_report/2` — Generates CI reports
+
+**A/B testing**:
+- `MobDev.ABTesting.run/2` — Runs an A/B test
+- `MobDev.ABTesting.analyze/1` — Analyzes A/B test results
+- `MobDev.ABTesting.generate_report/2` — Generates A/B test reports
+
+### Release Utilities
+
+**Android release build**:
+- `Mix.Tasks.Mob.Release.Android.format_size/1` — Formats file sizes for release notes
+
+---
+
+**Remember**: If you make any of these private, every downstream test breaks loudly. But worse, you'll lose the ability to evolve the parsers safely through refactoring with test coverage.
+
+## Maintaining This Document
+
+This file is a living document that should evolve with the codebase. Keep it current to help future contributors (including yourself) avoid past mistakes.
+
+### When to Update
+
+Update this file in the **same commit** when you:
+- Change repository conventions or workflows
+- Add a new public API seam (add it to the list above)
+- Discover a new gotcha or pitfall (add it to the "Gotchas" section)
+- Change the testing strategy or requirements
+- Add new Mix tasks or core modules
+- Update the release process
+
+### Why It Matters
+
+- **Stale guidance is worse than none** — It leads contributors astray
+- **Fresh documentation saves time** — Others won't repeat your mistakes
+- **It's part of the code** — Treat documentation updates as seriously as code changes
+
+### Review Checklist
+
+Before merging a PR, verify:
+- [ ] All new public functions are documented in the "Public API Seams" section
+- [ ] New gotchas are captured in the "Gotchas" section
+- [ ] Code examples are correct and copy-pasteable
+- [ ] Links to other docs (like `build_release.md`) are still valid
