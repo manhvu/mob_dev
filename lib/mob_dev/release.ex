@@ -287,7 +287,7 @@ defmodule DalaDev.Release do
     epmd_src = cfg[:ios_epmd_build_src] || otp_root
 
     [
-      env = [
+      _env = [
         {"DALA_DIR", Path.expand(cfg[:dala_dir])},
         {"DALA_ELIXIR_LIB", Path.expand(elixir_lib)},
         {"DALA_IOS_DEVICE_OTP_ROOT", otp_root},

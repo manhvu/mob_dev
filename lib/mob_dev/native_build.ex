@@ -136,7 +136,7 @@ defmodule DalaDev.NativeBuild do
 
   defp build_android_release(cfg) do
     IO.puts("  Building Android App Bundle (release)...")
-    bundle_id = cfg[:bundle_id] || DalaDev.Config.bundle_id()
+    _bundle_id = cfg[:bundle_id] || DalaDev.Config.bundle_id()
     aab = "android/app/build/outputs/bundle/release/app-release.aab"
 
     with {:ok, otp_arm64} <- DalaDev.OtpDownloader.ensure_android("arm64-v8a"),

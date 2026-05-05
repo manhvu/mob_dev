@@ -60,11 +60,15 @@ defmodule DalaDev.Debugger do
   """
   @spec get_supervision_tree(node_ref(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def get_supervision_tree(node_ref, opts \\ []) do
+  def get_supervision_tree(node_ref, opts) do
     node = resolve_node(node_ref)
     timeout = Keyword.get(opts, :timeout, 15_000)
 
     :rpc.call(node, __MODULE__, :get_supervision_tree_local, [], timeout)
+  end
+
+  def get_supervision_tree(node_ref) do
+    get_supervision_tree(node_ref, [])
   end
 
   @doc """
@@ -278,7 +282,7 @@ defmodule DalaDev.Debugger do
     try do
       # This is a best-effort attempt
       case :sys.get_state(pid) do
-        state -> inspect(state)
+        state when not is_nil(state) -> inspect(state)
         _ -> nil
       end
     rescue

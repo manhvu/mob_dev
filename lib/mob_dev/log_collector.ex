@@ -127,7 +127,7 @@ defmodule DalaDev.LogCollector do
 
     case :rpc.call(node, __MODULE__, :fetch_local_logs, [opts], timeout) do
       logs when is_list(logs) -> logs
-      {:badrpc, reason} -> []
+      {:badrpc, _reason} -> []
       _ -> []
     end
   end
@@ -174,8 +174,10 @@ defmodule DalaDev.LogCollector do
 
     args = ["-s", serial, "logcat", "-d", "-t", to_string(lines)]
 
-    if package do
-      args = args ++ ["-s", package]
+    args = if package do
+      args ++ ["-s", package]
+    else
+      args
     end
 
     case Utils.run_adb_with_timeout(args, stderr_to_stdout: true, timeout: 10_000) do
@@ -242,7 +244,7 @@ defmodule DalaDev.LogCollector do
   Collect iOS physical device logs via `idevicesyslog` (requires libimobiledevice).
   """
   @spec collect_ios_device_logs(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def collect_ios_device_logs(udid, opts \\ []) do
+  def collect_ios_device_logs(udid, _opts \\ []) do
     if System.find_executable("idevicesyslog") do
       case System.cmd("idevicesyslog", ["-u", udid, "-n", "100"], stderr_to_stdout: true) do
         {output, 0} -> {:ok, output}

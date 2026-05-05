@@ -39,7 +39,7 @@ defmodule Mix.Tasks.Dala.Screen do
     * `--port` - Preview server port (default: 5050)
   """
 
-  alias DalaDev.{ScreenCapture, Device, Discovery}
+  alias DalaDev.{ScreenCapture, Discovery}
 
   @impl Mix.Task
   def run(args) do
@@ -174,7 +174,7 @@ defmodule Mix.Tasks.Dala.Screen do
     case Keyword.get(opts, :node) do
       nil ->
         # Auto-detect first available device
-        devices = Device.list_all()
+        devices = DalaDev.Discovery.Android.list_devices() ++ DalaDev.Discovery.IOS.list_devices()
 
         case devices do
           [] ->

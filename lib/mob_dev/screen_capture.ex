@@ -306,7 +306,7 @@ defmodule DalaDev.ScreenCapture do
     {:ok, pid}
   end
 
-  defp serve_preview(device, port, fps, scale) do
+  defp serve_preview(_device, port, _fps, _scale) do
     # Simplified preview server - in production, use Bandit/Plug
     # This is a placeholder that shows the concept
     IO.puts("Preview server started on port #{port}")
@@ -325,7 +325,7 @@ defmodule DalaDev.ScreenCapture do
 
   defp resolve_device(node) when is_atom(node) do
     # Try to find device by node name
-    devices = Device.list_all()
+    devices = DalaDev.Discovery.Android.list_devices() ++ DalaDev.Discovery.IOS.list_devices()
 
     case Enum.find(devices, &(&1.node == node)) do
       nil -> {:error, :device_not_found}
@@ -335,7 +335,7 @@ defmodule DalaDev.ScreenCapture do
 
   defp resolve_device(serial) when is_binary(serial) do
     # Assume it's an ADB serial or UDID
-    devices = Device.list_all()
+    devices = DalaDev.Discovery.Android.list_devices() ++ DalaDev.Discovery.IOS.list_devices()
 
     case Enum.find(devices, &(&1.serial == serial)) do
       nil -> {:error, :device_not_found}

@@ -80,28 +80,22 @@ defmodule Mix.Tasks.Dala.Trace do
 
         IO.puts("Collecting traces...")
 
-        case Tracing.collect_traces(trace_id) do
-          {:ok, traces} ->
-            IO.puts("Collected #{length(traces)} trace events")
+        traces = Tracing.get_events(trace_id)
+        IO.puts("Collected #{length(traces)} trace events")
 
-            if export_path do
-              case Tracing.export_trace(trace_id, :chrome) do
-                {:ok, json} ->
-                  File.write!(export_path, json)
-                  IO.puts("Exported to: #{export_path}")
+        if export_path do
+          case Tracing.export_chrome_trace(trace_id, export_path) do
+            :ok ->
+              IO.puts("Exported to: #{export_path}")
 
-                error ->
-                  IO.puts("Export failed: #{inspect(error)}")
-              end
-            else
-              print_traces(traces)
-            end
-
-            Tracing.stop_trace(trace_id)
-
-          error ->
-            IO.puts("Failed to collect traces: #{inspect(error)}")
+            error ->
+              IO.puts("Export failed: #{inspect(error)}")
+          end
+        else
+          print_traces(traces)
         end
+
+        Tracing.stop_trace(trace_id)
 
       {:error, reason} ->
         IO.puts("Failed to start trace: #{inspect(reason)}")

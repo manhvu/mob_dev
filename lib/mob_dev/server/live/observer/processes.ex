@@ -273,7 +273,7 @@ defmodule DalaDev.Server.ObserverLive.Processes do
   defp sort_processes(processes, "message_queue", :asc), do: Enum.sort_by(processes, & &1.message_queue_len, &<=/2)
   defp sort_processes(processes, _, _), do: processes
 
-  defp matches_filter?(proc, ""), do: true
+  defp matches_filter?(_proc, ""), do: true
   defp matches_filter?(proc, filter) do
     String.contains?(proc.pid, filter) ||
       (proc.name && String.contains?(proc.name, filter)) ||

@@ -53,7 +53,8 @@ defmodule DalaDev.Tracing do
   """
   @spec start_trace(node() | :all_nodes | [node()], trace_opts()) ::
           {:ok, trace_id()} | {:error, term()}
-  def start_trace(nodes, opts \\ []) when is_list(nodes) do
+  def start_trace(nodes, opts \\ [])
+  def start_trace(nodes, opts) when is_list(nodes) do
     trace_id = make_ref()
     resolved_nodes = Enum.flat_map(nodes, &resolve_nodes/1)
 
@@ -71,7 +72,7 @@ defmodule DalaDev.Tracing do
   Stop tracing and collect final events.
   """
   @spec stop_trace(trace_id()) :: :ok | {:error, term()}
-  def stop_trace(trace_id) do
+  def stop_trace(_trace_id) do
     # In a real implementation, this would stop :erlang.trace/3 on all nodes
     # and collect remaining events from ETS tables
     :ok
@@ -161,7 +162,7 @@ defmodule DalaDev.Tracing do
   end
 
   @doc false
-  def enable_trace_on_node(trace_id, opts) do
+  def enable_trace_on_node(_trace_id, _opts) do
     # This runs ON the remote node
     # In a real implementation:
     # 1. Create ETS table for trace events

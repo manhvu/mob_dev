@@ -279,7 +279,7 @@ defmodule DalaDev.Server.ClusterVizLive do
   defp fetch_flow(socket) do
     case ClusterViz.liveview_flow() do
       {:ok, data} -> assign(socket, :flow, data)
-      {:error, reason} -> assign(socket, :error, "Flow: #{reason}")
+      _ -> assign(socket, :error, "Flow: unknown error")
     end
   end
 

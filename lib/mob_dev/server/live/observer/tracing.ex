@@ -4,7 +4,7 @@ defmodule DalaDev.Server.ObserverLive.Tracing do
   """
   use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias DalaDev.{Observer, Tracing}
+  # alias DalaDev.{Observer, Tracing} - currently unused
 
   @refresh_interval 5_000
 

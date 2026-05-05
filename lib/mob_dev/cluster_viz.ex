@@ -12,7 +12,7 @@ defmodule DalaDev.ClusterViz do
   Integrates with `dala.server` to serve the dashboard.
   """
 
-  alias DalaDev.{Device, Benchmark, Debugger, NetworkDiag}
+  alias DalaDev.Benchmark
 
   @type node_info :: %{
           node: node(),
@@ -74,7 +74,7 @@ defmodule DalaDev.ClusterViz do
 
         # Get latency;
         latency =
-          case NetworkDiag.ping_node(node) do
+          case DalaDev.NetworkDiag.ping_node(node) do
             {:ok, ms} -> ms
             {:error, _} -> nil
           end
@@ -110,7 +110,7 @@ defmodule DalaDev.ClusterViz do
 
     all_data =
       Enum.flat_map(nodes, fn node ->
-        case Debugger.get_supervision_tree(node) do
+        case DalaDev.Debugger.get_supervision_tree(node, []) do
           {:ok, tree} ->
             [%{node: node, tree: tree}]
 
@@ -157,9 +157,9 @@ defmodule DalaDev.ClusterViz do
 
     # Start a simple HTTP server;
     Task.start(fn ->
-      :cowboy.start_clear(port,
+      apply(:cowboy, :start_clear, [port,
         dispatch: dispatch_rules(refresh)
-      )
+      ])
     end)
 
     IO.puts("Dashboard available at: http://localhost:#{port}/dashboard")
@@ -198,7 +198,7 @@ defmodule DalaDev.ClusterViz do
     # Simple: all connected nodes are connected to each other;
     Enum.flat_map(nodes, fn node1 ->
       Enum.map(nodes, fn node2 ->
-        if node1 != node2 and Node.connected?(node1, node2) do
+        if node1 != node2 and node2 in Node.list() do
           {node1, node2}
         else
           nil

@@ -17,7 +17,7 @@ defmodule DalaDev.CITesting do
       {:ok, results} = DalaDev.CITesting.run_with_provisioning(test_config)
   """
 
-  alias DalaDev.{Device, NetworkDiag, Benchmark, Deployer}
+  # No aliases needed currently
 
   @type test_case :: %{
           name: String.t(),

@@ -180,20 +180,20 @@ defmodule DalaDev.CrashDump do
     |> maybe_put(:compile_time, find_line_value(lines, "Compile time"))
   end
 
-  defp parse_processes(lines) do
+  defp parse_processes(_lines) do
     # Simplified - would parse actual process entries
     []
   end
 
-  defp parse_ports(lines) do
+  defp parse_ports(_lines) do
     []
   end
 
-  defp parse_ets_tables(lines) do
+  defp parse_ets_tables(_lines) do
     []
   end
 
-  defp parse_timers(lines) do
+  defp parse_timers(_lines) do
     []
   end
 
@@ -237,7 +237,7 @@ defmodule DalaDev.CrashDump do
 
   # ── Summary helpers ──────────────────────────────
 
-  defp generate_summary(header, error_info, memory) do
+  defp generate_summary(header, _error_info, _memory) do
     "Crash dump parsed: #{Map.get(header, :created_at, "unknown time")}"
   end
 

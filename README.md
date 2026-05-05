@@ -4,6 +4,8 @@ Development tooling for [Dala](https://hexdocs.pm/dala) — the BEAM-on-device m
 
 [![Hex.pm](https://img.shields.io/hexpm/v/dala_dev.svg)](https://hex.pm/packages/dala_dev)
 
+Original repo [mob_dev](https://github.com/GenericJam/mob_dev)
+
 ## Project Structure
 
 ```

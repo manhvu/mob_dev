@@ -20,6 +20,7 @@ defmodule DalaDev.Profiling do
       DalaDev.Profiling.flame_graph(profile, "flame.html")
   """
 
+  # alias DalaDev.Device - currently unused
   alias DalaDev.Device
 
   @type node_ref :: node() | Device.t() | String.t()
@@ -118,21 +119,21 @@ defmodule DalaDev.Profiling do
 
   defp profile_locally_eprof(fun, duration) do
     # Start :eprof profiling
-    :eprof.start()
-    :eprof.profile(fn -> profile_duration(fun, duration) end)
+    apply(:eprof, :start, [])
+    apply(:eprof, :profile, [fn -> profile_duration(fun, duration) end])
 
     # Get profile data
-    {:ok, :eprof.get_data()}
+    {:ok, apply(:eprof, :get_data, [])}
   end
 
-  defp profile_locally_fprof(fun, duration) do
+  defp profile_locally_fprof(fun, _duration) do
     # Start :fprof profiling
-    :fprof.start()
-    :fprof.apply(fun, [])
-    :fprof.stop()
+    apply(:fprof, :start, [])
+    apply(:fprof, :apply, [fun, []])
+    apply(:fprof, :stop, [])
 
     # Get profile data
-    {:ok, :fprof.get_profile()}
+    {:ok, apply(:fprof, :get_profile, [])}
   end
 
   # ── Private helpers ──────────────────────────────;
@@ -167,7 +168,7 @@ defmodule DalaDev.Profiling do
     |> Tuple.to_list()
     |> Enum.flat_map(fn
       {_, funcs} when is_list(funcs) ->
-        Enum.map(funcs, fn {mod, fun, arity, time, calls} ->
+        Enum.map(funcs, fn {mod, fun, _arity, time, calls} ->
           {mod, fun, time, calls}
         end)
 
@@ -217,7 +218,7 @@ defmodule DalaDev.Profiling do
     """
   end
 
-  defp generate_flame_bars(profile) do
+  defp generate_flame_bars(_profile) do
     # Placeholder - would generate actual flame bars;
     """
     <div class="flame">
@@ -235,7 +236,7 @@ defmodule DalaDev.Profiling do
     """
   end
 
-  defp generate_flame_graph_text(profile) do
+  defp generate_flame_graph_text(_profile) do
     # Placeholder - would generate text-based flame graph;
     """
     Flame Graph

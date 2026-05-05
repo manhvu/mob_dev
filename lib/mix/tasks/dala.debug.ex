@@ -124,7 +124,7 @@ defmodule Mix.Tasks.Dala.Debug do
   defp show_supervision_tree(node) do
     Mix.shell().info("Getting supervision tree for #{node}...")
 
-    case Debugger.get_supervision_tree(node) do
+    case DalaDev.Debugger.get_supervision_tree(node, []) do
       {:ok, tree} ->
         print_supervision_tree(tree)
 

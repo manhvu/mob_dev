@@ -18,7 +18,7 @@ defmodule DalaDev.Observer do
   `:observer`.
   """
 
-  alias DalaDev.Network
+  # alias DalaDev.Network - currently unused
 
   @type process_info :: %{
           pid: String.t(),
@@ -96,7 +96,7 @@ defmodule DalaDev.Observer do
 
   # ── Private: Data Collection ─────────────────────
 
-  defp fetch_system_info(node, timeout) do
+  defp fetch_system_info(node, _timeout) do
     call_remote(node, fn ->
       memory = :erlang.memory() |> Enum.into(%{})
       stats = :erlang.statistics(:runtime) |> elem(0)
@@ -122,7 +122,7 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_processes(node, timeout) do
+  defp fetch_processes(node, _timeout) do
     call_remote(node, fn ->
       :erlang.processes()
       |> Enum.map(fn pid ->
@@ -156,7 +156,7 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_ets_tables(node, timeout) do
+  defp fetch_ets_tables(node, _timeout) do
     call_remote(node, fn ->
       :ets.all()
       |> Enum.map(fn tid ->
@@ -182,7 +182,7 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_applications(node, timeout) do
+  defp fetch_applications(node, _timeout) do
     call_remote(node, fn ->
       :application.which_applications()
       |> Enum.map(fn {name, desc, version} ->
@@ -195,7 +195,7 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_modules_info(node, timeout) do
+  defp fetch_modules_info(node, _timeout) do
     call_remote(node, fn ->
       modules = :code.all_loaded()
 
@@ -222,7 +222,7 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_ports(node, timeout) do
+  defp fetch_ports(node, _timeout) do
     call_remote(node, fn ->
       :erlang.ports()
       |> Enum.map(fn port ->
@@ -245,12 +245,13 @@ defmodule DalaDev.Observer do
     end)
   end
 
-  defp fetch_load(node, timeout) do
+  defp fetch_load(node, _timeout) do
     call_remote(node, fn ->
       %{
         scheduler_usage:
           try do
-            :scheduler.sample() |> :scheduler.usage()
+            sample = apply(:scheduler, :sample, [])
+            apply(:scheduler, :usage, [sample])
           rescue
             _ -> []
           end,

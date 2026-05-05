@@ -118,7 +118,7 @@ defmodule DalaDev.Server.LogStreamer do
       tag: nil,
       message: "── Restart ──",
       raw: "",
-      mob: true,
+      dala: true,
       restart: true,
       ts: time_string()
     }
@@ -187,7 +187,7 @@ defmodule DalaDev.Server.LogStreamer do
           tag: String.trim(tag),
           message: message,
           raw: raw,
-          mob: dala_tag?(tag),
+          dala: dala_tag?(tag),
           ts: time_string()
         }
 
@@ -200,7 +200,7 @@ defmodule DalaDev.Server.LogStreamer do
           tag: nil,
           message: String.trim(raw),
           raw: raw,
-          mob: dala_line?(raw),
+          dala: dala_line?(raw),
           ts: time_string()
         }
     end

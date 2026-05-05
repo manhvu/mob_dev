@@ -198,7 +198,7 @@ defmodule DalaDev.Server.ObserverLive.ETS do
   defp sort_tables(tables, "size", :asc), do: Enum.sort_by(tables, & &1.size, &<=/2)
   defp sort_tables(tables, _, _), do: tables
 
-  defp matches_filter?(table, ""), do: true
+  defp matches_filter?(_table, ""), do: true
   defp matches_filter?(table, filter) do
     String.contains?(table.id, filter) ||
       String.contains?(table.name, filter)

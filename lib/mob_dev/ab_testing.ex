@@ -25,7 +25,7 @@ defmodule DalaDev.ABTesting do
       DalaDev.ABTesting.generate_report(results, "ab_report.html")
   """
 
-  alias DalaDev.{Benchmark, Device}
+  alias DalaDev.Benchmark
 
   @type experiment :: %{
           name: String.t(),
@@ -170,7 +170,7 @@ defmodule DalaDev.ABTesting do
 
   # ── Private helpers ──────────────────────────────;
 
-  defp run_variant_on_node(node, variant, metric, duration, iterations, warmup, timeout) do
+  defp run_variant_on_node(node, variant, metric, _duration, iterations, warmup, timeout) do
     # Warmup;
     Enum.each(1..warmup, fn _ ->
       measure_metric(node, variant, metric, timeout)
@@ -212,7 +212,7 @@ defmodule DalaDev.ABTesting do
     end
   end
 
-  defp measure_metric(node, variant, :memory, timeout) do
+  defp measure_metric(node, _variant, :memory, _timeout) do
     case Benchmark.memory_profile(node, duration: 1000, interval: 100) do
       {:ok, snapshots} ->
         total_memory = Enum.map(snapshots, & &1.memory) |> Enum.sum()
