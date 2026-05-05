@@ -62,6 +62,13 @@ narrowing functions). Don't make them private:
 - `NativeBuild.narrow_platforms_for_device/2`, `ios_toolchain_available?/0`, `read_sdk_dir/1`
 - `Emulators.parse_simctl_json/1`, `find_emulator_binary/1`
 - `Provision.diagnose_xcodebuild_failure/1`
+- `CrashDump.parse/1`, `parse_file/1`, `summary/1`, `html_report/1`
+- `ClusterViz.topology/0`, `health_dashboard/0`, `process_distribution/0`, `liveview_flow/0`
+- `Observer.observe/2`, `system_info/2`, `process_list/2`, `ets_tables/2`  # New: Remote node observer
+- `Profiling.profile/3`, `analyze/1`, `flame_graph/2`, `profile_locally/3`
+- `CITesting.run_suite/2`, `run_with_provisioning/2`, `generate_ci_report/2`
+- `ABTesting.run/2`, `analyze/1`, `generate_report/2`
+- `Mix.Tasks.Mob.Release.Android.format_size/1`  # New: Android release build
 
 If you make any of these private, every downstream test breaks loudly — but
 you'll lose the ability to evolve the parsers safely.

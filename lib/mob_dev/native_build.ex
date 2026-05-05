@@ -26,6 +26,7 @@ defmodule MobDev.NativeBuild do
     cfg = load_config()
     platforms = Keyword.get(opts, :platforms, [:android, :ios])
     device_id = Keyword.get(opts, :device, nil)
+    release = Keyword.get(opts, :release, false)
     platforms = narrow_platforms_for_device(platforms, device_id)
 
     results = []
@@ -46,6 +47,9 @@ defmodule MobDev.NativeBuild do
         not android_toolchain_available?() ->
           warn_skipped_android()
           results
+
+        release ->
+          [build_android_release(cfg) | results]
 
         true ->
           [build_android(cfg, device_id) | results]
@@ -106,7 +110,7 @@ defmodule MobDev.NativeBuild do
   # ── Android ──────────────────────────────────────────────────────────────────
 
   defp build_android(cfg, device_id) do
-    IO.puts("  Building Android APK...")
+    IO.puts("  Building Android APK (debug)...")
     bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
     apk = "android/app/build/outputs/apk/debug/app-debug.apk"
 
@@ -129,6 +133,39 @@ defmodule MobDev.NativeBuild do
       {:error, reason} -> {:error, "Android", reason}
     end
   end
+
+  defp build_android_release(cfg) do
+    IO.puts("  Building Android App Bundle (release)...")
+    bundle_id = cfg[:bundle_id] || MobDev.Config.bundle_id()
+    aab = "android/app/build/outputs/bundle/release/app-release.aab"
+
+    with {:ok, otp_arm64} <- MobDev.OtpDownloader.ensure_android("arm64-v8a"),
+         {:ok, otp_arm32} <- MobDev.OtpDownloader.ensure_android("armeabi-v7a"),
+         :ok <- ensure_jni_libs(otp_arm64, "arm64-v8a"),
+         :ok <- ensure_jni_libs(otp_arm32, "armeabi-v7a"),
+         :ok <- gradle_bundle_release() do
+      if File.exists?(aab) do
+        size = File.stat!(aab).size
+        IO.puts("  AAB: #{aab}")
+        IO.puts("  Size: #{format_size(size)}")
+        {:ok, "Android (release)"}
+      else
+        {:error, "AAB not found at #{aab}. Build may have failed."}
+      end
+    else
+      {:error, "Android", reason} -> {:error, "Android (release)", reason}
+    end
+  end
+
+  defp format_size(bytes) when bytes >= 1024 * 1024 do
+    :io_lib.format("~.1fM", [bytes / (1024 * 1024)]) |> List.flatten() |> to_string()
+  end
+
+  defp format_size(bytes) when bytes >= 1024 do
+    :io_lib.format("~.1fK", [bytes / 1024]) |> List.flatten() |> to_string()
+  end
+
+  defp format_size(bytes), do: "#{bytes}B"
 
   # Copies ERTS helper executables into jniLibs as lib*.so so Android grants
   # them the apk_data_file SELinux label (required for execve).
@@ -154,8 +191,27 @@ defmodule MobDev.NativeBuild do
   end
 
   defp gradle_assemble do
+    gradle_build(:debug)
+  end
+
+  defp gradle_bundle_release do
+    gradle_build(:release)
+  end
+
+  defp gradle_build(:debug) do
     IO.puts("  Running Gradle assembleDebug...")
     IO.puts("  (first build may take a few minutes while CMake compiles native code)")
+    run_gradle("assembleDebug")
+  end
+
+  defp gradle_build(:release) do
+    IO.puts("  Running Gradle bundleRelease...")
+    IO.puts("  (first build may take a few minutes while CMake compiles native code)")
+    apply_release_signing_config()
+    run_gradle("bundleRelease")
+  end
+
+  defp run_gradle(task) do
     android_dir = Path.join(File.cwd!(), "android")
     gradlew = Path.join(android_dir, "gradlew")
 
@@ -178,7 +234,7 @@ defmodule MobDev.NativeBuild do
       #
       # NOTE: Kotlin errors appear before "* What went wrong:" in the output.
       # If the build fails, scroll up or run `cd android && ./gradlew assembleDebug`.
-      case System.cmd("bash", [gradlew, "assembleDebug", "--no-daemon"],
+      case System.cmd("bash", [gradlew, task, "--no-daemon"],
              cd: android_dir,
              stderr_to_stdout: true,
              into: IO.stream()
@@ -188,10 +244,63 @@ defmodule MobDev.NativeBuild do
 
         {_, _} ->
           {:error,
-           "Gradle failed — scroll up for errors\n  (or run: cd android && ./gradlew assembleDebug)"}
+           "Gradle failed — scroll up for errors\n  (or run: cd android && ./gradlew #{task})"}
       end
     else
       {:error, "gradlew not found at #{gradlew}"}
+    end
+  end
+
+  defp apply_release_signing_config do
+    cfg = load_config()
+    signing = cfg[:android_signing]
+
+    if signing do
+      store_file = signing[:store_file] |> Path.expand()
+      store_password = signing[:store_password]
+      key_alias = signing[:key_alias]
+      key_password = signing[:key_password]
+
+      unless File.exists?(store_file) do
+        IO.puts(
+          "#{IO.ANSI.yellow()}Warning: Keystore not found at #{store_file}#{IO.ANSI.reset()}"
+        )
+      end
+
+      # Write signing config to gradle.properties for the build
+      props_path = Path.join("android", "gradle.properties")
+      props = File.exists?(props_path) |> if(do: File.read!(props_path), else: "")
+
+      signing_block = """
+      # Android release signing (added by mob)
+      android.injected.signing.store.file=#{store_file}
+      android.injected.signing.store.password=#{store_password}
+      android.injected.signing.key.alias=#{key_alias}
+      android.injected.signing.key.password=#{key_password}
+      """
+
+      # Remove old signing config if present, then append new one
+      props =
+        props
+        |> String.split("\n")
+        |> Enum.reject(&String.contains?(&1, "android.injected.signing"))
+        |> Enum.join("\n")
+
+      File.write!(props_path, props <> signing_block)
+    else
+      IO.puts(
+        "#{IO.ANSI.yellow()}Warning: No android_signing config in mob.exs. Release build will use debug signing.#{IO.ANSI.reset()}"
+      )
+
+      IO.puts("  Add to mob.exs:")
+      IO.puts("")
+      IO.puts("    config :mob_dev,")
+      IO.puts("      android_signing: [")
+      IO.puts("        store_file: \"~/.android/keystore.jks\",")
+      IO.puts("        store_password: \"your_password\",")
+      IO.puts("        key_alias: \"your_alias\",")
+      IO.puts("        key_password: \"your_password\"")
+      IO.puts("      ]")
     end
   end
 

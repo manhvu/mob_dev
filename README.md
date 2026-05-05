@@ -4,16 +4,71 @@ Development tooling for [Mob](https://hexdocs.pm/mob) — the BEAM-on-device mob
 
 [![Hex.pm](https://img.shields.io/hexpm/v/mob_dev.svg)](https://hex.pm/packages/mob_dev)
 
+## Project Structure
+
+```
+mob_dev/
+├── lib/
+│   ├── mob_dev/
+│   │   ├── discovery/          # Device discovery modules
+│   │   │   ├── android.ex      # Android device discovery via adb
+│   │   │   └── ios.ex          # iOS simulator/device discovery
+│   │   ├── bench/              # Battery benchmarking modules
+│   │   │   ├── probe.ex        # Multi-source state probing
+│   │   │   ├── logger.ex       # CSV logging
+│   │   │   ├── summary.ex      # Post-run analysis
+│   │   │   ├── preflight.ex    # Pre-run checklist
+│   │   │   ├── reconnector.ex  # Auto-reconnect logic
+│   │   │   └── device_observer.ex  # Device event subscription
+│   │   ├── deployer.ex         # Main deployment logic (BEAM + native)
+│   │   ├── hot_push.ex         # Hot-push changed modules via RPC
+│   │   ├── connector.ex        # Discovery → tunnel → connect orchestration
+│   │   ├── tunnel.ex           # Port tunneling (adb forward/reverse, iproxy)
+│   │   ├── native_build.ex     # APK/.app bundle building
+│   │   ├── otp_downloader.ex    # Pre-built OTP runtime downloads
+│   │   ├── device.ex           # Unified device struct
+│   │   ├── config.ex           # Configuration handling
+│   │   ├── utils.ex            # Centralized utilities
+│   │   ├── error.ex            # Standardized error handling
+│   │   └── ...
+│   └── mix/tasks/              # Mix task implementations
+│       ├── mob.deploy.ex
+│       ├── mob.connect.ex
+│       ├── mob.devices.ex
+│       ├── mob.server.ex       # Dev dashboard server
+│       └── ...
+├── test/                       # Test files
+├── scripts/
+│   └── release/                # OTP cross-compilation scripts
+│       ├── xcompile_android.sh
+│       ├── xcompile_ios_device.sh
+│       ├── xcompile_ios_sim.sh
+│       └── patches/            # OTP patches for iOS device
+├── priv/
+│   └── templates/              # EEx templates for project generation
+└── guides/                     # Additional documentation
+```
+
+## Architecture Overview
+
+mob_dev follows a modular architecture with clear separation of concerns:
+
+- **Discovery Layer** (`MobDev.Discovery.*`): Discovers connected devices using platform-specific tools (adb, xcrun simctl, libimobiledevice)
+- **Tunnel Layer** (`MobDev.Tunnel`): Establishes network tunnels for Erlang distribution between dev machine and devices
+- **Deployment Layer** (`MobDev.Deployer`, `MobDev.HotPush`): Handles both full deployment (native + BEAM) and hot-pushing changed modules
+- **Build Layer** (`MobDev.NativeBuild`): Compiles native Android/iOS apps and downloads pre-built OTP runtimes
+- **Dashboard Layer** (`MobDev.Server`): Provides web-based development dashboard with live logs and device controls
+
 ## Installation
 
 Add to your project's `mix.exs` (dev only):
 
 ```elixir
-def deps do
-  [
-    {:mob_dev, "~> 0.2", only: :dev}
-  ]
-end
+  def deps do
+    [
+      {:mob_dev, "~> 0.2", only: :dev}
+    ]
+  end
 ```
 
 ## Mix tasks

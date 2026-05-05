@@ -11,6 +11,28 @@ when upgrading OTP.
 
 ---
 
+## Table of Contents
+
+1. [What's in each tarball](#whats-in-each-tarball)
+   - [Android arm64](#android-arm64-otp-android-hashtargz)
+   - [Android arm32](#android-arm32-otp-android-arm32-hashtargz)
+   - [iOS device](#ios-device-otp-ios-device-hashtargz)
+   - [iOS simulator](#ios-simulator-otp-ios-sim-hashtargz)
+2. [Prerequisites](#prerequisites)
+3. [Step 1 — Locate the OTP commit hash](#step-1--locate-the-otp-commit-hash)
+4. [Step 2 — Build the Android tarballs (arm64 + arm32)](#step-2--build-the-android-tarballs-arm64--arm32)
+   - [arm64](#arm64)
+   - [arm32](#arm32)
+5. [Step 3 — Build the iOS simulator tarball](#step-3--build-the-ios-simulator-tarball)
+6. [Step 3b — Build the iOS device tarball](#step-3b--build-the-ios-device-tarball)
+   - [3b.0 — Cross-compile OTP for iOS arm64](#3b0--cross-compile-otp-for-ios-arm64-only-needed-once-per-otp-version)
+7. [Step 4 — Publish the GitHub release](#step-4--publish-the-github-release)
+   - [Re-uploading without bumping the hash (schema-bump pattern)](#re-uploading-without-bumping-the-hash-schema-bump-pattern)
+8. [Step 5 — Update OtpDownloader](#step-5--update-otpdownloader)
+9. [Troubleshooting](#troubleshooting)
+
+---
+
 ## What's in each tarball
 
 Both tarballs must extract (via `--strip-components=1`) into a flat directory
@@ -44,6 +66,28 @@ Needs the same extra static libs and headers as iOS (see Step 2).
 The ERTS helper binaries (`erl_child_setup`, `inet_gethost`, `epmd`) must be
 in `erts-<vsn>/bin/`; `mob_dev` copies them into the APK as `lib*.so` (required
 for SELinux `execve` permission on Android).
+
+**Required static libs:**
+- `libzstd.a` — from `erts/emulator/zstd/obj/aarch64-unknown-linux-android/opt/`
+- `libepcre.a` — from `erts/emulator/pcre/obj/aarch64-unknown-linux-android/opt/`
+- `libryu.a` — from `erts/emulator/ryu/obj/aarch64-unknown-linux-android/opt/`
+- `asn1rt_nif.a` — from `lib/asn1/priv/lib/aarch64-unknown-linux-android/`
+
+**Required headers:**
+- `erl_nif.h` — from `erts/emulator/beam/`
+- `erl_nif_api_funcs.h` — from `erts/emulator/beam/`
+- `erl_drv_nif.h` — from `erts/emulator/beam/`
+- `erl_int_sizes_config.h` — from `erts/include/aarch64-unknown-linux-android/`
+- `erl_fixed_size_int_types.h` — from `erts/include/`
+
+**Bundled Elixir stdlib:**
+- `elixir/ebin/` — ensures version consistency across deployments
+- `logger/ebin/`
+- `eex/ebin/`
+
+**Bundled exqlite BEAMs:**
+- `exqlite-<vsn>/ebin/` — platform-independent bytecode
+- Note: The native `.so` NIF is in the APK, symlinked at runtime by `mob_beam.c`
 
 ### Android arm32 (`otp-android-arm32-<hash>.tar.gz`)
 
@@ -102,6 +146,12 @@ needs to compile EPMD against the iOS arm64 SDK.
 `MobDev.OtpDownloader` validates these files are present after extraction;
 older tarballs without them are treated as invalid and re-downloaded.
 
+**Required patches (applied by `xcompile_ios_device.sh`):**
+- `scripts/release/patches/0001-ios-device-skip-forker-fork.patch`
+  - **Reason:** iOS device sandbox blocks `fork()`, which BEAM calls at startup
+  - **Effect:** Skip `forker_start` initialization on iOS device
+  - **Without it:** App dies at launch with `Sandbox: <App>(<pid>) deny(1) process-fork`
+
 ### iOS simulator (`otp-ios-sim-<hash>.tar.gz`)
 
 Built from a cross-compiled OTP for `aarch64-apple-iossimulator`. Needs:
@@ -123,9 +173,13 @@ Built from a cross-compiled OTP for `aarch64-apple-iossimulator`. Needs:
 
 ## Prerequisites
 
-- A cross-compiled OTP build. The OTP source tree at `~/code/otp` (commit `73ba6e0f`)
-  has iOS simulator and Android targets already compiled.
-- `gh` CLI authenticated to the `GenericJam` GitHub account.
+- **OTP source tree** at `~/code/otp` with iOS simulator and Android targets already compiled
+  - Tested commit: `73ba6e0f` (OTP 29.x)
+  - iOS device patches applied (see `scripts/release/patches/`)
+- **Android NDK** installed and path known (e.g., `~/Library/Android/sdk/ndk/27.2.12479018/`)
+- **Xcode** with iPhoneOS SDK installed (`xcrun --sdk iphoneos --show-sdk-path`)
+- **gh CLI** authenticated to the `GenericJam` GitHub account
+- **Elixir project with exqlite** (for bundling BEAMs): Run `mix deps.get && mix compile` in any app using `ecto_sqlite3`
 
 ---
 
@@ -467,6 +521,11 @@ add a new schema requirement there, existing users' caches fail validation
 and the next `mix mob.deploy --native` re-downloads the asset automatically.
 No hash bump, no user action needed.
 
+**Example schema bumps:**
+- Adding EPMD source files to iOS device tarball → update `valid_otp_dir?/2` to check for `erts/epmd/src/epmd.c`
+- Adding new static lib → update `valid_otp_dir?/2` to check for that `.a` file
+- **Don't bump the OTP hash** — the schema check is the right knob
+
 ---
 
 ## Step 5 — Update OtpDownloader
@@ -478,7 +537,12 @@ Edit `lib/mob_dev/otp_downloader.ex` — update the hash and ERTS version:
 ```
 
 If the ERTS version changed (e.g. from 16.3 to 16.4), update `build_release.md`
-to match.
+to match (search for `erts-16.3` and replace).
+
+**Verification:**
+```bash
+mix test test/mob_dev/otp_downloader_test.exs
+```
 
 ---
 
@@ -504,3 +568,35 @@ that `ensure_android/0` succeeded and `push_otp_release_android` ran.
 ```bash
 tar tzf otp-ios-sim-<hash>.tar.gz | grep "erts-"
 ```
+
+**iOS device app crashes at launch** — check device log for:
+```
+Sandbox: <App>(<pid>) deny(1) process-fork
+```
+This means the `0001-ios-device-skip-forker-fork.patch` wasn't applied. Rebuild
+OTP for iOS device with `xcompile_ios_device.sh` which applies it automatically.
+
+**EPMD static linking fails** — verify iOS device tarball has EPMD sources:
+```bash
+tar tzf otp-ios-device-<hash>.tar.gz | grep "erts/epmd/src/"
+```
+
+---
+
+## Scripts Reference
+
+All steps above are automated in `scripts/release/`:
+
+| Script | Description |
+|--------|-------------|
+| `xcompile_android.sh` | Cross-compile OTP for Android arm64 |
+| `xcompile_android_arm32.sh` | Cross-compile OTP for Android arm32 |
+| `xcompile_ios_sim.sh` | Cross-compile OTP for iOS simulator |
+| `xcompile_ios_device.sh` | Cross-compile OTP for iOS device (applies patch) |
+| `stage_android.sh` | Stage Android tarball (add libs, headers, Elixir) |
+| `stage_ios_sim.sh` | Stage iOS simulator tarball |
+| `stage_ios_device.sh` | Stage iOS device tarball (add EPMD sources) |
+| `publish_release.sh` | Create GitHub release and upload all tarballs |
+| `patches/0001-ios-device-skip-forker-fork.patch` | iOS device fork() fix |
+
+See `scripts/release/README.md` for the typical full-release workflow.
