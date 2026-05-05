@@ -14,6 +14,8 @@ defmodule MobDev.Server.Router do
   scope "/" do
     pipe_through(:browser)
     live("/", MobDev.Server.DashboardLive)
+    live("/web", MobDev.Server.WebLive)
+    live("/web/:feature", MobDev.Server.WebLive)
     live("/cluster", MobDev.Server.ClusterVizLive)
     live("/observer", MobDev.Server.ObserverLive)
     live("/observer/:node", MobDev.Server.ObserverLive)
@@ -25,5 +27,17 @@ defmodule MobDev.Server.Router do
     live("/observer/:node/ports", MobDev.Server.ObserverLive.Ports)
     live("/observer/:node/load", MobDev.Server.ObserverLive.Load)
     live("/observer/:node/tracing", MobDev.Server.ObserverLive.Tracing)
+
+    # Feature-specific routes for direct access
+    live("/dashboard", MobDev.Server.DashboardLive)
+    live("/devices", MobDev.Server.WebLive)
+    live("/deploy", MobDev.Server.WebLive)
+    live("/emulators", MobDev.Server.WebLive)
+    live("/provision", MobDev.Server.WebLive)
+    live("/release", MobDev.Server.WebLive)
+    live("/profiling", MobDev.Server.WebLive)
+    live("/ci", MobDev.Server.WebLive)
+    live("/logs", MobDev.Server.WebLive)
+    live("/settings", MobDev.Server.WebLive)
   end
 end
