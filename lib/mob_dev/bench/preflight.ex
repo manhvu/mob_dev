@@ -30,6 +30,7 @@ defmodule DalaDev.Bench.Preflight do
   """
 
   alias DalaDev.Bench.Probe
+  alias DalaDev.Bench.ADBHelper
 
   @typedoc "Result for a single check."
   @type check_result :: {:ok, String.t()} | {:error, String.t()}
@@ -274,28 +275,11 @@ defmodule DalaDev.Bench.Preflight do
       not is_binary(bundle) ->
         {:error, "bundle_id not configured"}
 
-      is_nil(System.find_executable("adb")) ->
-        {:ok, "skipped (adb unavailable)"}
-
       not is_binary(serial) ->
         {:ok, "skipped (no adb_serial provided to verify)"}
 
       true ->
-        case System.cmd("adb", ["-s", serial, "shell", "pm", "list", "packages", bundle],
-               stderr_to_stdout: true
-             ) do
-          {out, 0} ->
-            # `pm list packages com.example.foo` prints "package:com.example.foo"
-            # if installed; empty if not.
-            if String.contains?(out, "package:#{bundle}") do
-              {:ok, "#{bundle} installed on device"}
-            else
-              {:error, "#{bundle} not installed — run `mix dala.deploy --native`"}
-            end
-
-          {out, _} ->
-            {:error, "adb pm list failed: #{String.trim(out)}"}
-        end
+        ADBHelper.check_app_installed(serial, bundle)
     end
   end
 

@@ -338,8 +338,8 @@ defmodule DalaDev.Remote do
         else
           case :rpc.call(node, DalaDev.Debugger, :get_process_state, [pid_or_name], timeout) do
             nil -> {:error, :process_not_found}
-            state -> {:ok, state}
             {:badrpc, reason} -> {:error, reason}
+            state -> {:ok, state}
           end
         end
       end
