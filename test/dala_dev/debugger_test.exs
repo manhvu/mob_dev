@@ -38,16 +38,10 @@ defmodule DalaDev.DebuggerTest do
 
   describe "memory_report_local/0" do
     test "generates memory report" do
-      case Debugger.memory_report_local() do
-        {:ok, report} ->
-          assert is_map(report)
-          assert Map.has_key?(report, :total)
-          assert Map.has_key?(report, :processes)
-
-        {:error, _} ->
-          # Memory report might not be available;
-          assert true
-      end
+      {:ok, report} = Debugger.memory_report_local()
+      assert is_map(report)
+      assert Map.has_key?(report, :total)
+      assert Map.has_key?(report, :processes)
     end
   end
 end

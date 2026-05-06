@@ -59,20 +59,54 @@ defmodule DalaDev.Utils do
   end
 
   defp run_with_timeout(cmd, timeout, stderr_to_stdout) do
-    case System.cmd("sh", ["-c", "timeout #{div(timeout, 1000)} #{cmd}"],
-           stderr_to_stdout: stderr_to_stdout
-         ) do
-      {output, 0} -> {:ok, String.trim(output)}
-      {_output, 124} -> {:error, :timeout}
-      {output, _code} -> {:error, String.trim(output)}
+    if windows?() do
+      # On Windows, use timeout command if available, otherwise use Task.await
+      case System.find_executable("timeout") do
+        nil ->
+          run_without_timeout(cmd, stderr_to_stdout)
+
+        _ ->
+          case System.cmd("cmd", ["/c", "timeout #{div(timeout, 1000)} && #{cmd}"],
+                 stderr_to_stdout: stderr_to_stdout
+               ) do
+            {output, 0} -> {:ok, String.trim(output)}
+            {_output, 124} -> {:error, :timeout}
+            {output, _code} -> {:error, String.trim(output)}
+          end
+      end
+    else
+      case System.cmd("sh", ["-c", "timeout #{div(timeout, 1000)} #{cmd}"],
+             stderr_to_stdout: stderr_to_stdout
+           ) do
+        {output, 0} -> {:ok, String.trim(output)}
+        {_output, 124} -> {:error, :timeout}
+        {output, _code} -> {:error, String.trim(output)}
+      end
     end
   end
 
   defp run_without_timeout(cmd, stderr_to_stdout) do
-    case System.cmd("sh", ["-c", cmd], stderr_to_stdout: stderr_to_stdout) do
-      {output, 0} -> {:ok, String.trim(output)}
-      {output, _code} -> {:error, String.trim(output)}
+    task =
+      Task.async(fn ->
+        if windows?() do
+          System.cmd("cmd", ["/c", cmd], stderr_to_stdout: stderr_to_stdout)
+        else
+          System.cmd("sh", ["-c", cmd], stderr_to_stdout: stderr_to_stdout)
+        end
+      end)
+
+    try do
+      case Task.await(task, 60_000) do
+        {output, 0} -> {:ok, String.trim(output)}
+        {output, _code} -> {:error, String.trim(output)}
+      end
+    catch
+      :exit, _ -> {:error, :timeout}
     end
+  end
+
+  defp windows? do
+    :os.type() == {:win32, :nt}
   end
 
   defp timeout_available? do

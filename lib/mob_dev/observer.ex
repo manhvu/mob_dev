@@ -262,13 +262,13 @@ defmodule DalaDev.Observer do
 
   # ── Private: Helpers ─────────────────────────────
 
-  defp call_remote(node, fun) do
+  def call_remote(node, fun) do
     if node == Node.self() do
       fun.()
     else
       case Node.connect(node) do
         true ->
-          case :rpc.call(node, __MODULE__, :call_remote, [node, fun], 10_000) do
+          case :rpc.call(node, __MODULE__, :execute_remote, [fun], 10_000) do
             {:badrpc, reason} -> %{error: "RPC failed: #{inspect(reason)}"}
             result -> result
           end
@@ -277,6 +277,11 @@ defmodule DalaDev.Observer do
           %{error: "Cannot connect to node #{inspect(node)}"}
       end
     end
+  end
+
+  @doc false
+  def execute_remote(fun) do
+    fun.()
   end
 
   defp format_process_name(_pid, :undefined), do: nil

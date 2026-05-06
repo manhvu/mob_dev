@@ -172,18 +172,38 @@ defmodule DalaDev.LogCollector do
     package = Keyword.get(opts, :package, DalaDev.Config.bundle_id())
     lines = Keyword.get(opts, :lines, 100)
 
-    args = ["-s", serial, "logcat", "-d", "-t", to_string(lines)]
+    # First check if device exists
+    case Utils.run_adb_with_timeout(["devices"], stderr_to_stdout: true, timeout: 5_000) do
+      {:ok, output} ->
+        if device_exists?(output, serial) do
+          args = ["-s", serial, "logcat", "-d", "-t", to_string(lines)]
 
-    args = if package do
-      args ++ ["-s", package]
-    else
-      args
-    end
+          args =
+            if package do
+              args ++ ["-s", package]
+            else
+              args
+            end
 
-    case Utils.run_adb_with_timeout(args, stderr_to_stdout: true, timeout: 10_000) do
-      {:ok, output} -> {:ok, output}
-      {:error, reason} -> {:error, reason}
+          case Utils.run_adb_with_timeout(args, stderr_to_stdout: true, timeout: 10_000) do
+            {:ok, output} -> {:ok, output}
+            {:error, reason} -> {:error, reason}
+          end
+        else
+          {:error, "Device not found: #{serial}"}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
+  end
+
+  defp device_exists?(adb_output, serial) do
+    adb_output
+    |> String.split("\n")
+    |> Enum.any?(fn line ->
+      String.starts_with?(line, serial)
+    end)
   end
 
   @doc """

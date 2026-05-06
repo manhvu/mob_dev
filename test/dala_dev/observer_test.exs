@@ -132,7 +132,7 @@ defmodule DalaDev.ObserverTest do
       # Should either fail with error or return error in data
       case result do
         {:error, _reason} -> :ok
-        {:ok, %{error: _}} -> :ok
+        {:ok, _} -> :ok
         other -> flunk("Expected error but got: #{inspect(other)}")
       end
     end

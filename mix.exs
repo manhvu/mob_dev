@@ -15,7 +15,7 @@ defmodule DalaDev.MixProject do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    [mod: {DalaDev.Application, []}, extra_applications: [:logger]]
   end
 
   defp deps do

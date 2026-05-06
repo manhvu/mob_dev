@@ -9,7 +9,7 @@ defmodule DalaDev.Bench.LoggerTest do
     {:ok, path: path}
   end
 
-  defp probe(opts \\ []) do
+  defp probe(opts) do
     %Probe{
       ts_ms: Keyword.get(opts, :ts_ms, System.monotonic_time(:millisecond)),
       reachability: Keyword.get(opts, :reachability, :alive_rpc),

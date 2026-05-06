@@ -150,15 +150,15 @@ defmodule DalaDev.Debugger do
 
         %{
           pid: inspect(pid),
-          dictionary: format_dict(Keyword.get(info_map, :dictionary, [])),
-          message_queue_len: Keyword.get(info_map, :message_queue_len, 0),
-          memory: Keyword.get(info_map, :memory, 0),
-          reductions: Keyword.get(info_map, :reductions, 0),
-          links: Keyword.get(info_map, :links, []),
-          monitors: Keyword.get(info_map, :monitors, []),
-          status: Keyword.get(info_map, :status, :unknown),
-          current_function: format_mfa(Keyword.get(info_map, :current_function)),
-          current_location: Keyword.get(info_map, :current_location),
+          dictionary: format_dict(Map.get(info_map, :dictionary, [])),
+          message_queue_len: Map.get(info_map, :message_queue_len, 0),
+          memory: Map.get(info_map, :memory, 0),
+          reductions: Map.get(info_map, :reductions, 0),
+          links: Map.get(info_map, :links, []),
+          monitors: Map.get(info_map, :monitors, []),
+          status: Map.get(info_map, :status, :unknown),
+          current_function: format_mfa(Map.get(info_map, :current_function)),
+          current_location: Map.get(info_map, :current_location),
           state: state
         }
         |> then(fn result -> {:ok, result} end)
@@ -225,22 +225,76 @@ defmodule DalaDev.Debugger do
     {:ok, report}
   end
 
+  @doc """
+  Gets the state of a process.
+
+  Similar to `:sys.get_state/1` from Erlang/OTP, this function retrieves
+  the internal state of a process. The process must be a system process
+  (e.g., a GenServer, GenStateMachine, or other process that implements
+  the sys protocol).
+
+  ## Parameters
+
+  - `pid_or_name` - A PID or registered name of the process
+
+  ## Returns
+
+  - The process state, or `nil` if the process is not found or doesn't have state
+
+  ## See Also
+
+  - [Erlang sys:get_state/1](https://www.erlang.org/doc/apps/stdlib/sys.html#get_state/1)
+  """
+  @spec get_process_state_local(pid() | atom() | {atom(), atom()}) :: term() | nil
+  def get_process_state_local(pid_or_name) do
+    pid = resolve_pid_safe(pid_or_name)
+    get_process_state(pid)
+  end
+
+  defp resolve_pid_safe(pid) when is_pid(pid), do: pid
+
+  defp resolve_pid_safe(name) when is_atom(name) do
+    case Process.whereis(name) do
+      nil -> nil
+      pid -> pid
+    end
+  end
+
+  defp resolve_pid_safe({mod, fun}) when is_atom(mod) and is_atom(fun) do
+    case Process.whereis(mod) do
+      nil -> nil
+      pid -> pid
+    end
+  end
+
+  defp resolve_pid_safe(mod) when is_atom(mod) do
+    case Process.whereis(mod) do
+      nil -> nil
+      pid -> pid
+    end
+  end
+
   @doc false
   def trace_messages_local(process_ref, duration) do
     pid = resolve_pid(process_ref)
 
-    # Set up tracing
-    :erlang.trace(pid, true, [:send, :receive, :timestamp])
+    # Check if process is alive
+    if Process.alive?(pid) do
+      # Set up tracing
+      :erlang.trace(pid, true, [:send, :receive, :timestamp])
 
-    # Collect messages for duration
-    messages =
-      collect_trace_messages(duration, pid, [])
-      |> Enum.reverse()
+      # Collect messages for duration
+      messages =
+        collect_trace_messages(duration, pid, [])
+        |> Enum.reverse()
 
-    # Stop tracing
-    :erlang.trace(pid, false, [:send, :receive])
+      # Stop tracing
+      :erlang.trace(pid, false, [:send, :receive])
 
-    {:ok, messages}
+      {:ok, messages}
+    else
+      {:ok, []}
+    end
   end
 
   # ── Private helpers ─────────────────────────────────────────
@@ -287,6 +341,8 @@ defmodule DalaDev.Debugger do
       end
     rescue
       _ -> nil
+    catch
+      :exit, _ -> nil
     end
   end
 
