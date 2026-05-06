@@ -12,7 +12,7 @@ defmodule DalaDev.OtpDownloader do
 
   @otp_hash "73ba6e0f"
   @release_tag "otp-#{@otp_hash}"
-  @base_url "https://github.com/GenericJam/dala/releases/download/#{@release_tag}"
+  @base_url "https://github.com/manhvu/dala/releases/download/#{@release_tag}"
 
   @android_name "otp-android-#{@otp_hash}"
   @android_arm32_name "otp-android-arm32-#{@otp_hash}"
@@ -201,7 +201,7 @@ defmodule DalaDev.OtpDownloader do
            :otp_downloader,
            "OTP extraction produced no erts-* directory in #{dir}.\\n" <>
              "       The tarball may have an unexpected layout.\\n" <>
-             "       Run `mix dala.doctor` for diagnosis, or report at https://github.com/GenericJam/dala/issues"
+             "       Run `mix dala.doctor` for diagnosis, or report at https://github.com/manhvu/dala/issues"
          )}
     end
   end

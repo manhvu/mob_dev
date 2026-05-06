@@ -1,7 +1,7 @@
 # Building and Publishing OTP Release Tarballs
 
 `DalaDev.OtpDownloader` pulls pre-built OTP runtimes from a GitHub release on
-`GenericJam/dala`. This file documents how to build and publish those tarballs
+`manhvu/dala` (previously `GenericJam/dala`). This file documents how to build and publish those tarballs
 when upgrading OTP.
 
 > **TL;DR — runnable form:** every step below is also implemented as a script
@@ -178,7 +178,7 @@ Built from a cross-compiled OTP for `aarch64-apple-iossimulator`. Needs:
   - iOS device patches applied (see `scripts/release/patches/`)
 - **Android NDK** installed and path known (e.g., `~/Library/Android/sdk/ndk/27.2.12479018/`)
 - **Xcode** with iPhoneOS SDK installed (`xcrun --sdk iphoneos --show-sdk-path`)
-- **gh CLI** authenticated to the `GenericJam` GitHub account
+- **gh CLI** authenticated to the `manhvu` GitHub account
 - **Elixir project with exqlite** (for bundling BEAMs): Run `mix deps.get && mix compile` in any app using `ecto_sqlite3`
 
 ---
@@ -488,7 +488,7 @@ HASH=<hash>
 
 # Create the release (or use an existing one)
 gh release create "otp-$HASH" \
-    --repo GenericJam/dala \
+    --repo manhvu/dala \
     --title "OTP pre-built runtime $HASH" \
     --notes "Pre-built OTP for Android (aarch64 + arm32), iOS simulator (aarch64-apple-iossimulator), and iOS device (aarch64-apple-ios). OTP source commit: $HASH."
 
@@ -498,17 +498,17 @@ gh release upload "otp-$HASH" \
     "/tmp/otp-android-arm32-$HASH.tar.gz" \
     "/tmp/otp-ios-sim-$HASH.tar.gz" \
     "/tmp/otp-ios-device-$HASH.tar.gz" \
-    --repo GenericJam/dala
+    --repo manhvu/dala
 
 # Verify
-gh release view "otp-$HASH" --repo GenericJam/dala --json assets \
+gh release view "otp-$HASH" --repo manhvu/dala --json assets \
     -q '.assets[] | "\(.name) \(.size)"'
 ```
 
 To replace a bad asset:
 ```bash
-gh release delete-asset "otp-$HASH" otp-ios-sim-$HASH.tar.gz --repo GenericJam/dala --yes
-gh release upload "otp-$HASH" /tmp/otp-ios-sim-$HASH.tar.gz --repo GenericJam/dala
+gh release delete-asset "otp-$HASH" otp-ios-sim-$HASH.tar.gz --repo manhvu/dala --yes
+gh release upload "otp-$HASH" /tmp/otp-ios-sim-$HASH.tar.gz --repo manhvu/dala
 ```
 
 ### Re-uploading without bumping the hash (schema-bump pattern)

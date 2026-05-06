@@ -4,14 +4,14 @@ Development tooling for [Dala](https://hexdocs.pm/dala) — the BEAM-on-device m
 
 [![Hex.pm](https://img.shields.io/hexpm/v/dala_dev.svg)](https://hex.pm/packages/dala_dev)
 
-Original repo [mob_dev](https://github.com/GenericJam/mob_dev)
+Original repo [mob_dev](https://github.com/GenericJam/mob_dev) — now part of the [Dala](https://github.com/manhvu/dala) ecosystem.
 
 ## Project Structure
 
 ```
 dala_dev/
 ├── lib/
-│   ├── dala_dev/
+│   ├── mob_dev/                # Core modules (DalaDev.* namespace)
 │   │   ├── discovery/          # Device discovery modules
 │   │   │   ├── android.ex      # Android device discovery via adb
 │   │   │   └── ios.ex          # iOS simulator/device discovery via xcrun simctl
@@ -22,6 +22,12 @@ dala_dev/
 │   │   │   ├── preflight.ex    # Pre-run checklist (device ready, app installed)
 │   │   │   ├── reconnector.ex  # Auto-reconnect logic for flapping connections
 │   │   │   └── device_observer.ex  # Device event subscription (app state changes)
+│   │   ├── server/             # Phoenix dev dashboard
+│   │   │   ├── endpoint.ex     # Phoenix endpoint
+│   │   │   ├── router.ex       # Route definitions
+│   │   │   ├── device_poller.ex # Periodic device discovery
+│   │   │   ├── watch_worker.ex  # File watch and auto-push
+│   │   │   └── ...             # Log streaming, buffering, filtering
 │   │   ├── deployer.ex         # Main deployment logic (BEAM + native apps)
 │   │   ├── hot_push.ex         # Hot-push changed modules via RPC (no restart)
 │   │   ├── connector.ex        # Discovery → tunnel → restart → connect orchestration
@@ -30,14 +36,54 @@ dala_dev/
 │   │   ├── otp_downloader.ex    # Pre-built OTP runtime downloads and caching
 │   │   ├── device.ex           # Unified device struct with common interface
 │   │   ├── config.ex           # Configuration handling (dala.exs)
-│   │   ├── utils.ex            # Centralized utility functions
+│   │   ├── utils.ex            # Centralized utility functions (regex, ADB helpers)
+│   │   ├── paths.ex            # Path resolution for OTP runtimes, SDKs, build artifacts
 │   │   ├── error.ex            # Standardized error handling and formatting
+│   │   ├── crash_dump.ex       # Crash dump parsing and HTML reports
+│   │   ├── emulators.ex        # Emulator lifecycle management
+│   │   ├── profiling.ex        # Profiling and flame graph generation
+│   │   ├── tracing.ex          # Distributed tracing infrastructure
+│   │   ├── observer.ex         # Remote node observation (web-based :observer)
+│   │   ├── debugger.ex         # Interactive remote debugging
+│   │   ├── log_collector.ex    # Log collection and streaming
+│   │   ├── screen_capture.ex   # Screenshot and video capture
+│   │   ├── network.ex          # Network diagnostics
+│   │   ├── benchmark.ex        # Performance benchmarking
+│   │   ├── release.ex          # Release build utilities
+│   │   ├── icon_generator.ex   # Icon generation for Android/iOS
+│   │   ├── enable.ex           # Feature enablement
+│   │   ├── qr.ex               # QR code generation
 │   │   └── ...
 │   └── mix/tasks/              # Mix task implementations (mix dala.*)
 │       ├── dala.deploy.ex      # Deploy builds to devices
+│       ├── dala.push.ex        # Hot-push changed modules (no restart)
 │       ├── dala.connect.ex     # Connect to running device nodes
 │       ├── dala.devices.ex     # List connected devices
 │       ├── dala.server.ex      # Dev dashboard server (Phoenix)
+│       ├── dala.web.ex         # Comprehensive web UI
+│       ├── dala.release.ex     # Build signed iOS .ipa
+│       ├── dala.release.android.ex # Build signed Android .aab
+│       ├── dala.publish.ex     # Upload .ipa to TestFlight
+│       ├── dala.publish.android.ex # Upload .aab to Google Play
+│       ├── dala.install.ex     # First-run setup
+│       ├── dala.enable.ex      # Enable optional features
+│       ├── dala.doctor.ex      # Diagnose setup issues
+│       ├── dala.provision.ex   # iOS provisioning
+│       ├── dala.routes.ex      # Navigation validation
+│       ├── dala.debug.ex       # Interactive debugging
+│       ├── dala.observer.ex    # Web-based Observer
+│       ├── dala.logs.ex        # Log collection
+│       ├── dala.trace.ex       # Distributed tracing
+│       ├── dala.bench.ex       # Performance benchmarks
+│       ├── dala.screen.ex      # Screenshots and video
+│       ├── dala.emulators.ex   # Emulator management
+│       ├── dala.cache.ex       # Cache management
+│       ├── dala.icon.ex        # Icon generation
+│       ├── dala.gen.live_screen.ex # LiveView+Screen generation
+│       ├── dala.watch.ex       # Watch-mode development
+│       ├── dala.watch_stop.ex  # Stop watch session
+│       ├── dala.battery_bench_android.ex # Android battery bench
+│       ├── dala.battery_bench_ios.ex     # iOS battery bench
 │       └── ...
 ├── test/                       # Test files (mirrors lib/ structure)
 │   ├── dala_dev/               # Unit tests for lib/dala_dev/*
@@ -70,14 +116,32 @@ For a complete guide to all `mix dala.*` commands with detailed explanations of 
 | `mix dala.devices` | List connected Android and iOS devices |
 | `mix dala.connect` | Connect IEx to running device nodes |
 | `mix dala.deploy` | Build and deploy to connected devices |
+| `mix dala.push` | Hot-push changed modules (no restart) |
 | `mix dala.server` | Start dev dashboard (localhost:4040) |
+| `mix dala.web` | Start comprehensive web UI |
 | `mix dala.emulators` | Manage Android emulators and iOS simulators |
 | `mix dala.doctor` | Diagnose setup and configuration issues |
 | `mix dala.provision` | iOS provisioning profile management |
+| `mix dala.release` | Build signed iOS .ipa for distribution |
+| `mix dala.release.android` | Build signed Android .aab for distribution |
+| `mix dala.publish` | Upload .ipa to App Store Connect / TestFlight |
+| `mix dala.publish.android` | Upload .aab to Google Play Console |
+| `mix dala.install` | First-run setup: download OTP, generate icons |
+| `mix dala.enable` | Enable optional Dala features |
+| `mix dala.icon` | Regenerate app icons from source image |
+| `mix dala.cache` | Show or clear machine-wide caches |
+| `mix dala.routes` | Validate navigation destinations |
+| `mix dala.screen` | Capture screenshots, record video |
+| `mix dala.debug` | Interactive debugging for dala nodes |
+| `mix dala.observer` | Web-based Observer for remote nodes |
+| `mix dala.logs` | Collect and stream logs from devices |
+| `mix dala.trace` | Distributed tracing for dala clusters |
+| `mix dala.bench` | Run performance benchmarks |
+| `mix dala.gen.live_screen` | Generate a LiveView + Dala.Screen pair |
+| `mix dala.watch` | Auto-deploy on file changes |
+| `mix dala.watch_stop` | Stop a running watch session |
 | `mix dala.battery_bench_android` | Android battery benchmarking |
 | `mix dala.battery_bench_ios` | iOS battery benchmarking |
-| `mix dala.release` | Build release for distribution |
-| `mix dala.watch` | Auto-deploy on file changes |
 
 See the [full guide](guides/dala_commands.md) for detailed usage, options, and "under the hood" explanations.
 
@@ -447,10 +511,10 @@ mix dala.battery_bench_ios --no-build --wifi-ip 10.0.0.120 --log-path /tmp/run.c
 
 The Nerves-tuned BEAM is essentially indistinguishable from a stock Android app at idle. The untuned BEAM costs ~25% more because schedulers spin-wait instead of sleeping.
 
-**iOS results** are tracked separately in `mob/guides/why_beam.md` (different
+**iOS results** are tracked separately in `dala/guides/why_beam.md` (different
 device, different methodology — physical iPhone with screen on/off
 distinction). The `--preset` shortcuts (`untuned`/`sbwt`/`nerves`) aren't
-useful on iOS because they require a full Xcode rebuild (which Mob projects
+useful on iOS because they require a full Xcode rebuild (which Dala projects
 don't have), so on iOS you set flags via `mix dala.deploy --beam-flags ...`
 and bench with `--no-build`.
 
@@ -612,9 +676,9 @@ Add to `~/.claude.json`:
 
 With these installed, Claude Code can take screenshots, inspect the accessibility tree, and simulate gestures on the native device — useful when you need to verify layout or test native gesture paths.
 
-### Recommended CLAUDE.md for Mob projects
+### Recommended CLAUDE.md for Dala projects
 
-Add a `CLAUDE.md` to your Mob project root to give an agent the context it needs:
+Add a `CLAUDE.md` to your Dala project root to give an agent the context it needs:
 
 ````markdown
 # MyApp — Agent Instructions
@@ -629,7 +693,7 @@ mix dala.devices          # list connected devices
 
 Node names:
 - iOS simulator:    `my_app_ios@127.0.0.1`
-- Android emulator: `my_app_android@127.0.0.1`
+- Android emulator: `my_app_android_<serial-suffix>@127.0.0.1`
 
 ## Inspecting and driving the running app
 

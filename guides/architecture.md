@@ -43,9 +43,9 @@ As described in the system-wide [AGENTS.md](../../dala/AGENTS.md), the dala ecos
 |------------|---------|
 | **dala** | Core framework: Elixir/OTP runtime for mobile, LiveView integration, NIF bridges |
 | **dala_dev** | Development tooling: Mix tasks, device discovery, deployment, emulators, provisioning |
-| **dala_deploy** | Production deployment: App store publishing, CI/CD pipelines, release management |
+| **dala_new** | Project generator: Hex archive, templates for new Dala projects |
 
-`dala_dev` sits between the core framework and production deployment, providing all the local development workflows.
+`dala_dev` works alongside the core framework and project generator, providing all the local development workflows.
 
 ---
 
@@ -58,8 +58,8 @@ As described in the system-wide [AGENTS.md](../../dala/AGENTS.md), the dala ecos
 │                    Developer Machine                        │
 │                                                             │
 │  ┌─────────────┐    ┌──────────────┐    ┌─────────────┐  │
-│  │  dala (app) │───▶│ dala_dev    │───▶│ dala_deploy │  │
-│  │  Elixir src  │    │ (this repo) │    │ (prod)      │  │
+│  │  dala (app) │───▶│ dala_dev    │───▶│ dala_new    │  │
+│  │  Elixir src  │    │ (this repo) │    │ (generator) │  │
 │  └─────────────┘    └──────────────┘    └─────────────┘  │
 │         │                   │                    │           │
 │         ▼                   ▼                    ▼           │

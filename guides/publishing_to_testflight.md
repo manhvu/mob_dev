@@ -73,7 +73,7 @@ Examples:
 
 - `com.beyondagronomy.aircartmax` (your team owns `beyondagronomy.com`)
 - `ca.larocque.aircartmax` (Canadian convention, your name)
-- `com.genericjam.somecoolapp` (your dev handle)
+- `com.yourname.somecoolapp` (your dev handle)
 
 Bundle IDs are forever — once Apple registers it under your team you
 can't transfer it cleanly. Pick something you'll be happy with in 5 years.
