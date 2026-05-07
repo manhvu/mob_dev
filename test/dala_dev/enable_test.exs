@@ -320,7 +320,9 @@ defmodule DalaDev.EnableTest do
   # ── helpers ───────────────────────────────────────────────────────────────
 
   defp write_tmp_mix_exs(content) do
-    dir = System.tmp_dir!() |> Path.join("dala_enable_test_#{:erlang.unique_integer([:positive])}")
+    dir =
+      System.tmp_dir!() |> Path.join("dala_enable_test_#{:erlang.unique_integer([:positive])}")
+
     File.mkdir_p!(dir)
     path = Path.join(dir, "mix.exs")
     File.write!(path, content)

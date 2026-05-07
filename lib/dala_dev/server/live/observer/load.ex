@@ -1,5 +1,5 @@
-defmodule DalaDev.Server.ObserverLive.Modules do
-  @moduledoc "LiveView for loaded modules display."
+defmodule DalaDev.Server.ObserverLive.Load do
+  @moduledoc "LiveView for system load display (scheduler usage, I/O stats)."
 
   use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
@@ -14,17 +14,17 @@ defmodule DalaDev.Server.ObserverLive.Modules do
       socket
       |> assign(:node, Node.self())
       |> assign(:available_nodes, [Node.self() | Node.list()])
-      |> assign(:modules_info, %{})
+      |> assign(:load, %{})
       |> assign(:error, nil)
       |> assign(:loading, false)
 
-    {:ok, fetch_modules(socket)}
+    {:ok, fetch_load(socket)}
   end
 
   def handle_params(%{"node" => node_str}, _uri, socket) do
     try do
       node = String.to_existing_atom(":#{node_str}")
-      {:noreply, assign(socket, :node, node) |> fetch_modules()}
+      {:noreply, assign(socket, :node, node) |> fetch_load()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node name: #{node_str}")}
     end
@@ -32,14 +32,14 @@ defmodule DalaDev.Server.ObserverLive.Modules do
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
-  def handle_info(:refresh, socket), do: {:noreply, fetch_modules(socket)}
+  def handle_info(:refresh, socket), do: {:noreply, fetch_load(socket)}
 
-  def handle_event("refresh", _params, socket), do: {:noreply, fetch_modules(socket)}
+  def handle_event("refresh", _params, socket), do: {:noreply, fetch_load(socket)}
 
   def handle_event("select_node", %{"node" => node_str}, socket) do
     try do
       node = String.to_existing_atom(node_str)
-      {:noreply, assign(socket, :node, node) |> fetch_modules()}
+      {:noreply, assign(socket, :node, node) |> fetch_load()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node: #{node_str}")}
     end
@@ -51,7 +51,7 @@ defmodule DalaDev.Server.ObserverLive.Modules do
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
           <a href={"/observer/#{@node}"} class="text-zinc-400 hover:text-white">← Back</a>
-          <h1 class="text-2xl font-bold">Modules: <%= @node %></h1>
+          <h1 class="text-2xl font-bold">System Load: <%= @node %></h1>
         </div>
         <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded" phx-click="refresh">Refresh</button>
       </div>
@@ -73,50 +73,55 @@ defmodule DalaDev.Server.ObserverLive.Modules do
         </div>
       <% end %>
 
-      <div class="bg-zinc-900 rounded-lg p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">Summary</h2>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <dt class="text-zinc-400 text-sm">Total Modules</dt>
-            <dd class="text-2xl font-bold"><%= @modules_info[:count] || 0 %></dd>
-          </div>
-          <div>
-            <dt class="text-zinc-400 text-sm">Total Memory</dt>
-            <dd class="text-2xl font-bold"><%= format_bytes(@modules_info[:total_memory]) %></dd>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-zinc-900 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Scheduler Usage</h2>
+          <div class="space-y-3">
+            <%= for {scheduler, usage} <- @load[:scheduler_usage] || [] do %>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-zinc-300"><%= inspect(scheduler) %></span>
+                  <span class="text-zinc-400"><%= Float.round(usage, 1) %>%</span>
+                </div>
+                <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden">
+                  <div class="bg-blue-600 h-full rounded-full" style={"width: #{usage}%"}></div>
+                </div>
+              </div>
+            <% end %>
           </div>
         </div>
-      </div>
 
-      <div class="bg-zinc-900 rounded-lg overflow-hidden">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-zinc-700 bg-zinc-800">
-              <th class="text-left p-3">Module</th>
-              <th class="text-left p-3">Path</th>
-            </tr>
-          </thead>
-          <tbody>
-            <%= for mod <- @modules_info[:modules] || [] do %>
-              <tr class="border-b border-zinc-800 hover:bg-zinc-800">
-                <td class="p-3 font-mono text-xs"><%= mod.module %></td>
-                <td class="p-3 font-mono text-xs text-zinc-400"><%= mod.path %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+        <div class="bg-zinc-900 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">I/O Statistics</h2>
+          <%= if io = @load[:io] do %>
+            <dl class="space-y-3">
+              <div class="flex justify-between">
+                <dt class="text-zinc-400">Input</dt>
+                <dd class="font-mono"><%= format_bytes(elem(io, 0)) %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-zinc-400">Output</dt>
+                <dd class="font-mono"><%= format_bytes(elem(io, 1)) %></dd>
+              </div>
+            </dl>
+          <% end %>
+        </div>
       </div>
     </div>
     """
   end
 
-  defp fetch_modules(socket) do
+  defp fetch_load(socket) do
     node = socket.assigns[:node]
-    socket = socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
+
+    socket =
+      socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
 
     case Observer.observe(node) do
       {:ok, data} ->
-        modules = data[:modules] || %{}
-        assign(socket, :modules_info, modules) |> assign(:error, nil) |> assign(:loading, false)
+        load = data[:load] || %{}
+        assign(socket, :load, load) |> assign(:error, nil) |> assign(:loading, false)
+
       {:error, reason} ->
         assign(socket, :error, "Failed: #{reason}") |> assign(:loading, false)
     end
@@ -125,6 +130,9 @@ defmodule DalaDev.Server.ObserverLive.Modules do
   defp format_bytes(nil), do: "0 B"
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
+  
+   
+
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 end

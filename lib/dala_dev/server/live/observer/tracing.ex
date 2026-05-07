@@ -1,9 +1,10 @@
-defmodule DalaDev.Server.ObserverLive.Applications do
-  @moduledoc "LiveView for applications list display."
-
+defmodule DalaDev.Server.ObserverLive.Tracing do
+  @moduledoc """
+  LiveView for process tracing and message flow analysis.
+  """
   use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
-  alias DalaDev.Observer
+  # alias DalaDev.{Observer, Tracing} - currently unused
 
   @refresh_interval 5_000
 
@@ -14,17 +15,17 @@ defmodule DalaDev.Server.ObserverLive.Applications do
       socket
       |> assign(:node, Node.self())
       |> assign(:available_nodes, [Node.self() | Node.list()])
-      |> assign(:applications, [])
+      |> assign(:traces, [])
       |> assign(:error, nil)
       |> assign(:loading, false)
 
-    {:ok, fetch_applications(socket)}
+    {:ok, fetch_traces(socket)}
   end
 
   def handle_params(%{"node" => node_str}, _uri, socket) do
     try do
       node = String.to_existing_atom(":#{node_str}")
-      {:noreply, assign(socket, :node, node) |> fetch_applications()}
+      {:noreply, assign(socket, :node, node) |> fetch_traces()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node name: #{node_str}")}
     end
@@ -32,14 +33,14 @@ defmodule DalaDev.Server.ObserverLive.Applications do
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
-  def handle_info(:refresh, socket), do: {:noreply, fetch_applications(socket)}
+  def handle_info(:refresh, socket), do: {:noreply, fetch_traces(socket)}
 
-  def handle_event("refresh", _params, socket), do: {:noreply, fetch_applications(socket)}
+  def handle_event("refresh", _params, socket), do: {:noreply, fetch_traces(socket)}
 
   def handle_event("select_node", %{"node" => node_str}, socket) do
     try do
       node = String.to_existing_atom(node_str)
-      {:noreply, assign(socket, :node, node) |> fetch_applications()}
+      {:noreply, assign(socket, :node, node) |> fetch_traces()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node: #{node_str}")}
     end
@@ -51,7 +52,7 @@ defmodule DalaDev.Server.ObserverLive.Applications do
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
           <a href={"/observer/#{@node}"} class="text-zinc-400 hover:text-white">← Back</a>
-          <h1 class="text-2xl font-bold">Applications: <%= @node %></h1>
+          <h1 class="text-2xl font-bold">Tracing: <%= @node %></h1>
         </div>
         <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded" phx-click="refresh">Refresh</button>
       </div>
@@ -73,29 +74,45 @@ defmodule DalaDev.Server.ObserverLive.Applications do
         </div>
       <% end %>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <%= for app <- @applications do %>
-          <div class="bg-zinc-900 rounded-lg p-4">
-            <h3 class="font-semibold text-lg"><%= app.name %></h3>
-            <p class="text-sm text-zinc-400 mt-1"><%= app.description %></p>
-            <p class="text-xs text-zinc-500 mt-2">Version: <%= app.version %></p>
-          </div>
+      <div class="bg-zinc-900 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Active Traces</h2>
+        <%= if @traces == [] do %>
+          <p class="text-zinc-400">No active traces. Start a trace by selecting a process from the Processes tab.</p>
+        <% else %>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-zinc-700">
+                <th class="text-left p-3">Trace ID</th>
+                <th class="text-left p-3">Process</th>
+                <th class="text-left p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for trace <- @traces do %>
+                <tr class="border-b border-zinc-800">
+                  <td class="p-3 font-mono text-xs"><%= trace.id %></td>
+                  <td class="p-3"><%= trace.process || "-" %></td>
+                  <td class="p-3">
+                    <button class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                            phx-click="stop_trace" phx-value-trace_id={trace.id}>
+                      Stop
+                    </button>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
         <% end %>
       </div>
     </div>
     """
   end
 
-  defp fetch_applications(socket) do
-    node = socket.assigns[:node]
-    socket = socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
+  defp fetch_traces(socket) do
+    socket =
+      socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
 
-    case Observer.observe(node) do
-      {:ok, data} ->
-        apps = data[:applications] || []
-        assign(socket, :applications, apps) |> assign(:error, nil) |> assign(:loading, false)
-      {:error, reason} ->
-        assign(socket, :error, "Failed: #{reason}") |> assign(:loading, false)
-    end
+    traces = []
+    assign(socket, :traces, traces) |> assign(:error, nil) |> assign(:loading, false)
   end
 end

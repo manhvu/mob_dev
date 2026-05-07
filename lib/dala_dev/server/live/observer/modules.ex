@@ -1,5 +1,5 @@
-defmodule DalaDev.Server.ObserverLive.Ports do
-  @moduledoc "LiveView for ports information display."
+defmodule DalaDev.Server.ObserverLive.Modules do
+  @moduledoc "LiveView for loaded modules display."
 
   use Phoenix.LiveView, layout: {DalaDev.Server.Layouts, :app}
 
@@ -14,17 +14,17 @@ defmodule DalaDev.Server.ObserverLive.Ports do
       socket
       |> assign(:node, Node.self())
       |> assign(:available_nodes, [Node.self() | Node.list()])
-      |> assign(:ports, [])
+      |> assign(:modules_info, %{})
       |> assign(:error, nil)
       |> assign(:loading, false)
 
-    {:ok, fetch_ports(socket)}
+    {:ok, fetch_modules(socket)}
   end
 
   def handle_params(%{"node" => node_str}, _uri, socket) do
     try do
       node = String.to_existing_atom(":#{node_str}")
-      {:noreply, assign(socket, :node, node) |> fetch_ports()}
+      {:noreply, assign(socket, :node, node) |> fetch_modules()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node name: #{node_str}")}
     end
@@ -32,14 +32,14 @@ defmodule DalaDev.Server.ObserverLive.Ports do
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
-  def handle_info(:refresh, socket), do: {:noreply, fetch_ports(socket)}
+  def handle_info(:refresh, socket), do: {:noreply, fetch_modules(socket)}
 
-  def handle_event("refresh", _params, socket), do: {:noreply, fetch_ports(socket)}
+  def handle_event("refresh", _params, socket), do: {:noreply, fetch_modules(socket)}
 
   def handle_event("select_node", %{"node" => node_str}, socket) do
     try do
       node = String.to_existing_atom(node_str)
-      {:noreply, assign(socket, :node, node) |> fetch_ports()}
+      {:noreply, assign(socket, :node, node) |> fetch_modules()}
     rescue
       _ -> {:noreply, assign(socket, :error, "Invalid node: #{node_str}")}
     end
@@ -51,7 +51,7 @@ defmodule DalaDev.Server.ObserverLive.Ports do
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
           <a href={"/observer/#{@node}"} class="text-zinc-400 hover:text-white">← Back</a>
-          <h1 class="text-2xl font-bold">Ports: <%= @node %></h1>
+          <h1 class="text-2xl font-bold">Modules: <%= @node %></h1>
         </div>
         <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded" phx-click="refresh">Refresh</button>
       </div>
@@ -73,27 +73,33 @@ defmodule DalaDev.Server.ObserverLive.Ports do
         </div>
       <% end %>
 
+      <div class="bg-zinc-900 rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">Summary</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <dt class="text-zinc-400 text-sm">Total Modules</dt>
+            <dd class="text-2xl font-bold"><%= @modules_info[:count] || 0 %></dd>
+          </div>
+          <div>
+            <dt class="text-zinc-400 text-sm">Total Memory</dt>
+            <dd class="text-2xl font-bold"><%= format_bytes(@modules_info[:total_memory]) %></dd>
+          </div>
+        </div>
+      </div>
+
       <div class="bg-zinc-900 rounded-lg overflow-hidden">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-zinc-700 bg-zinc-800">
-              <th class="text-left p-3">Port ID</th>
-              <th class="text-left p-3">Name</th>
-              <th class="text-right p-3">Input</th>
-              <th class="text-right p-3">Output</th>
-              <th class="text-left p-3">Connected To</th>
-              <th class="text-left p-3">OS PID</th>
+              <th class="text-left p-3">Module</th>
+              <th class="text-left p-3">Path</th>
             </tr>
           </thead>
           <tbody>
-            <%= for port <- @ports do %>
+            <%= for mod <- @modules_info[:modules] || [] do %>
               <tr class="border-b border-zinc-800 hover:bg-zinc-800">
-                <td class="p-3 font-mono text-xs"><%= port.id %></td>
-                <td class="p-3"><%= port.name %></td>
-                <td class="p-3 text-right"><%= format_bytes(port.input) %></td>
-                <td class="p-3 text-right"><%= format_bytes(port.output) %></td>
-                <td class="p-3 font-mono text-xs text-zinc-400"><%= port.connected %></td>
-                <td class="p-3"><%= port.os_pid || "-" %></td>
+                <td class="p-3 font-mono text-xs"><%= mod.module %></td>
+                <td class="p-3 font-mono text-xs text-zinc-400"><%= mod.path %></td>
               </tr>
             <% end %>
           </tbody>
@@ -103,14 +109,17 @@ defmodule DalaDev.Server.ObserverLive.Ports do
     """
   end
 
-  defp fetch_ports(socket) do
+  defp fetch_modules(socket) do
     node = socket.assigns[:node]
-    socket = socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
+
+    socket =
+      socket |> assign(:loading, true) |> assign(:available_nodes, [Node.self() | Node.list()])
 
     case Observer.observe(node) do
       {:ok, data} ->
-        ports = data[:ports] || []
-        assign(socket, :ports, ports) |> assign(:error, nil) |> assign(:loading, false)
+        modules = data[:modules] || %{}
+        assign(socket, :modules_info, modules) |> assign(:error, nil) |> assign(:loading, false)
+
       {:error, reason} ->
         assign(socket, :error, "Failed: #{reason}") |> assign(:loading, false)
     end
@@ -119,6 +128,9 @@ defmodule DalaDev.Server.ObserverLive.Ports do
   defp format_bytes(nil), do: "0 B"
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
+  
+   
+
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 end

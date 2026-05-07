@@ -199,6 +199,7 @@ defmodule DalaDev.Server.ObserverLive.ETS do
   defp sort_tables(tables, _, _), do: tables
 
   defp matches_filter?(_table, ""), do: true
+
   defp matches_filter?(table, filter) do
     String.contains?(table.id, filter) ||
       String.contains?(table.name, filter)
@@ -210,7 +211,10 @@ defmodule DalaDev.Server.ObserverLive.ETS do
   defp format_bytes(nil), do: "0 B"
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
+  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024,
+    do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 
   defp format_number(n) when n < 1000, do: "#{n}"

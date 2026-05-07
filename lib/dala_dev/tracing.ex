@@ -54,6 +54,7 @@ defmodule DalaDev.Tracing do
   @spec start_trace(node() | :all_nodes | [node()], trace_opts()) ::
           {:ok, trace_id()} | {:error, term()}
   def start_trace(nodes, opts \\ [])
+
   def start_trace(nodes, opts) when is_list(nodes) do
     trace_id = make_ref()
     resolved_nodes = Enum.flat_map(nodes, &resolve_nodes/1)

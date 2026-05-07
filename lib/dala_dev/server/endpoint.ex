@@ -3,7 +3,9 @@ defmodule DalaDev.Server.Endpoint do
 
   socket("/live", Phoenix.LiveView.Socket,
     websocket: [
-      connect_info: [session: [store: :cookie, key: "_dala_dev_session", signing_salt: "dala_dev"]]
+      connect_info: [
+        session: [store: :cookie, key: "_dala_dev_session", signing_salt: "dala_dev"]
+      ]
     ]
   )
 

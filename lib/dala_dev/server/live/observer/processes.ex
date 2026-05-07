@@ -267,13 +267,23 @@ defmodule DalaDev.Server.ObserverLive.Processes do
 
   defp sort_processes(processes, "memory", :desc), do: Enum.sort_by(processes, & &1.memory, &>=/2)
   defp sort_processes(processes, "memory", :asc), do: Enum.sort_by(processes, & &1.memory, &<=/2)
-  defp sort_processes(processes, "reductions", :desc), do: Enum.sort_by(processes, & &1.reductions, &>=/2)
-  defp sort_processes(processes, "reductions", :asc), do: Enum.sort_by(processes, & &1.reductions, &<=/2)
-  defp sort_processes(processes, "message_queue", :desc), do: Enum.sort_by(processes, & &1.message_queue_len, &>=/2)
-  defp sort_processes(processes, "message_queue", :asc), do: Enum.sort_by(processes, & &1.message_queue_len, &<=/2)
+
+  defp sort_processes(processes, "reductions", :desc),
+    do: Enum.sort_by(processes, & &1.reductions, &>=/2)
+
+  defp sort_processes(processes, "reductions", :asc),
+    do: Enum.sort_by(processes, & &1.reductions, &<=/2)
+
+  defp sort_processes(processes, "message_queue", :desc),
+    do: Enum.sort_by(processes, & &1.message_queue_len, &>=/2)
+
+  defp sort_processes(processes, "message_queue", :asc),
+    do: Enum.sort_by(processes, & &1.message_queue_len, &<=/2)
+
   defp sort_processes(processes, _, _), do: processes
 
   defp matches_filter?(_proc, ""), do: true
+
   defp matches_filter?(proc, filter) do
     String.contains?(proc.pid, filter) ||
       (proc.name && String.contains?(proc.name, filter)) ||
@@ -291,7 +301,10 @@ defmodule DalaDev.Server.ObserverLive.Processes do
   defp format_bytes(nil), do: "0 B"
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
+  
+   
+
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 
   defp format_number(n) when n < 1000, do: "#{n}"

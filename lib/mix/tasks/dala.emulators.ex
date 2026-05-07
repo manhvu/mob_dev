@@ -157,7 +157,9 @@ defmodule Mix.Tasks.Dala.Emulators do
         IO.puts("Already booted: #{name}")
 
       :not_found ->
-        Mix.raise("No emulator/simulator matched #{inspect(id)}. Run `mix dala.emulators --list`.")
+        Mix.raise(
+          "No emulator/simulator matched #{inspect(id)}. Run `mix dala.emulators --list`."
+        )
     end
   end
 
@@ -204,7 +206,9 @@ defmodule Mix.Tasks.Dala.Emulators do
         IO.puts("Not booted: #{name}")
 
       :not_found ->
-        Mix.raise("No emulator/simulator matched #{inspect(id)}. Run `mix dala.emulators --list`.")
+        Mix.raise(
+          "No emulator/simulator matched #{inspect(id)}. Run `mix dala.emulators --list`."
+        )
     end
   end
 

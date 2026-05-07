@@ -82,7 +82,10 @@ defmodule DalaDev.Config do
     with true <- File.exists?(gradle),
          {:ok, content} <- File.read(gradle),
          match when match != nil <-
-           Regex.run(DalaDev.Utils.compile_regex("applicationId\\s+[\"']([^\"']+)[\"']"), content) ||
+           Regex.run(
+             DalaDev.Utils.compile_regex("applicationId\\s+[\"']([^\"']+)[\"']"),
+             content
+           ) ||
              Regex.run(
                DalaDev.Utils.compile_regex("applicationId\\s*=\\s*[\"']([^\"']+)[\"']"),
                content

@@ -27,6 +27,7 @@ defmodule DalaDev.Server.Router do
     live("/observer/:node/ports", DalaDev.Server.ObserverLive.Ports)
     live("/observer/:node/load", DalaDev.Server.ObserverLive.Load)
     live("/observer/:node/tracing", DalaDev.Server.ObserverLive.Tracing)
+    live("/design", DalaDev.Server.DesignLive)
 
     # Feature-specific routes for direct access
     live("/dashboard", DalaDev.Server.DashboardLive)

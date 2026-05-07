@@ -157,9 +157,7 @@ defmodule DalaDev.ClusterViz do
 
     # Start a simple HTTP server;
     Task.start(fn ->
-      apply(:cowboy, :start_clear, [port,
-        dispatch: dispatch_rules(refresh)
-      ])
+      apply(:cowboy, :start_clear, [port, dispatch: dispatch_rules(refresh)])
     end)
 
     IO.puts("Dashboard available at: http://localhost:#{port}/dashboard")
