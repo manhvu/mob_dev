@@ -266,7 +266,7 @@ defmodule Mix.Tasks.Dala.BatteryBenchAndroid do
     suffixed_node = :"#{app}_android_#{suffix}@127.0.0.1"
     bare_node = :"#{app}_android@127.0.0.1"
 
-    # Poll Node.connect for up to 10 s. The BEAM's `Dala.Dist` waits ~3 s
+    # Poll Node.connect for up to 10 s. The BEAM's `Dala.Connectivity.Dist` waits ~3 s
     # after app launch and only then registers — and the EPMD-name->port
     # path can be briefly stale if a previous run held the slot. A single-
     # shot connect here would race with all of that and `active_node = nil`
@@ -343,7 +343,7 @@ defmodule Mix.Tasks.Dala.BatteryBenchAndroid do
       DeviceObserver.subscribe(active_node, categories: [:app, :display, :memory])
 
     if observer.subscribed? do
-      IO.puts("  Subscribed to Dala.Device events on #{inspect(active_node)}")
+      IO.puts("  Subscribed to Dala.Device.Device events on #{inspect(active_node)}")
     end
 
     {final_log, _final_reconnector, _final_observer} =
@@ -982,7 +982,7 @@ defmodule Mix.Tasks.Dala.BatteryBenchAndroid do
 
   # Repeatedly try Node.connect until success or timeout. Used right after
   # `verify_app_running!` to handle the timing window where the device-side
-  # `Dala.Dist` is still bringing up its listener — a single Node.connect
+  # `Dala.Connectivity.Dist` is still bringing up its listener — a single Node.connect
   # would fail and leave `active_node = nil` for the entire run, sending
   # every probe to `:unreachable` even when the BEAM is healthy.
   #
@@ -1110,7 +1110,7 @@ defmodule Mix.Tasks.Dala.BatteryBenchAndroid do
            adb -s #{device} reverse tcp:4369 tcp:4369
 
        Logcat tells you whether the BEAM tried distribution this run:
-         adb -s #{device} logcat -d | grep -iE "Dala.Dist|step [0-9]"
+         adb -s #{device} logcat -d | grep -iE "Dala.Connectivity.Dist|step [0-9]"
     """
   end
 

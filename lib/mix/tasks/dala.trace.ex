@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Dala.Trace do
       mix dala.trace                          # interactive tracing UI
       mix dala.trace --node dala_qa@192.168.1.5  # trace specific node
       mix dala.trace --export trace.json      # export to Chrome Tracing format
-      mix dala.trace --modules Dala.Screen,MyApp  # trace specific modules
+      mix dala.trace --modules Dala.Screen.Screen,MyApp  # trace specific modules
 
   ## Options
 

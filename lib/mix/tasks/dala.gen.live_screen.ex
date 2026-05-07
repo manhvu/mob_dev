@@ -28,18 +28,18 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
 
       defmodule MyAppWeb.DashboardLive do
         use MyAppWeb, :live_view
-        use Dala.LiveView
+        use Dala.Platform.LiveView
 
         def mount(_params, _session, socket) do
           {:ok, socket}
         end
 
         def render(assigns) do
-          ~H\"""
+          ~H\"\"\"
           <div>
             <h1>Dashboard</h1>
           </div>
-          \"""
+          \"\"\"
         end
 
         # Receive messages from the native layer:
@@ -58,7 +58,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
         use Dala.Screen
 
         screen "dashboard" do
-          webview url: Dala.LiveView.local_url("/dashboard"), show_url: false
+          webview url: Dala.Platform.LiveView.local_url("/dashboard"), show_url: false
         end
 
         def handle_event(event, _params, socket) do
@@ -74,7 +74,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
 
   Then navigate to the screen from Elixir:
 
-      Dala.Socket.navigate(socket, {:push, MyApp.DashboardScreen})
+      Dala.Ui.Socket.navigate(socket, {:push, MyApp.DashboardScreen})
   """
 
   @impl Mix.Task
@@ -161,7 +161,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
     """
     defmodule #{live_module} do
       use #{web_module}, :live_view
-      use Dala.LiveView
+      use Dala.Platform.LiveView
 
       def mount(_params, _session, socket) do
         {:ok, socket}
@@ -191,7 +191,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
       use Dala.Screen
 
       screen "#{String.replace(url_path, "/", "")}" do
-        webview url: Dala.LiveView.local_url("#{url_path}"), show_url: false
+        webview url: Dala.Platform.LiveView.local_url("#{url_path}"), show_url: false
       end
 
       def handle_event(event, _params, socket) do

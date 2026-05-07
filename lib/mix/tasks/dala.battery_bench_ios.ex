@@ -374,16 +374,16 @@ defmodule Mix.Tasks.Dala.BatteryBenchIos do
 
     expected_screen = if screen_locked, do: :off, else: :on
 
-    # Subscribe to Dala.Device events on the device. If the app supports it,
+    # Subscribe to Dala.Device.Device events on the device. If the app supports it,
     # we'll get ground-truth screen + app-state events as they happen (via
-    # `:rpc.call(node, Dala.Device, :subscribe, ...)`). If not, the observer
+    # `:rpc.call(node, Dala.Device.Device, :subscribe, ...)`). If not, the observer
     # falls back to passing through `expected_screen`.
     observer = DeviceObserver.subscribe(node, categories: [:app, :display, :memory])
 
     if observer.subscribed? do
-      IO.puts("  Subscribed to Dala.Device events on #{inspect(node)}")
+      IO.puts("  Subscribed to Dala.Device.Device events on #{inspect(node)}")
     else
-      IO.puts("  (Dala.Device events not available — using expected screen state)")
+      IO.puts("  (Dala.Device.Device events not available — using expected screen state)")
     end
 
     {final_log, final_reconnector, _final_observer} =
@@ -493,7 +493,7 @@ defmodule Mix.Tasks.Dala.BatteryBenchIos do
     elapsed_min = Float.round(elapsed_sec / 60, 1)
     ts = time_string()
 
-    # Drain any buffered Dala.Device events first so the probe reflects
+    # Drain any buffered Dala.Device.Device events first so the probe reflects
     # ground-truth screen/app state.
     observer = DeviceObserver.consume_messages(observer)
 

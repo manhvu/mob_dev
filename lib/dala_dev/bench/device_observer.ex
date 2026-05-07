@@ -1,6 +1,6 @@
 defmodule DalaDev.Bench.DeviceObserver do
   @moduledoc """
-  Subscribes to `Dala.Device` events on the running app over Erlang
+  Subscribes to `Dala.Device.Device` events on the running app over Erlang
   distribution and tracks ground-truth screen/app state for the bench.
 
   Without this, the bench only knows what *it* asked the device to do
@@ -19,7 +19,7 @@ defmodule DalaDev.Bench.DeviceObserver do
       observer.events   # => list of recent events (most recent first)
 
   Subscription is best-effort — if the device's BEAM doesn't have
-  `Dala.Device.subscribe/1` exported (older app build), `subscribe/2`
+  `Dala.Device.Device.subscribe/1` exported (older app build), `subscribe/2`
   returns an observer that just passes through the caller's expected
   state.
   """
@@ -50,7 +50,7 @@ defmodule DalaDev.Bench.DeviceObserver do
   @max_events_kept 100
 
   @doc """
-  Try to subscribe the calling process to `Dala.Device` events on `node`.
+  Try to subscribe the calling process to `Dala.Device.Device` events on `node`.
   Returns an observer struct, possibly with `subscribed?: false` if the
   device's app doesn't support it (older build).
   """
@@ -72,7 +72,7 @@ defmodule DalaDev.Bench.DeviceObserver do
 
     subscribed? =
       try do
-        case :rpc.call(node, Dala.Device, :subscribe, [categories], 3_000) do
+        case :rpc.call(node, Dala.Device.Device, :subscribe, [categories], 3_000) do
           :ok -> true
           {:badrpc, _} -> false
           _ -> false
@@ -98,7 +98,7 @@ defmodule DalaDev.Bench.DeviceObserver do
   end
 
   @doc """
-  Drain the calling process's mailbox of pending Dala.Device messages and
+  Drain the calling process's mailbox of pending Dala.Device.Device messages and
   update the observer's tracked state. Returns the updated observer.
 
   Call this at the top of each poll cycle. Non-blocking — uses `receive`

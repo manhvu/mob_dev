@@ -1,6 +1,6 @@
 # dala_dev — Agent Instructions
 
-**Read [`AGENTS.md`](AGENTS.md) first**, then [`~/code/dala/AGENTS.md`](../dala/AGENTS.md) for the system-wide view. This file provides Claude Code-specific workflow guidance that complements the general AGENTS.md documentation.
+**Read [`AGENTS.md`](AGENTS.md) first**, then [`~/code/dala/docs/reference/AGENTS.md`](../dala/docs/reference/AGENTS.md) for the system-wide view. This file provides Claude Code-specific workflow guidance that complements the general AGENTS.md documentation.
 
 > **Important**: Keep AGENTS.md up to date when you add a public API seam, change a convention, or discover a new gotcha. Update it in the **same commit** as your change — not a follow-up.
 

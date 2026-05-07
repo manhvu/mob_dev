@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Dala.Enable do
     - Injects the `DalaHook` LiveView hook into `assets/js/app.js`
     - Injects a hidden `<div id="dala-bridge" phx-hook="DalaHook">` into
       `root.html.heex` — **this is required for the hook to mount**
-    - Updates `dala.exs` with `liveview_port` so `Dala.LiveView.local_url/1` works
+    - Updates `dala.exs` with `liveview_port` so `Dala.Platform.LiveView.local_url/1` works
 
   ### Why the hidden div is required
 
@@ -202,7 +202,7 @@ defmodule Mix.Tasks.Dala.Enable do
       use Dala.Screen
 
       screen "dala" do
-        webview url: Dala.LiveView.local_url("/"), show_url: false
+        webview url: Dala.Platform.LiveView.local_url("/"), show_url: false
       end
 
       def handle_event(event, _params, socket) do
@@ -219,7 +219,7 @@ defmodule Mix.Tasks.Dala.Enable do
 
     unless File.exists?(path) do
       Mix.shell().info("  * skip DalaHook injection (#{path} not found)")
-      Mix.shell().info("    Add the hook manually — see `Dala.LiveView` docs.")
+      Mix.shell().info("    Add the hook manually — see `Dala.Platform.LiveView` docs.")
       return(nil)
     end
 

@@ -21,6 +21,7 @@ defmodule Mix.Tasks.Dala.Routes do
   - `Dala.Socket.push_screen(socket, MyApp.SomeScreen, params)`
   - `Dala.Socket.reset_to(socket, MyApp.SomeScreen)`
   - `Dala.Socket.pop_to(socket, MyApp.SomeScreen)`
+  - `Dala.Ui.Socket.push_screen(socket, MyApp.SomeScreen)` (new sub-namespace)
   - Unqualified forms: `push_screen(socket, ...)`, `reset_to(...)`, `pop_to(...)`
 
   ## What is NOT checked
@@ -147,6 +148,13 @@ defmodule Mix.Tasks.Dala.Routes do
   # Dala.Socket.push_screen / reset_to / pop_to with at least 2 args
   defp nav_call(
          {{:., meta, [{:__aliases__, _, [:Dala, :Socket]}, fn_name]}, _, [_socket, dest | _]}
+       )
+       when fn_name in @nav_fns,
+       do: {fn_name, meta, dest}
+
+  # Dala.Ui.Socket.push_screen / reset_to / pop_to (new sub-namespace)
+  defp nav_call(
+         {{:., meta, [{:__aliases__, _, [:Dala, :Ui, :Socket]}, fn_name]}, _, [_socket, dest | _]}
        )
        when fn_name in @nav_fns,
        do: {fn_name, meta, dest}

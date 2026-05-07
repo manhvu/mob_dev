@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Dala.Release do
        - Packages as `Payload/<App>.app` zipped into `<App>.ipa`
 
   The shipped `.ipa` runs the full BEAM but with no Erlang distribution
-  surface — `Dala.Dist.ensure_started/1` no-ops at runtime when
+  surface — `Dala.Connectivity.Dist.ensure_started/1` no-ops at runtime when
   `DALA_RELEASE=1`.
   """
 

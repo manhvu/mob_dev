@@ -374,7 +374,7 @@ defmodule DalaDev.Bench.Probe do
   #   - If RPC works during a screen-off bench, the BEAM is awake even though
   #     the screen is locked — so screen state is independent of RPC state
   #
-  # We honor the caller's expectation. Future: subscribe to Dala.Device's
+  # We honor the caller's expectation. Future: subscribe to Dala.Device.Device's
   # protected_data_will_become_unavailable / available events via RPC for
   # ground-truth screen state.
 

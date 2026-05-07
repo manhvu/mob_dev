@@ -7,7 +7,7 @@ You're in **dala_dev**, the build/deploy/devices toolkit for the dala ecosystem.
 - Provisioning development certificates and profiles
 - Cross-compiling OTP releases for mobile platforms
 
-**Important**: Read [`~/code/dala/AGENTS.md`](../dala/AGENTS.md) first for the system-wide view, the three-repo topology (dala, dala_dev, dala_new), and the cross-cutting pre-empt-failure rules that apply across all repositories. The notes below are dala_dev-specific conventions and gotchas.
+**Important**: Read [`~/code/dala/docs/reference/AGENTS.md`](../dala/docs/reference/AGENTS.md) first for the system-wide view, the three-repo topology (dala, dala_dev, dala_new), and the cross-cutting pre-empt-failure rules that apply across all repositories. The notes below are dala_dev-specific conventions and gotchas.
 
 ## What this repo is
 
@@ -262,7 +262,7 @@ System.get_env("ROOTDIR") || Path.expand("~/otp")
 
 ### 10. `:dala_nif.log/1` for Early Startup Logging
 
-**Problem**: `Logger` output goes to stderr and is invisible before `Dala.App.start` runs `Dala.NativeLogger.install()` (which reroutes Logger to NSLog/logcat).
+**Problem**: `Logger` output goes to stderr and is invisible before `Dala.App.start` runs `Dala.Platform.NativeLogger.install()` (which reroutes Logger to NSLog/logcat).
 
 **Solution**: Use `:dala_nif.log("message")` for diagnostics during early init (steps 1–4 in the Erlang bootstrap).
 
@@ -272,7 +272,7 @@ System.get_env("ROOTDIR") || Path.expand("~/otp")
 
 **Problem**: Android cannot start distribution at BEAM launch — races with hwui thread pool cause SIGABRT via FORTIFY `pthread_mutex_lock on destroyed mutex`.
 
-**Solution**: `Dala.Dist.ensure_started/1` defers `Node.start/2` by 3 seconds after app startup. This is handled in the dala library.
+**Solution**: `Dala.Connectivity.Dist.ensure_started/1` defers `Node.start/2` by 3 seconds after app startup. This is handled in the dala library.
 
 **Also**: ERTS helper binaries (`erl_child_setup`, `inet_gethost`, `epmd`) cannot be exec'd from the app data directory (SELinux `app_data_file` blocks `execute_no_trans`). They are packaged in the APK as `lib*.so` in `jniLibs/arm64-v8a/` (gets `apk_data_file` label, which allows exec). `dala_beam.c` symlinks `BINDIR/<name>` → `<nativeLibraryDir>/lib<name>.so` before `erl_start`.
 
@@ -308,13 +308,100 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 
 **Solution**: Always initialize all fields in the struct definition, not just in constructor functions.
 
-**Reference**: Burned us in `Dala.Socket` where `:changed` was only set in `new/2`.
+**Reference**: Burned us in `Dala.Ui.Socket` where `:changed` was only set in `new/2`.
 
 ### 15. Multi-Repo Changes Batch Together
 
 **Problem**: A user-visible fix in dala often needs matching changes in dala_dev (build) and dala_new (template). Bumping versions without coordination produces ghost regressions.
 
 **Rule**: Check all three repos before declaring done.
+
+### 16. Dala Module Restructuring (Facade Pattern)
+
+**Problem**: Dala's internal modules were restructured into sub-namespaces (e.g., `Dala.Renderer` → `Dala.Ui.Renderer`, `Dala.Socket` → `Dala.Ui.Socket`, `Dala.NativeLogger` → `Dala.Platform.NativeLogger`).
+
+**Solution**: Top-level facade modules still exist and delegate to the new locations. Use the **facade module names** (`Dala.Screen`, `Dala.Socket`, `Dala.Renderer`, etc.) for public API calls — they still work. Use the **new sub-namespace paths** when referencing internal implementation details.
+
+**Key mappings**:
+- `Dala.App` → `Dala.App.App` (implementation)
+- `Dala.Screen` → `Dala.Screen.Screen` (implementation)
+- `Dala.Renderer` → `Dala.Ui.Renderer`
+- `Dala.Socket` → `Dala.Ui.Socket`
+- `Dala.Component` → `Dala.Ui.NativeView`
+- `Dala.ComponentServer` → `Dala.Ui.NativeView.Server`
+- `Dala.ComponentRegistry` → `Dala.Ui.NativeView.Registry`
+- `Dala.Diff` → `Dala.Ui.Diff`
+- `Dala.Node` → `Dala.Ui.Node`
+- `Dala.List` → `Dala.Ui.List`
+- `Dala.Sigil` → `Dala.Ui.Sigil`
+- `Dala.Style` → `Dala.Ui.Style`
+- `Dala.Native` → `Dala.Platform.Native`
+- `Dala.NativeLogger` → `Dala.Platform.NativeLogger`
+- `Dala.Dist` → `Dala.Connectivity.Dist`
+- `Dala.WiFi` → `Dala.Connectivity.Wifi`
+- `Dala.Device` → `Dala.Device.Device`
+- `Dala.Bluetooth` → `Dala.Hardware.Bluetooth`
+- `Dala.Haptic` → `Dala.Hardware.Haptic`
+- `Dala.Scanner` → `Dala.Hardware.Scanner`
+- `Dala.Biometric` → `Dala.Hardware.Biometric`
+- `Dala.Camera` → `Dala.Media.Camera`
+- `Dala.Audio` → `Dala.Media.Audio`
+- `Dala.Photos` → `Dala.Media.Photos`
+- `Dala.PubSub` → `Dala.Platform.Pubsub`
+- `Dala.Event` → `Dala.Event.Event`
+- `Dala.LiveView` → `Dala.Platform.LiveView`
+- `Dala.WebView` → `Dala.Ui.Embedded.Webview`
+- `Dala.Motion` → `Dala.Ui.Sensor.Motion`
+- `Dala.Alert` → `Dala.Ui.Feedback.Alert`
+- `Dala.Theme.set/1` → `Dala.Theme.Theme.set/1`
+
+**Rule**: When writing new code in dala_dev that references dala internals, use the new sub-namespace paths. When generating code for user projects (templates), use the facade names.
+
+### 17. UI Render Path: Binary Protocol
+
+**Problem**: The render pipeline now uses a custom binary protocol instead of JSON.
+
+**Architecture**: `Dala.Ui.Renderer.render/4` encodes `Dala.Ui.Node` trees to compact binary → `Dala.Native.set_root_binary/1` NIF receives binary data.
+
+**Binary format**: `[u16 version][u16 flags][u64 node_count] + nodes`
+**Patches**: `[u16 version=1][u16 patch_count] + opcodes`
+
+**Zero-copy**: Rustler's `Binary<'a>` maps directly to BEAM off-heap binaries.
+
+### 18. Skip Renders When Nothing Changed
+
+**Problem**: Unnecessary renders waste CPU and cause flicker.
+
+**Solution**: `Dala.Ui.Socket.assign/3` tracks changed keys in `__dala__.changed`. `Dala.Screen.Screen.do_render/3` skips the render if no assigns changed and no navigation occurred. `do_render/3` clears `changed` even when skipping render, preventing stale change tracking.
+
+### 19. Incremental Rendering with Diff Engine
+
+**Problem**: Full tree re-renders are expensive.
+
+**Solution**: `Dala.Ui.Diff.diff/2` compares two `Dala.Ui.Node` trees and produces patches (`:replace`, `:update_props`, `:insert`, `:remove`). `Dala.Ui.Renderer.render_patches/5` sends only patches to native when supported. Falls back to full render if native doesn't support `apply_patches/1`.
+
+### 20. Spark DSL for Declarative Screens
+
+**Problem**: Writing `render/1` by hand is verbose.
+
+**Solution**: `use Dala.Spark.Dsl` provides a declarative DSL that mirrors `Dala.Ui.Widgets` one-to-one. Features `@ref` syntax for assigns, auto-generated `mount/3`, and compile-time verifiers.
+
+### 21. Zero-Config ML on iOS/Android
+
+**Problem**: ML configuration is platform-specific and error-prone.
+
+**Solution**: `Dala.ML.setup/0` auto-configures the ML stack:
+- iOS device: EMLX with Metal GPU, JIT disabled (W^X policy)
+- iOS simulator: EMLX with Metal GPU, JIT enabled
+- Android: Nx.BinaryBackend
+
+CoreML predictions are synchronous (NIF captures ObjC callback via Mutex) and run on the dirty CPU scheduler.
+
+### 22. Bluetooth/WiFi Setup
+
+**Problem**: Bluetooth and WiFi permissions setup is platform-specific and tedious.
+
+**Solution**: `mix dala.setup_bluetooth_wifi` simplifies setup. Runtime helpers: `Dala.Setup.check_bluetooth/0`, `Dala.Setup.check_wifi/0`, `Dala.Setup.diagnostic/0`.
 
 ## Public API Seams (Testing Interfaces)
 
@@ -559,7 +646,7 @@ This file is a living document that should evolve with the codebase. Keep it cur
 - **[Dala Commands Guide](guides/dala_commands.md)** — Complete reference for all `mix dala.*` commands with detailed explanations
 - **[README.md](README.md)** — Project overview, architecture, and quick command reference
 - **[build_release.md](build_release.md)** — Release build walkthrough with step-by-step instructions
-- **[~/code/dala/AGENTS.md](../dala/AGENTS.md)** — System-wide orientation and pre-empt-failure rules
+- **[~/code/dala/docs/reference/AGENTS.md](../dala/docs/reference/AGENTS.md)** — System-wide orientation and pre-empt-failure rules
 
 ### When to Update
 

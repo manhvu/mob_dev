@@ -314,7 +314,7 @@ Pushing 14 BEAM file(s) to 2 device(s)...
 
 If dist is not reachable (first deploy, app not running), it falls back to `adb push` + restart. Mixed deploys work — one device can hot-push while another restarts.
 
-**Requirements:** The app must call `Dala.Dist.ensure_started/1` at startup, and the cookie must match the one in `dala.exs` (default `:dala_secret`).
+**Requirements:** The app must call `Dala.Connectivity.Dist.ensure_started/1` at startup, and the cookie must match the one in `dala.exs` (default `:dala_secret`).
 
 ## Navigation validation (`mix dala.routes`)
 

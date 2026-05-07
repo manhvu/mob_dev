@@ -1088,13 +1088,13 @@ defmodule DalaDev.Deployer do
   #
   # Erlang hot code loading (`code:load_binary`) replaces the module in the
   # code server but does NOT cause running processes to re-execute. A
-  # Dala.Screen GenServer that is already mounted and displaying will continue
+  # Dala.Screen.Screen GenServer that is already mounted and displaying will continue
   # to sit in its receive loop waiting for the next message. Until something
   # sends it a message, `render/1` never runs again — so the user sees the
   # old UI even though the new code is live in memory.
   #
   # The fix: immediately after the push, RPC-send `:__dala_hot_reload__` to the
-  # `:dala_screen` registered process on the device. Dala.Screen's handle_info
+  # `:dala_screen` registered process on the device. Dala.Screen.Screen's handle_info
   # catch-all receives it, delegates to the user module's handle_info (which
   # ignores unknown messages), then calls do_render/2 using the now-current
   # version of the screen module. The screen repaints with the new code, with
