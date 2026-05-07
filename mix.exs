@@ -42,6 +42,9 @@ defmodule DalaDev.MixProject do
       source_url_pattern: "https://github.com/manhvu/dala_dev/blob/main/%{path}#L%{line}",
       extras: [
         "README.md": [title: "dala_dev"],
+        "guides/beginner_guide.md": [title: "Beginner Step-by-Step Guide"],
+        "guides/development_workflow.md": [title: "Development Workflow"],
+        "guides/release_and_packaging.md": [title: "Release and Packaging"],
         "guides/publishing_to_testflight.md": [title: "Publishing to TestFlight (iOS)"]
       ],
       groups_for_extras: [
