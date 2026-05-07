@@ -4,7 +4,7 @@ defmodule DalaDev.MixProject do
   def project do
     [
       app: :dala_dev,
-      version: "0.0.4",
+      version: "0.0.5",
       elixir: "~> 1.18",
       description: "Development tooling for the Dala framework",
       source_url: "https://github.com/manhvu/dala_dev",
@@ -57,7 +57,7 @@ defmodule DalaDev.MixProject do
 
   defp package do
     [
-      licenses: ["MIT"],
+      licenses: ["MIT", "Apache-2.0"],
       links: %{"GitHub" => "https://github.com/manhvu/dala_dev"}
     ]
   end

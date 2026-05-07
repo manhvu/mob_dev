@@ -13,6 +13,12 @@ You're in **dala_dev**, the build/deploy/devices toolkit for the dala ecosystem.
 
 This repository provides the command-line tooling and library code for mobile development workflows with Elixir/OTP.
 
+**Dual licensed under:**
+- **MIT License** (for original Mob project portions) - see [LICENSE](LICENSE)
+- **Apache License 2.0** (for new contributions) - see [LICENSE-APACHE](LICENSE-APACHE)
+
+See [NOTICE](NOTICE) for attribution details.
+
 ### Mix Tasks (User-facing commands)
 
 These are the commands users run via `mix dala.<task>`:
