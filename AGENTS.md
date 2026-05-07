@@ -552,6 +552,9 @@ This file is a living document that should evolve with the codebase. Keep it cur
 
 ### Related Documentation
 
+- **[Beginner Step-by-Step Guide](guides/beginner_guide.md)** — Getting started with dala_dev from scratch
+- **[Development Workflow Guide](guides/development_workflow.md)** — Running, updating, and debugging with dala_dev
+- **[Release and Packaging Guide](guides/release_and_packaging.md)** — Building and distributing production apps
 - **[Architecture Guide](guides/architecture.md)** — Complete technical reference for dala_dev architecture
 - **[Dala Commands Guide](guides/dala_commands.md)** — Complete reference for all `mix dala.*` commands with detailed explanations
 - **[README.md](README.md)** — Project overview, architecture, and quick command reference
