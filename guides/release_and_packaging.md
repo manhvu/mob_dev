@@ -152,6 +152,8 @@ export DALA_ANDROID_KEY_PASSWORD=password
 
 ### iOS: Upload to App Store Connect / TestFlight
 
+#### Quick Publish
+
 ```bash
 # Upload .ipa to App Store Connect
 mix dala.publish
@@ -166,7 +168,122 @@ mix dala.publish --skip-build
 mix dala.publish --testflight
 ```
 
-The publish process:
+#### Detailed TestFlight Setup (First-time)
+
+For first-time TestFlight publishing, follow these one-time setup steps:
+
+**1. Pick a real bundle ID**
+```elixir
+# In dala.exs
+config :dala,
+  bundle_id: "com.yourcompany.yourapp"  # Must be unique!
+```
+
+**2. Update bundle ID + display name**
+```bash
+# Edit dala.exs with your real bundle ID
+mix dala.install  # Regenerate with new ID
+```
+
+**3. Register App ID at Apple**
+- Go to [Apple Developer Portal](https://developer.apple.com)
+- Certificates, Identifiers & Profiles → Identifiers → +
+- Register your bundle ID
+
+**4. Create Apple Distribution Certificate**
+- Certificates → +
+- Select "Apple Distribution"
+- Download and install the certificate
+
+**5. Create App Store Provisioning Profile**
+- Profiles → +
+- Select "App Store" distribution
+- Download and install the profile
+
+**6. Run provisioning helper**
+```bash
+mix dala.provision --distribution
+```
+
+**7. Create App Store Connect App Record**
+- Go to [App Store Connect](https://appstoreconnect.apple.com)
+- My Apps → +
+- Create new app with your bundle ID
+
+**8. Create App Store Connect API Key**
+- App Store Connect → Users and Access → Keys
+- Generate API key with "App Manager" role
+- Save the key ID and issuer ID
+
+**9. Configure dala.exs**
+```elixir
+config :dala, :app_store_connect,
+  key_id: "your_key_id",
+  issuer_id: "your_issuer_id",
+  private_key_path: "/path/to/AuthKey_XXXXXX.p8"
+```
+
+#### Per-Release Flow
+
+```bash
+# 1. Ensure provisioning is up-to-date
+mix dala.provision --distribution
+
+# 2. Build the release
+mix dala.release
+
+# 3. Publish to TestFlight
+mix dala.publish --testflight
+
+# 4. Add testers in TestFlight (via App Store Connect web UI)
+```
+
+#### TestFlight Troubleshooting
+
+**Build hangs during upload:**
+```bash
+# The publish command may appear to hang for several minutes
+# This is normal - xcrun altool can be slow
+# Be patient, it will complete
+```
+
+**Missing API key permissions:**
+```bash
+# Ensure you've downloaded the API key once from App Store Connect
+# The "one-time download" warning must be acknowledged
+# Otherwise you'll get authentication errors
+```
+
+**Provisioning profile errors:**
+```bash
+# Error: No profile for team 'X' matching 'profile name' found
+# Solution: Run provisioning helper again
+mix dala.provision --distribution
+
+# Error: Distribution profile can't be auto-created for unregistered App ID
+# Solution: Register App ID at developer.apple.com first
+```
+
+**App Store validation errors:**
+The App Store validator may reject builds for these reasons:
+
+1. **Standalone binaries in bundle** (Error 90171)
+   - OTP runtime contains standalone binaries
+   - Use the patched OTP build from dala_dev
+
+2. **Test-harness uses private UIKit selectors** (Error 50)
+   - Debug symbols in release build
+   - Ensure you're building with MIX_ENV=prod
+
+3. **Info.plist gaps** (Errors 90065/90507/90530)
+   - Missing required keys in Info.plist
+   - Run `mix dala.provision --distribution` to fix
+
+4. **CodeResources symlink** (Error 90071)
+   - Symlink issues in the bundle
+   - Rebuild with `mix dala.release`
+
+The publish process includes:
 1. Validates .ipa file
 2. Authenticates with App Store Connect
 3. Uploads using `xcrun altool` or Transporter
@@ -182,6 +299,7 @@ mix dala.publish.android
 mix dala.publish.android --track production
 mix dala.publish.android --track beta
 mix dala.publish.android --track alpha
+mix dala.publish.android --track internal
 
 # Skip package upload (if already built)
 mix dala.publish.android --skip-build

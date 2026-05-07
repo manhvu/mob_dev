@@ -6,10 +6,14 @@ This guide covers how to run, update, and debug applications using `dala_dev` to
 
 Before starting, ensure you have:
 - Elixir and Mix installed
-- `dala_dev` dependency added to your project (see `dala_new` for new projects)
+- `dala_dev` dependency added to your project
 - For iOS development: Xcode and Xcode command line tools
 - For Android development: Android SDK and ADB tools
 - A connected device or running emulator/simulator
+
+**New to dala?** See the [Beginner Step-by-Step Guide](beginner_guide.md) first.
+
+---
 
 ## Running Your App with dala_dev
 
@@ -245,23 +249,9 @@ mix dala.profile --function "MyApp.SlowModule.slow_function/2"
 ```bash
 # List all connected devices and emulators
 mix dala.devices
-
-# Example output:
-# Android Devices:
-#   - emulator-5554 (Android 13, Pixel 6) [short: a1b2]
-#   - R32N42ABC (Samsung Galaxy S21, Android 12) [short: c3d4]
-#
-# iOS Simulators:
-#   - A1B2C3D4-1234-5678-90AB-CDEF01234567 (iPhone 14, iOS 16.5) [short: e5f6]
-#
-# iOS Devices:
-#   - 00008020-001234567890ABCD (iPhone 13, iOS 16.4) [short: g7h8]
 ```
 
-Use the short ID for convenience:
-```bash
-mix dala.deploy --device a1b2
-```
+See [Beginner Guide](beginner_guide.md#step-3-connect-a-device-or-emulator) for device setup instructions.
 
 ### Managing Emulators
 
@@ -296,19 +286,14 @@ mix dala.screen preview --device <id>
 
 ### Running Doctor
 
-When things aren't working:
+When things aren't working, run diagnostics:
 
 ```bash
 # Diagnose common setup and configuration issues
 mix dala.doctor
 ```
 
-The doctor checks:
-- ADB connectivity
-- Xcode tools availability
-- OTP runtime installation
-- Configuration validity
-- Device connectivity
+See [Beginner Guide](beginner_guide.md#step-2-initial-setup-with-dala_dev) for initial setup.
 
 ### Checking Configuration
 
