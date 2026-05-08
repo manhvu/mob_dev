@@ -165,7 +165,7 @@ defmodule DalaDev.CITesting do
         :junit -> generate_junit_report(suite_result)
         :html -> generate_html_report(suite_result)
         :text -> generate_text_report(suite_result)
-        :json -> Jason.encode!(suite_result)
+        :json -> JSON.encode!(suite_result)
       end
 
     if output do

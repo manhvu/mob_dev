@@ -1,7 +1,7 @@
 # Building and Publishing OTP Release Tarballs
 
 `DalaDev.OtpDownloader` pulls pre-built OTP runtimes from a GitHub release on
-`manhvu/dala` (previously `GenericJam/dala`). This file documents how to build and publish those tarballs
+`manhvu/dala`. This file documents how to build and publish those tarballs
 when upgrading OTP.
 
 > **TL;DR — runnable form:** every step below is also implemented as a script

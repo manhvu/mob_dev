@@ -123,7 +123,7 @@ defmodule DalaDev.Discovery.IOS do
           {_, 0} ->
             tmp
             |> File.read!()
-            |> Jason.decode!()
+            |> JSON.decode!()
             |> get_in(["result", "devices"])
             |> List.wrap()
             |> Enum.flat_map(&device_ipv4_candidates/1)
@@ -213,7 +213,7 @@ defmodule DalaDev.Discovery.IOS do
       _ -> []
     end
   rescue
-    # Jason not available — fall back to simpler text parsing
+    # json not available — fall back to simpler text parsing
     _ -> list_simulators_text()
   end
 

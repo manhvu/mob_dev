@@ -137,7 +137,7 @@ defmodule DalaDev.Benchmark do
       case format do
         :text -> generate_text_report(results)
         :html -> generate_html_report(results)
-        :json -> Jason.encode!(results, pretty: true)
+        :json -> JSON.encode!(results)
       end
 
     if output do

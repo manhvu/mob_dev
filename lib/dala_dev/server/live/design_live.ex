@@ -47,7 +47,7 @@ defmodule DalaDev.Server.DesignLive do
       |> assign(:zoom, @default_zoom)
       |> assign(:grid_size, @grid_size)
       |> assign(:active_tab, "components")
-      |> assign(:export_format, "sigil")
+      |> assign(:export_format, "dsl")
       |> assign(:generated_code, "")
 
     {:ok, socket}
@@ -194,15 +194,10 @@ defmodule DalaDev.Server.DesignLive do
 
   defp generate_code(design, format) do
     case format do
-      "sigil" -> generate_sigil_code(design.nodes)
       "dsl" -> generate_dsl_code(design.nodes)
       "map" -> generate_map_code(design.nodes)
-      _ -> ""
+      _ -> generate_dsl_code(design.nodes)
     end
-  end
-
-  defp generate_sigil_code(nodes) do
-    "~dala\"\"\"\n" <> nodes_to_sigil(nodes) <> "\n\"\"\""
   end
 
   defp generate_dsl_code(nodes) do
@@ -211,34 +206,6 @@ defmodule DalaDev.Server.DesignLive do
 
   defp generate_map_code(nodes) do
     nodes_to_map(nodes)
-  end
-
-  defp nodes_to_sigil(nodes) do
-    nodes
-    |> Enum.map(&node_to_sigil/1)
-    |> Enum.join("\n")
-  end
-
-  defp node_to_sigil(%{type: type, props: props, children: children}) do
-    props_str = props_to_sigil(props)
-
-    children_str =
-      if children && children != [] do
-        children
-        |> Enum.map(&node_to_sigil/1)
-        |> Enum.join("\n  ")
-        |> (fn s -> "\n  " <> s <> "\n" end).()
-      else
-        ""
-      end
-
-    "<#{type}#{if props_str != "", do: " " <> props_str, else: ""}>#{children_str}</#{type}>"
-  end
-
-  defp props_to_sigil(props) do
-    props
-    |> Enum.map(fn {k, v} -> "#{k}=\"#{v}\"" end)
-    |> Enum.join(" ")
   end
 
   defp nodes_to_dsl(nodes) do
@@ -438,10 +405,6 @@ defmodule DalaDev.Server.DesignLive do
               <div class="export-options">
                 <h4>Export Format</h4>
                 <div class="format-selector">
-                  <label>
-                    <input type="radio" name="format" value="sigil" checked={@export_format == "sigil"} phx-change="set_export_format" phx-value-format="sigil" />
-                    Sigil (~dala")
-                  </label>
                   <label>
                     <input type="radio" name="format" value="dsl" checked={@export_format == "dsl"} phx-change="set_export_format" phx-value-format="dsl" />
                     DSL (Spark)

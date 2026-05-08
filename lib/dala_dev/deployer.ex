@@ -1042,7 +1042,7 @@ defmodule DalaDev.Deployer do
            System.cmd("xcrun", ["devicectl", "list", "devices", "--json-output", "-"],
              stderr_to_stdout: true
            ),
-         {:ok, data} <- Jason.decode(json),
+         {:ok, data} <- JSON.decode(json),
          devices <- get_in(data, ["result", "devices"]) || [],
          wifi_only <-
            Enum.reject(devices, fn d ->

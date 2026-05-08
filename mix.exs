@@ -4,7 +4,7 @@ defmodule DalaDev.MixProject do
   def project do
     [
       app: :dala_dev,
-      version: "0.0.8",
+      version: "0.0.9",
       elixir: "~> 1.18",
       description: "Development tooling for the Dala framework",
       source_url: "https://github.com/manhvu/dala_dev",
@@ -21,7 +21,6 @@ defmodule DalaDev.MixProject do
   defp deps do
     [
       {:eqrcode, "~> 0.2"},
-      {:jason, "~> 1.4"},
       {:avatarz, "~> 0.2", optional: true},
       {:image, "~> 0.54", optional: true},
       # Dev server

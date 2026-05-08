@@ -333,7 +333,6 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 - `Dala.Diff` → `Dala.Ui.Diff`
 - `Dala.Node` → `Dala.Ui.Node`
 - `Dala.List` → `Dala.Ui.List`
-- `Dala.Sigil` → `Dala.Ui.Sigil`
 - `Dala.Style` → `Dala.Ui.Style`
 - `Dala.Native` → `Dala.Platform.Native`
 - `Dala.NativeLogger` → `Dala.Platform.NativeLogger`
@@ -363,8 +362,8 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 
 **Architecture**: `Dala.Ui.Renderer.render/4` encodes `Dala.Ui.Node` trees to compact binary → `Dala.Native.set_root_binary/1` NIF receives binary data.
 
-**Binary format**: `[u16 version][u16 flags][u64 node_count] + nodes`
-**Patches**: `[u16 version=1][u16 patch_count] + opcodes`
+**Binary format**: `[0xDA][0xA1][u16 version=3][u16 flags][u64 node_count] + nodes`
+**Patches**: `[0xDA][0xA1][u16 version=3][u16 patch_count] + [FRAME_BEGIN][opcodes...][FRAME_END]`
 
 **Zero-copy**: Rustler's `Binary<'a>` maps directly to BEAM off-heap binaries.
 
