@@ -16,7 +16,7 @@ dala is a toolkit that lets you build mobile apps using Elixir and OTP (Erlang V
 Before starting, ensure you have:
 
 ### Required for Everyone
-- [ ] **Elixir installed** - Run `elixir --version` (need 1.14+)
+- [ ] **Elixir installed** - Run `elixir --version` (need 1.18+)
 - [ ] **Mix installed** - Run `mix --version`
 
 ### For iOS Development (Mac only)

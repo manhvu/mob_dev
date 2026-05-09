@@ -58,7 +58,7 @@ defmodule DalaDev.MixProject do
 
   defp package do
     [
-      licenses: ["MIT", "Apache-2.0"],
+      licenses: ["MIT", "MPL-2.0"],
       links: %{"GitHub" => "https://github.com/manhvu/dala_dev"}
     ]
   end

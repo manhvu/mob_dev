@@ -1,17 +1,8 @@
 Dala Dev - Build/deploy/devices toolkit for the Dala mobile framework
 
-This project contains code originally from Mob (https://github.com/GenericJam/mob),
-licensed under the MIT License.
+This project is licensed under the Mozilla Public License 2.0.
 
-Modifications and additional code are licensed under the Apache License 2.0.
+Copyright (c) 2026 Dala contributors
+https://github.com/manhvu/dala_dev
 
-Original Mob project:
-  Copyright (c) GenericJam
-  Licensed under MIT License - see LICENSE file
-
-Dala Dev modifications and new contributions:
-  Copyright (c) 2026 Dala contributors
-  Licensed under Apache License 2.0 - see LICENSE-APACHE file
-
-This software includes components from the Dala project (https://github.com/manhvu/dala),
-licensed under Apache License 2.0.
+Original Mob project code is licensed under the MIT License - see LICENSE file.
