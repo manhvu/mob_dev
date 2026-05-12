@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Dala.Enable do
 
   What it does:
 
-    - Generates `lib/<app>/dala_screen.ex` — a `Dala.Screen` that opens a WebView
+    - Generates `lib/<app>/dala_screen.ex` — a `Dala.Spark.Dsl` screen that opens a WebView
       at `http://127.0.0.1:PORT/`
     - Injects the `DalaHook` LiveView hook into `assets/js/app.js`
     - Injects a hidden `<div id="dala-bridge" phx-hook="DalaHook">` into
@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Dala.Enable do
   After running:
 
     1. Add `MyApp.DalaScreen` to your supervision tree (or call
-       `Dala.Screen.start_root(MyApp.DalaScreen)` from your `Dala.App.on_start/0`)
+       `Dala.Ui.Socket.start_root(MyApp.DalaScreen)` from your `Dala.App.on_start/0`)
     2. Ensure Phoenix is running on the port set in `dala.exs` (default: 4000)
 
   ### `camera`
@@ -189,20 +189,23 @@ defmodule Mix.Tasks.Dala.Enable do
 
   defp dala_screen_template(module_name) do
     moduledoc = """
-      Dala.Screen that wraps the Phoenix LiveView app in a native WebView.
+      Dala.Spark.Dsl screen that wraps the Phoenix LiveView app in a native WebView.
 
       Add this to your supervision tree or call from Dala.App.on_start/0:
 
-          Dala.Screen.start_root(#{module_name}.DalaScreen)
+          Dala.Ui.Socket.start_root(#{module_name}.DalaScreen)
     """
 
     """
     defmodule #{module_name}.DalaScreen do
       @moduledoc #{inspect(moduledoc)}
-      use Dala.Screen
+      use Dala.Spark.Dsl
 
-      screen "dala" do
-        webview url: Dala.Platform.LiveView.local_url("/"), show_url: false
+      dala do
+        screen do
+          name :dala
+          webview url: Dala.Platform.LiveView.local_url("/"), show_url: false
+        end
       end
 
       def handle_event(event, _params, socket) do

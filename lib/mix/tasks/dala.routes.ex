@@ -17,11 +17,11 @@ defmodule Mix.Tasks.Dala.Routes do
 
   ## What is checked
 
-  - `Dala.Socket.push_screen(socket, MyApp.SomeScreen)`
-  - `Dala.Socket.push_screen(socket, MyApp.SomeScreen, params)`
-  - `Dala.Socket.reset_to(socket, MyApp.SomeScreen)`
-  - `Dala.Socket.pop_to(socket, MyApp.SomeScreen)`
-  - `Dala.Ui.Socket.push_screen(socket, MyApp.SomeScreen)` (new sub-namespace)
+  - `Dala.Ui.Socket.push_screen(socket, MyApp.SomeScreen)`
+  - `Dala.Ui.Socket.push_screen(socket, MyApp.SomeScreen, params)`
+  - `Dala.Ui.Socket.reset_to(socket, MyApp.SomeScreen)`
+  - `Dala.Ui.Socket.pop_to(socket, MyApp.SomeScreen)`
+  - `Dala.Socket.push_screen(socket, MyApp.SomeScreen)` (legacy)
   - Unqualified forms: `push_screen(socket, ...)`, `reset_to(...)`, `pop_to(...)`
 
   ## What is NOT checked
@@ -145,21 +145,21 @@ defmodule Mix.Tasks.Dala.Routes do
     refs
   end
 
-  # Dala.Socket.push_screen / reset_to / pop_to with at least 2 args
-  defp nav_call(
-         {{:., meta, [{:__aliases__, _, [:Dala, :Socket]}, fn_name]}, _, [_socket, dest | _]}
-       )
-       when fn_name in @nav_fns,
-       do: {fn_name, meta, dest}
-
-  # Dala.Ui.Socket.push_screen / reset_to / pop_to (new sub-namespace)
+  # Dala.Ui.Socket.push_screen / reset_to / pop_to (preferred sub-namespace)
   defp nav_call(
          {{:., meta, [{:__aliases__, _, [:Dala, :Ui, :Socket]}, fn_name]}, _, [_socket, dest | _]}
        )
        when fn_name in @nav_fns,
        do: {fn_name, meta, dest}
 
-  # Unqualified push_screen / reset_to / pop_to (imported via use Dala.Screen)
+  # Dala.Socket.push_screen / reset_to / pop_to (legacy sub-namespace)
+  defp nav_call(
+         {{:., meta, [{:__aliases__, _, [:Dala, :Socket]}, fn_name]}, _, [_socket, dest | _]}
+       )
+       when fn_name in @nav_fns,
+       do: {fn_name, meta, dest}
+
+  # Unqualified push_screen / reset_to / pop_to (imported via use Dala.Screen or use Dala.Spark.Dsl)
   defp nav_call({fn_name, meta, [_socket, dest | _]})
        when fn_name in @nav_fns and is_list(meta),
        do: {fn_name, meta, dest}

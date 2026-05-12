@@ -1,10 +1,10 @@
 defmodule Mix.Tasks.Dala.Gen.LiveScreen do
   use Mix.Task
 
-  @shortdoc "Generate a LiveView + Dala.Screen pair"
+  @shortdoc "Generate a LiveView + Dala.Spark.Dsl screen pair"
 
   @moduledoc """
-  Generates a paired `Dala.Screen` and Phoenix `LiveView` for LiveView mode apps.
+  Generates a paired `Dala.Spark.Dsl` screen and Phoenix `LiveView` for LiveView mode apps.
 
   ## Usage
 
@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
 
       mix dala.gen.live_screen Dashboard
       # → lib/<app>_web/live/dashboard_live.ex  (LiveView)
-      # → lib/<app>/screens/dashboard_screen.ex (Dala.Screen)
+      # → lib/<app>/screens/dashboard_screen.ex (Dala.Spark.Dsl screen)
 
       mix dala.gen.live_screen Settings /preferences
       # → path override: /preferences
@@ -52,13 +52,16 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
         #   push_event(socket, "dala_push", %{type: "haptic"})
       end
 
-  ### Dala.Screen (`lib/<app>/screens/<name>_screen.ex`)
+  ### Dala.Spark.Dsl screen (`lib/<app>/screens/<name>_screen.ex`)
 
       defmodule MyApp.DashboardScreen do
-        use Dala.Screen
+        use Dala.Spark.Dsl
 
-        screen "dashboard" do
-          webview url: Dala.Platform.LiveView.local_url("/dashboard"), show_url: false
+        dala do
+          screen do
+            name :dashboard
+            webview url: Dala.Platform.LiveView.local_url("/dashboard"), show_url: false
+          end
         end
 
         def handle_event(event, _params, socket) do
@@ -129,7 +132,7 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
 
       2. Navigate to the screen from Elixir:
 
-             Dala.Socket.navigate(socket, {:push, #{screen_module}})
+             Dala.Ui.Socket.navigate(socket, {:push, #{screen_module}})
 
       3. Send events from JS to Elixir:
 
@@ -188,10 +191,13 @@ defmodule Mix.Tasks.Dala.Gen.LiveScreen do
   defp screen_template(screen_module, url_path) do
     """
     defmodule #{screen_module} do
-      use Dala.Screen
+      use Dala.Spark.Dsl
 
-      screen "#{String.replace(url_path, "/", "")}" do
-        webview url: Dala.Platform.LiveView.local_url("#{url_path}"), show_url: false
+      dala do
+        screen do
+          name :#{String.replace(url_path, "/", "")}
+          webview url: Dala.Platform.LiveView.local_url("#{url_path}"), show_url: false
+        end
       end
 
       def handle_event(event, _params, socket) do

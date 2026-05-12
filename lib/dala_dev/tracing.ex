@@ -8,7 +8,7 @@ defmodule DalaDev.Tracing do
   ## Examples
 
       # Start tracing on all connected nodes
-      {:ok, trace_id} = DalaDev.Tracing.start_trace(:all_nodes, modules: [MyApp, Dala.Screen.Screen])
+      {:ok, trace_id} = DalaDev.Tracing.start_trace(:all_nodes, modules: [MyApp, Dala.Ui.Socket])
 
       # Trace specific node
       {:ok, trace_id} = DalaDev.Tracing.start_trace(:"dala_qa@192.168.1.5")
