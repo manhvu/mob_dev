@@ -8,7 +8,7 @@ Original repo [mob_dev](https://github.com/GenericJam/mob_dev) — now part of t
 
 **Dual licensed under:**
 - **MIT License** (for original Mob project portions) - see [LICENSE](LICENSE)
-- **Apache License 2.0** (for new contributions) - see [LICENSE-APACHE](LICENSE-APACHE)
+- **MPL 2.0** (for new contributions) - see [LICENSE-MPL2.0](LICENSE-MPL2.0)
 
 ## Project Structure:
 

@@ -15,7 +15,7 @@ This repository provides the command-line tooling and library code for mobile de
 
 **Dual licensed under:**
 - **MIT License** (for original Mob project portions) - see [LICENSE](LICENSE)
-- **Apache License 2.0** (for new contributions) - see [LICENSE-APACHE](LICENSE-APACHE)
+- **MPL 2.0** (for new contributions) - see [LICENSE-MPL2.0](LICENSE-MPL2.0)
 
 See [NOTICE](NOTICE) for attribution details.
 
