@@ -6,6 +6,8 @@ You're in **dala_dev**, the build/deploy/devices toolkit for the dala ecosystem.
 - Running emulators and simulators
 - Provisioning development certificates and profiles
 - Cross-compiling OTP releases for mobile platforms
+- Performance benchmarking and battery profiling on devices
+- Cluster visualization and distributed tracing
 
 **Important**: Read [`~/code/dala/docs/reference/AGENTS.md`](../dala/docs/reference/AGENTS.md) first for the system-wide view, the three-repo topology (dala, dala_dev, dala_new), and the cross-cutting pre-empt-failure rules that apply across all repositories. The notes below are dala_dev-specific conventions and gotchas.
 
@@ -331,7 +333,7 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 - `Dala.ComponentServer` → `Dala.Ui.NativeView.Server`
 - `Dala.ComponentRegistry` → `Dala.Ui.NativeView.Registry`
 - `Dala.Diff` → `Dala.Ui.Diff`
-- `Dala.Node` → `Dala.Ui.Node`
+- `Dala.Node` — node struct (`lib/dala/node.ex`)
 - `Dala.List` → `Dala.Ui.List`
 - `Dala.Style` → `Dala.Ui.Style`
 - `Dala.Native` → `Dala.Platform.Native`
@@ -353,6 +355,35 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 - `Dala.Motion` → `Dala.Ui.Sensor.Motion`
 - `Dala.Alert` → `Dala.Ui.Feedback.Alert`
 - `Dala.Theme.set/1` → `Dala.Theme.Theme.set/1`
+- `Dala.ML` → `Dala.Ml.Ml` (implementation)
+- `Dala.Test` → `Dala.Test.Test` (implementation)
+- `Dala.Plugin` → `Dala.Plugin` (struct + behaviour, unchanged)
+- `Dala.Plugin.Registry` → `Dala.Plugin.Registry` (unchanged)
+- `Dala.Plugin.Lifecycle` → `Dala.Plugin.Lifecycle` (unchanged)
+- `Dala.Plugin.Component` → `Dala.Plugin.Component` (unchanged)
+- `Dala.Plugin.ComponentDSL` → `Dala.Plugin.ComponentDSL` (unchanged)
+- `Dala.Plugin.Manifest` → `Dala.Plugin.Manifest` (unchanged)
+- `Dala.Plugin.Protocol` → `Dala.Plugin.Protocol` (unchanged)
+- `Dala.Nav.Registry` → `Dala.Nav.Registry` (unchanged)
+- `Dala.Screen.Manager` → `Dala.Screen.Manager` (unchanged)
+- `Dala.Preview` → `Dala.Preview` (dev-only, in `dev_tools/`)
+- `Dala.Wakelock` → `Dala.Hardware.Wakelock`
+- `Dala.Storage` → `Dala.Storage.Storage`
+- `Dala.Blob` → `Dala.Storage.Blob`
+- `Dala.Files` → `Dala.Storage.Files`
+- `Dala.Settings` → `Dala.Platform.Settings`
+- `Dala.State` → `Dala.Platform.State`
+- `Dala.Linking` → `Dala.Platform.Linking`
+- `Dala.Background` → `Dala.Platform.Background`
+
+**New facade modules** (top-level, delegate to sub-namespaces):
+- `Dala` — main facade, delegates `assign/2` and `assign/3` to `Dala.Socket`
+- `Dala.ML` — ML facade, delegates to `Dala.Ml.Ml`
+- `Dala.Test` — testing facade, delegates to `Dala.Test.Test`
+- `Dala.App` — app facade, delegates to `Dala.App.App`
+- `Dala.Screen` — screen facade, delegates to `Dala.Screen.Screen`
+- `Dala.Renderer` — renderer facade, delegates to `Dala.Ui.Renderer`
+- `Dala.Plugin` — plugin facade, delegates to `Dala.Plugin`
 
 **Rule**: When writing new code in dala_dev that references dala internals, use the new sub-namespace paths. When generating code for user projects (templates), use the facade names.
 
@@ -360,7 +391,7 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 
 **Problem**: The render pipeline now uses a custom binary protocol instead of JSON.
 
-**Architecture**: `Dala.Ui.Renderer.render/4` encodes `Dala.Ui.Node` trees to compact binary → `Dala.Native.set_root_binary/1` NIF receives binary data.
+**Architecture**: `Dala.Ui.Renderer.render/4` encodes `Dala.Node` trees to compact binary → `Dala.Platform.Native.set_root_binary/1` NIF receives binary data.
 
 **Binary format**: `[0xDA][0xA1][u16 version=3][u16 flags][u64 node_count] + nodes`
 **Patches**: `[0xDA][0xA1][u16 version=3][u16 patch_count] + [FRAME_BEGIN][opcodes...][FRAME_END]`
@@ -377,7 +408,7 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 
 **Problem**: Full tree re-renders are expensive.
 
-**Solution**: `Dala.Ui.Diff.diff/2` compares two `Dala.Ui.Node` trees and produces patches (`:replace`, `:update_props`, `:insert`, `:remove`). `Dala.Ui.Renderer.render_patches/5` sends only patches to native when supported. Falls back to full render if native doesn't support `apply_patches/1`.
+**Solution**: `Dala.Ui.Diff.diff/2` compares two `Dala.Node` trees and produces patches (`:replace`, `:update_props`, `:insert`, `:remove`). `Dala.Ui.Renderer.render_patches/5` sends only patches to native when supported. Falls back to full render if native doesn't support `apply_patches/1`.
 
 ### 20. Spark DSL for Declarative Screens
 
@@ -401,6 +432,92 @@ CoreML predictions are synchronous (NIF captures ObjC callback via Mutex) and ru
 **Problem**: Bluetooth and WiFi permissions setup is platform-specific and tedious.
 
 **Solution**: `mix dala.setup_bluetooth_wifi` simplifies setup. Runtime helpers: `Dala.Setup.check_bluetooth/0`, `Dala.Setup.check_wifi/0`, `Dala.Setup.diagnostic/0`.
+
+### 23. Plugin Lifecycle and Capability Registration
+
+**Problem**: Plugins need a structured lifecycle with dependency ordering and capability negotiation.
+
+**Solution**: `Dala.Plugin` behaviour with `Dala.Plugin.Lifecycle` and `Dala.Plugin.Registry`:
+- Lifecycle states: `:registered` → `:initialized` → `:active` → `:registered` → `:unloaded`
+- `Dala.Plugin.Lifecycle` manages init/activate/deactivate/cleanup transitions
+- `Dala.Plugin.Registry` handles dependency resolution (topological sort), capability queries, and platform filtering
+- Two DSL styles: top-level declarations and `plugin do` block
+- Plugins MUST declare `schema_version`, `protocol_version`, and `native_api_version`
+
+**Rule**: Plugins should NEVER directly access BEAM internals, scheduler state, or raw protocol sockets. Use the Host API seam.
+
+### 24. Dev-Only UI Preview and Design Tool
+
+**Problem**: Developers need to preview UI without a device.
+
+**Solution**: `Dala.Preview` (in `dev_tools/`) provides:
+- Static preview — generates standalone HTML with CSS that mimics Dala's styling
+- Live designer — Phoenix LiveView server with drag-and-drop component palette, property editor, live phone-frame preview, and code generation
+
+**Key points**:
+- Lives in `dev_tools/` — only compiled in `:dev` environment
+- Not included in Hex package
+- Code generation supports Spark DSL style
+
+### 25. WebView Interact API
+
+**Problem**: Programmatic control of WebView content from Elixir is needed for production use and testing.
+
+**Solution**: `Dala.WebView.interact/2` provides a high-level API:
+- `{:tap, selector}`, `{:type, selector, text}`, `{:clear, selector}`, `{:eval, js_code}`, `{:scroll, selector, dx, dy}`, `{:wait, selector, timeout_ms}`
+- Also: `navigate/2`, `reload/1`, `stop_loading/1`, `go_forward/1`
+- Results arrive via `handle_info({:webview, :interact_result, ...})` and `handle_info({:webview, :eval_result, ...})`
+
+### 26. Event System and Platform APIs
+
+**Problem**: Unified event routing between native and BEAM, plus platform-specific APIs.
+
+**Solution**:
+- `Dala.Event` — unified event emission: `dispatch/4`, `emit/4`, `send_test/6`
+- `Dala.Event.Bridge` — event routing between native and BEAM
+- `Dala.Event.Throttle` — event throttling/debouncing
+- `Dala.Ui.NativeView` — stateful Elixir processes paired with platform-native views
+- `Dala.Platform.Background` — background execution keep-alive
+- `Dala.Platform.Linking` — open URLs, deep links
+- `Dala.Platform.Settings` — persistent settings (UserDefaults/SharedPreferences)
+- `Dala.Platform.State` — DETS-backed persistent key-value store
+- `Dala.Storage.Blob` — binary data via native blob references
+- `Dala.Storage.Storage` — app-local file storage with named locations
+- `Dala.Wakelock` — screen wakelock
+- `Dala.Ui.Feedback.Alert` — native alerts, action sheets, toasts
+- `Dala.Ui.Embedded.Webview` — bidirectional JS bridge for WebView
+- `Dala.Ui.Sensor.Motion` — accelerometer and gyroscope
+- `Dala.List` — list rendering with custom item renderers
+- `Dala.PubSub` — local PubSub via Elixir Registry
+- `Dala.Connectivity.Dist` — platform-aware Erlang distribution startup
+
+### 27. Dala.Test — Two-Layer Inspection Model
+
+**Problem**: Testing Dala apps requires both logical render tree inspection and native UI verification.
+
+**Solution**: `Dala.Test` exposes two complementary views:
+- **Render tree** (`tree/1`, `find/2`) — Dala logical components, fast, exact, has `on_tap` tags
+- **Native view tree** (`view_tree/1`, `find_view/2`) — native UIView/View hierarchies via NIF
+- **Accessibility tree** (`ui_tree/1`) — OS accessibility tree (requires AX activation on iOS)
+
+**Navigation helpers** (synchronous): `pop/1`, `navigate/3`, `pop_to/2`, `pop_to_root/1`, `reset_to/3`
+**Native UI helpers**: `tap_xy/3`, `type_text/2`, `swipe/5`, `ax_action/3`, `toggle/2`, `adjust_slider/4`
+**WebView helpers**: `webview_eval/2`, `webview_tap/3`, `webview_type/3`, `webview_navigate/2`
+
+**Rule**: Prefer `Dala.Test` over screenshots. Use render tree first for Dala apps, native tree for geometry/frames, AX tree for non-Dala content.
+
+### 28. Dala.App screens/1 Helper
+
+**Problem**: Screen modules need compile-time validation in navigation declarations.
+
+**Solution**: Use `screens/1` in your app's `navigation/1` to register screen modules:
+```elixir
+def navigation(_) do
+  screens([MyApp.HomeScreen, MyApp.SettingsScreen])
+  stack(:home, root: MyApp.HomeScreen)
+end
+```
+This validates at compile time that the modules are valid `Dala.Screen` modules.
 
 ## Public API Seams (Testing Interfaces)
 
@@ -479,6 +596,10 @@ Many of these functions contain parsing logic or platform-specific narrowing log
 - `DalaDev.Config.bundle_id/0` — Resolves app bundle ID
 - `DalaDev.Config.load_dala_config/0` — Reads dala.exs configuration
 
+**Connection**:
+- `DalaDev.Connector.start_epmd/0` — Starts EPMD daemon (public for testing)
+- `DalaDev.Connector.handle_dist_start/2` — Handles Node.start result (public for testing)
+
 ### Paths
 
 **Path resolution**:
@@ -532,6 +653,93 @@ Many of these functions contain parsing logic or platform-specific narrowing log
 **Android release build**:
 - `Mix.Tasks.Dala.Release.Android.format_size/1` — Formats file sizes for release notes
 
+### Dala Runtime Reference
+
+When writing new code in dala_dev that references dala internals, use the **new sub-namespace paths** (not the facade names). Key modules and their locations:
+
+**Core**:
+- `Dala` — main facade (`lib/dala.ex`)
+- `Dala.App` — app facade → `Dala.App.App` (`lib/dala/app/app.ex`)
+- `Dala.Screen` — screen facade → `Dala.Screen.Screen` (`lib/dala/screen/screen.ex`)
+- `Dala.Socket` — socket facade → `Dala.Ui.Socket` (`lib/dala/ui/socket.ex`)
+- `Dala.Renderer` — renderer facade → `Dala.Ui.Renderer` (`lib/dala/ui/renderer.ex`)
+- `Dala.Node` — node struct (`lib/dala/node.ex`)
+
+**UI**:
+- `Dala.Ui.Widgets` — declarative UI components (`lib/dala/ui/widgets.ex`)
+- `Dala.Ui.Diff` — diff engine (`lib/dala/ui/diff.ex`)
+- `Dala.Ui.NativeView` — stateful native views (`lib/dala/ui/native_view.ex`)
+- `Dala.Ui.NativeView.Server` — native view GenServer (`lib/dala/ui/native_view/server.ex`)
+- `Dala.Ui.NativeView.Registry` — native view registry (`lib/dala/ui/native_view/registry.ex`)
+- `Dala.Ui.Feedback.Alert` — native alerts (`lib/dala/ui/feedback/alert.ex`)
+- `Dala.Ui.Embedded.Webview` — WebView bridge (`lib/dala/ui/embedded/webview.ex`)
+- `Dala.Ui.Sensor.Motion` — motion sensors (`lib/dala/ui/sensor/motion.ex`)
+- `Dala.Ui.List` — list rendering (`lib/dala/ui/list.ex`)
+- `Dala.Ui.Style` — styling (`lib/dala/ui/style.ex`)
+- `Dala.Ui.Renderer` — binary protocol renderer (`lib/dala/ui/renderer.ex`)
+
+**Navigation**:
+- `Dala.Nav.Registry` — navigation registry (`lib/dala/nav/registry.ex`)
+- `Dala.Screen.Manager` — screen manager (`lib/dala/screen/manager.ex`)
+
+**Device APIs**:
+- `Dala.Hardware.Bluetooth` — BLE (`lib/dala/hardware/bluetooth.ex`)
+- `Dala.Hardware.Haptic` — haptics (`lib/dala/hardware/haptic.ex`)
+- `Dala.Hardware.Scanner` — barcode/QR scanner (`lib/dala/hardware/scanner.ex`)
+- `Dala.Hardware.Biometric` — biometrics (`lib/dala/hardware/biometric.ex`)
+- `Dala.Hardware.Wakelock` — screen wakelock (`lib/dala/hardware/wakelock.ex`)
+- `Dala.Media.Camera` — camera (`lib/dala/media/camera.ex`)
+- `Dala.Media.Audio` — audio (`lib/dala/media/audio.ex`)
+- `Dala.Media.Photos` — photo library (`lib/dala/media/photos.ex`)
+- `Dala.Connectivity.Dist` — Erlang distribution (`lib/dala/connectivity/dist.ex`)
+- `Dala.Connectivity.Wifi` — WiFi (`lib/dala/connectivity/wifi.ex`)
+
+**Platform**:
+- `Dala.Platform.Native` — NIF interface (`lib/dala/platform/native.ex`)
+- `Dala.Platform.NativeLogger` — native logging (`lib/dala/platform/native_logger.ex`)
+- `Dala.Platform.Background` — background execution (`lib/dala/platform/background.ex`)
+- `Dala.Platform.Linking` — deep linking (`lib/dala/platform/linking.ex`)
+- `Dala.Platform.Settings` — persistent settings (`lib/dala/platform/settings.ex`)
+- `Dala.Platform.State` — DETS-backed state (`lib/dala/platform/state.ex`)
+- `Dala.Platform.Pubsub` — local PubSub (`lib/dala/platform/pubsub.ex`)
+
+**Storage**:
+- `Dala.Storage.Storage` — file storage (`lib/dala/storage/storage.ex`)
+- `Dala.Storage.Blob` — binary blobs (`lib/dala/storage/blob.ex`)
+- `Dala.Storage.Files` — file operations (`lib/dala/storage/files.ex`)
+
+**Events**:
+- `Dala.Event.Event` — unified events (`lib/dala/event/event.ex`)
+- `Dala.Event.Bridge` — event routing (`lib/dala/event/bridge.ex`)
+- `Dala.Event.Throttle` — event throttling (`lib/dala/event/throttle.ex`)
+
+**Testing**:
+- `Dala.Test.Test` — testing facade implementation (`lib/dala/test/test.ex`)
+
+**Plugins**:
+- `Dala.Plugin` — plugin behaviour + DSL (`lib/dala/plugin.ex`)
+- `Dala.Plugin.Component` — component schema (`lib/dala/plugin/component.ex`)
+- `Dala.Plugin.ComponentDSL` — component DSL (`lib/dala/plugin/component_dsl.ex`)
+- `Dala.Plugin.Lifecycle` — lifecycle management (`lib/dala/plugin/lifecycle.ex`)
+- `Dala.Plugin.Registry` — plugin registry (`lib/dala/plugin/registry.ex`)
+- `Dala.Plugin.Protocol` — protocol generation (`lib/dala/plugin/protocol.ex`)
+- `Dala.Plugin.Manifest` — manifest generation (`lib/dala/plugin/manifest.ex`)
+
+**ML**:
+- `Dala.Ml.Ml` — ML facade implementation (`lib/dala/ml/ml.ex`)
+
+**Spark DSL**:
+- `Dala.Spark.Dsl` — screen DSL (`lib/dala/spark/dsl.ex`)
+
+**Theme**:
+- `Dala.Theme` — theme facade (`lib/dala/theme.ex`)
+- `Dala.Theme.Obsidian` — dark violet theme (`lib/dala/theme/obsidian.ex`)
+- `Dala.Theme.Citrus` — warm charcoal + lime theme (`lib/dala/theme/citrus.ex`)
+- `Dala.Theme.Birch` — warm parchment theme (`lib/dala/theme/birch.ex`)
+
+**Dev-only**:
+- `Dala.Preview` — UI preview/designer (`dev_tools/dala/preview.ex`)
+
 ---
 
 **Remember**: If you make any of these private, every downstream test breaks loudly. But worse, you'll lose the ability to evolve the parsers safely through refactoring with test coverage.
@@ -541,42 +749,51 @@ Many of these functions contain parsing logic or platform-specific narrowing log
 ### Core Modules
 
 **Device management**:
-- `lib/mob_dev/device.ex` — Device struct definition + `node_name/1`, `short_id/1`, `summary/1`
-- `lib/mob_dev/tunnel.ex` — ADB tunnel setup for device communication, `dist_port/1`
-- `lib/mob_dev/connector.ex` — Discovery → tunnel → restart → wait → connect workflow
-- `lib/mob_dev/config.ex` — Configuration handling (dala.exs), bundle ID resolution
-- `lib/mob_dev/paths.ex` — Path resolution for OTP runtimes, SDKs, and build artifacts
-- `lib/mob_dev/utils.ex` — Centralized utilities (regex compilation, ADB helpers, format_bytes)
-- `lib/mob_dev/error.ex` — Standardized error handling and formatting
+- `lib/dala_dev/device.ex` — Device struct definition + `node_name/1`, `short_id/1`, `summary/1`
+- `lib/dala_dev/tunnel.ex` — ADB tunnel setup for device communication, `dist_port/1`
+- `lib/dala_dev/connector.ex` — Discovery → tunnel → restart → wait → connect workflow
+- `lib/dala_dev/config.ex` — Configuration handling (dala.exs), bundle ID resolution
+- `lib/dala_dev/paths.ex` — Path resolution for OTP runtimes, SDKs, and build artifacts
+- `lib/dala_dev/utils.ex` — Centralized utilities (regex compilation, ADB helpers, format_bytes)
+- `lib/dala_dev/error.ex` — Standardized error handling and formatting
 
 **Deployment**:
-- `lib/mob_dev/deployer.ex` — Full BEAM push + app restart pipeline
-- `lib/mob_dev/hot_push.ex` — BEAM snapshot + RPC push for hot code reloading
-- `lib/mob_dev/native_build.ex` — APK/.app bundle building and signing
-- `lib/mob_dev/otp_downloader.ex` — Pre-built OTP runtime downloads and caching
+- `lib/dala_dev/deployer.ex` — Full BEAM push + app restart pipeline
+- `lib/dala_dev/hot_push.ex` — BEAM snapshot + RPC push for hot code reloading
+- `lib/dala_dev/native_build.ex` — APK/.app bundle building and signing
+- `lib/dala_dev/otp_downloader.ex` — Pre-built OTP runtime downloads and caching
 
 **Discovery**:
-- `lib/mob_dev/discovery/android.ex` — ADB device discovery and parsing
-- `lib/mob_dev/discovery/ios.ex` — xcrun simctl discovery and parsing
+- `lib/dala_dev/discovery/android.ex` — ADB device discovery and parsing
+- `lib/dala_dev/discovery/ios.ex` — xcrun simctl discovery and parsing
 
 **Observability**:
-- `lib/mob_dev/crash_dump.ex` — Crash dump parsing and HTML reports
-- `lib/mob_dev/debugger.ex` — Interactive remote debugging
-- `lib/mob_dev/observer.ex` — Web-based :observer for remote nodes
-- `lib/mob_dev/tracing.ex` — Distributed tracing infrastructure
-- `lib/mob_dev/profiling.ex` — Profiling and flame graph generation
-- `lib/mob_dev/log_collector.ex` — Log collection and streaming
-- `lib/mob_dev/screen_capture.ex` — Screenshot and video capture
-- `lib/mob_dev/network.ex` — Network diagnostics
-- `lib/mob_dev/network_diag.ex` — Network diagnostic utilities
+- `lib/dala_dev/crash_dump.ex` — Crash dump parsing and HTML reports
+- `lib/dala_dev/debugger.ex` — Interactive remote debugging
+- `lib/dala_dev/observer.ex` — Web-based :observer for remote nodes
+- `lib/dala_dev/tracing.ex` — Distributed tracing infrastructure
+- `lib/dala_dev/profiling.ex` — Profiling and flame graph generation
+- `lib/dala_dev/log_collector.ex` — Log collection and streaming
+- `lib/dala_dev/screen_capture.ex` — Screenshot and video capture
+- `lib/dala_dev/network.ex` — Network diagnostics
+- `lib/dala_dev/network_diag.ex` — Network diagnostic utilities
 
 **Other**:
-- `lib/mob_dev/emulators.ex` — Emulator lifecycle management
-- `lib/mob_dev/qr.ex` — QR code generation
-- `lib/mob_dev/release.ex` — Release build utilities
-- `lib/mob_dev/icon_generator.ex` — Icon generation for Android/iOS
-- `lib/mob_dev/enable.ex` — Feature enablement
-- `lib/mob_dev/benchmark.ex` — Performance benchmarking
+- `lib/dala_dev/emulators.ex` — Emulator lifecycle management
+- `lib/dala_dev/qr.ex` — QR code generation
+- `lib/dala_dev/release.ex` — Release build utilities
+- `lib/dala_dev/icon_generator.ex` — Icon generation for Android/iOS
+- `lib/dala_dev/enable.ex` — Feature enablement
+- `lib/dala_dev/benchmark.ex` — Performance benchmarking
+
+**Battery benchmarking**:
+- `lib/dala_dev/bench/device_observer.ex` — Subscribes to Dala.Device.Device events for ground-truth screen/app state
+- `lib/dala_dev/bench/probe.ex` — Device state snapshot (screen, app, memory, battery)
+- `lib/dala_dev/bench/preflight.ex` — Pre-flight checks before benchmark runs
+- `lib/dala_dev/bench/reconnector.ex` — Automatic node reconnection during long-running benches
+- `lib/dala_dev/bench/summary.ex` — Benchmark result summarization
+- `lib/dala_dev/bench/ADBHelper.ex` — ADB command helpers for bench
+- `lib/dala_dev/bench/logger.ex` — Bench-specific logging
 
 ### Mix Tasks (User-Facing Commands)
 
@@ -622,7 +839,7 @@ Many of these functions contain parsing logic or platform-specific narrowing log
 
 ### Development Server
 
-- `lib/mob_dev/server/` — Phoenix-based dev dashboard
+- `lib/dala_dev/server/` — Phoenix-based dev dashboard
   - `endpoint.ex` — Phoenix endpoint
   - `router.ex` — Route definitions
   - `device_poller.ex` — Periodic device discovery
