@@ -356,7 +356,7 @@ adb forward tcp:9100 tcp:9100   # dist:  Mac → device
 - `Dala.Alert` → `Dala.Ui.Feedback.Alert`
 - `Dala.Theme.set/1` → `Dala.Theme.Theme.set/1`
 - `Dala.ML` → `Dala.Ml.Ml` (implementation)
-- `Dala.Test` → `Dala.Test.Test` (implementation)
+- `Dala.Test` — testing facade, delegates to `Dala.Test.Test` (implementation at `lib/dala/test/test.ex`)
 - `Dala.Plugin` → `Dala.Plugin` (struct + behaviour, unchanged)
 - `Dala.Plugin.Registry` → `Dala.Plugin.Registry` (unchanged)
 - `Dala.Plugin.Lifecycle` → `Dala.Plugin.Lifecycle` (unchanged)
@@ -463,7 +463,7 @@ CoreML predictions are synchronous (NIF captures ObjC callback via Mutex) and ru
 
 **Problem**: Programmatic control of WebView content from Elixir is needed for production use and testing.
 
-**Solution**: `Dala.WebView.interact/2` provides a high-level API:
+**Solution**: `Dala.Ui.Embedded.Webview.interact/2` provides a high-level API:
 - `{:tap, selector}`, `{:type, selector, text}`, `{:clear, selector}`, `{:eval, js_code}`, `{:scroll, selector, dx, dy}`, `{:wait, selector, timeout_ms}`
 - Also: `navigate/2`, `reload/1`, `stop_loading/1`, `go_forward/1`
 - Results arrive via `handle_info({:webview, :interact_result, ...})` and `handle_info({:webview, :eval_result, ...})`

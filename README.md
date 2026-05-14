@@ -770,7 +770,7 @@ For device API interactions, simulate the result rather than triggering real har
 
 ```elixir
 # Instead of actually opening the camera:
-Dala.Test.tap(node, :take_photo)     # triggers handle_event → Dala.Camera.capture_photo
+Dala.Test.tap(node, :take_photo)     # triggers handle_event → Dala.Media.Camera.capture_photo
 # Simulate the result:
 Dala.Test.send_message(node, {:camera, :photo, %{path: "/tmp/test.jpg", width: 1920, height: 1080}})
 Dala.Test.assigns(node)              # verify photo_path was stored
