@@ -534,8 +534,11 @@ defmodule DalaDev.Discovery.IOS do
     |> String.split("\n")
     |> Enum.flat_map(fn line ->
       case Regex.run(Regex.compile!("^\\s*(\\d+)\\s+(.+Bundle/Application/.+\\.app/.+)$"), line) do
-        [_, pid_str, _path] -> [String.to_integer(pid_str)]
-        _ -> []
+        [_, pid_str, path] ->
+          if String.contains?(path, except_bundle), do: [], else: [String.to_integer(pid_str)]
+
+        _ ->
+          []
       end
     end)
     |> Enum.each(fn pid ->
@@ -556,7 +559,6 @@ defmodule DalaDev.Discovery.IOS do
       )
     end)
 
-    _ = except_bundle
     :ok
   rescue
     _ -> :ok

@@ -287,18 +287,16 @@ defmodule DalaDev.Release do
     epmd_src = cfg[:ios_epmd_build_src] || otp_root
 
     [
-      _env = [
-        {"DALA_DIR", Path.expand(cfg[:dala_dir])},
-        {"DALA_ELIXIR_LIB", Path.expand(elixir_lib)},
-        {"DALA_IOS_DEVICE_OTP_ROOT", otp_root},
-        {"DALA_IOS_EPMD_BUILD_SRC", epmd_src},
-        {"DALA_IOS_BUNDLE_ID", cfg[:bundle_id]},
-        {"DALA_IOS_TEAM_ID", cfg[:ios_team_id]},
-        {"DALA_IOS_SIGN_IDENTITY", cfg[:ios_dist_sign_identity]},
-        {"DALA_IOS_PROFILE_UUID", cfg[:ios_dist_profile_uuid]},
-        {"DALA_APP_NAME", app_name},
-        {"DALA_APP_MODULE", app_module}
-      ]
+      {"DALA_DIR", Path.expand(cfg[:dala_dir])},
+      {"DALA_ELIXIR_LIB", Path.expand(elixir_lib)},
+      {"DALA_IOS_DEVICE_OTP_ROOT", otp_root},
+      {"DALA_IOS_EPMD_BUILD_SRC", epmd_src},
+      {"DALA_IOS_BUNDLE_ID", cfg[:bundle_id]},
+      {"DALA_IOS_TEAM_ID", cfg[:ios_team_id]},
+      {"DALA_IOS_SIGN_IDENTITY", cfg[:ios_dist_sign_identity]},
+      {"DALA_IOS_PROFILE_UUID", cfg[:ios_dist_profile_uuid]},
+      {"DALA_APP_NAME", app_name},
+      {"DALA_APP_MODULE", app_module}
     ]
   end
 

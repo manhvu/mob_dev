@@ -302,9 +302,6 @@ defmodule DalaDev.Server.ObserverLive.Processes do
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
 
-  
-   
-
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 
   defp format_number(n) when n < 1000, do: "#{n}"
